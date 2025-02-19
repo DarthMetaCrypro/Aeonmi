@@ -13,32 +13,36 @@ The Aeonmi repository is a next-generation programming platform combining Web2 a
 ## Project Structure
 plaintext
 Copy code
+## Project Structure
+
+```plaintext
 📂 Aeonmi-QUBE
 ├── 📂 src
 │   ├── 📂 ai
 │   │   ├── neural_network.rs
-│   │   ├── inference.rs
+│   │   └── inference.rs
 │   ├── 📂 blockchain
 │   │   ├── ledger.rs
-│   │   ├── consensus.rs
+│   │   └── consensus.rs
 │   ├── 📂 cli
 │   │   ├── cli.rs
-│   │   ├── commands.rs
+│   │   └── commands.rs
 │   ├── 📂 core
 │   │   ├── parser.rs
 │   │   ├── lexer.rs
-│   │   ├── runtime.rs
+│   │   └── runtime.rs
 │   ├── 📂 io
 │   │   ├── files.rs
-│   │   ├── quantum_io.rs
+│   │   └── quantum_io.rs
 │   ├── 📂 physics
 │   │   ├── quantum_gates.rs
-│   │   ├── thermodynamics.rs
+│   │   └── thermodynamics.rs
 │   ├── main.rs
-│   ├── mod.rs
+│   └── mod.rs
 ├── Cargo.toml
 ├── README.md
-├── .gitignore
+└── .gitignore
+```
 
 ## Custom CLI
 The Aeonmi CLI provides a streamlined way to interact with the ecosystem. Key commands include:
