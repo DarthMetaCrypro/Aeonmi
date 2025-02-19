@@ -55,7 +55,7 @@ The Aeonmi CLI provides a streamlined way to interact with the ecosystem. Key co
 1. **Install Rust**: Ensure rustup is installed. Follow the [Rust Installation Guide](https://www.rust-lang.org/learn/get-started).
 2. **Clone the Repository**:
     ```bash
-    git clone https://github.com/YourUsername/Aeonmi.git
+    git clone https://github.com/DarthMetaCrypro/Aeonmi.git
     cd Aeonmi
     ```
 3. **Build the Project**:
