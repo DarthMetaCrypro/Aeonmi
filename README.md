@@ -37,39 +37,53 @@ Strict Licensing – All code remains proprietary; public use is restricted.
 
 Directory Structure
 ```
-Aeonmi/
-├── .github/workflows/release.yml       # Release automation
-├── Cargo.toml                          # Rust project manifest
-├── Cargo.lock
-├── src/
-│   ├── core/
-│   │   ├── ast.rs
-│   │   ├── code_generator.rs
-│   │   ├── compiler.rs
-│   │   ├── diagnostics.rs
-│   │   ├── error.rs
-│   │   ├── lexer.rs
-│   │   ├── lib.rs
-│   │   ├── mod.rs
-│   │   ├── parser.rs
-│   │   ├── semantic_analyzer.rs
-│   │   └── token.rs
-│   ├── lib.rs
-│   └── main.rs
-├── tests/
-│   ├── assign_and_calls.rs
-│   ├── cli_smoke.rs
-│   ├── comparisons.rs
-│   ├── compiler_pipeline.rs
-│   ├── control_flow.rs
-│   ├── diagnostics.rs
-│   ├── errors_extra.rs
-│   ├── functions.rs
-│   ├── precedence.rs
-│   └── quantum_glyph.rs
-├── output.js
-├── test_output.js
-└── README.md
+C:.
+|   cli.rs
+|   config.rs
+|   lib.rs
+|   main.rs
+|
++---ai
++---bin
+|       aeonmi.rs
+|       aeonmi_project.rs
+|
++---blockchain
++---cli
++---commands
+|       ast.rs
+|       compile.rs
+|       edit.rs
+|       format.rs
+|       lint.rs
+|       mod.rs
+|       repl.rs
+|       run.rs
+|       tokens.rs
+|
++---core
+|       ast.rs
+|       code_generator.rs
+|       compiler.rs
+|       diagnostics.rs
+|       error.rs
+|       lexer.rs
+|       lib.rs
+|       mod.rs
+|       parser.rs
+|       qpoly.rs
+|       semantic_analyzer.rs
+|       token.rs
+|
++---io
++---pkysics
++---shell
+|       mod.rs
+|
++---titan
+\---tui
+        editor.rs
+        mod.rs
 ```
 License
 This release is governed under a proprietary license.
