@@ -1,23 +1,39 @@
-Aeonmi v0.2.0
-⚠ Proprietary Software – All Rights Reserved
-This project is closed-source and is the exclusive property of DARK META Studios. Unauthorized copying, modification, distribution, or use is strictly prohibited. See the LICENSE file for full terms.
+Aeonmi v0.2.0 – Closed Source Pre-Release
+⚠️ Notice:
+Aeonmi is currently a closed-source project. No redistribution, modification, reverse engineering, or unauthorized use of any kind is permitted without explicit written consent from the author. All rights reserved. This pre-release is provided for demonstration, evaluation, and controlled collaboration purposes only.
 
 Overview
-Aeonmi is a next-generation programming language and execution environment designed for AI-native development, quantum-resistant security, and high-performance computing.
-Version 0.2.0 introduces the initial public binary release for limited testing, featuring the core compiler, parser, lexer, and semantic analysis pipeline.
+Aeonmi is an advanced programming language and compiler framework designed for AI-native, secure, and multi-dimensional computing. It introduces QUBE, a symbolic and hieroglyphic inner-core language capable of adaptive, self-modifying operations, quantum-resistant encryption, and deep AI integration.
+
+Version 0.2.0 delivers the initial operational codebase, test scaffolding, and compiler infrastructure required to begin controlled internal evaluation.
+
+Highlights in v0.2.0
+Core Compiler Pipeline – Fully implemented lexer, parser, semantic analyzer, and code generator modules.
+
+QUBE Integration Layer – Foundation for symbolic and quantum glyph parsing.
+
+Robust Test Suite – Modular test files for compiler components:
+
+compiler_pipeline.rs
+
+control_flow.rs
+
+functions.rs
+
+quantum_glyph.rs
+
+Diagnostics System – Advanced error handling with rich contextual output.
+
+Security by Design – Quantum-resistant cryptographic stubs embedded in the architecture.
+
+Strict Licensing – All code remains proprietary; public use is restricted.
 
 Directory Structure
 ```
-aeonmi_project/
-├── .github/
-│   └── workflows/
-│       └── release.yml
-├── .gitignore
+Aeonmi/
+├── .github/workflows/release.yml       # Release automation
+├── Cargo.toml                          # Rust project manifest
 ├── Cargo.lock
-├── Cargo.toml
-├── LICENSE.txt
-├── README.md
-├── output.js
 ├── src/
 │   ├── core/
 │   │   ├── ast.rs
@@ -33,7 +49,6 @@ aeonmi_project/
 │   │   └── token.rs
 │   ├── lib.rs
 │   └── main.rs
-├── test_output.js
 ├── tests/
 │   ├── assign_and_calls.rs
 │   ├── cli_smoke.rs
@@ -45,18 +60,24 @@ aeonmi_project/
 │   ├── functions.rs
 │   ├── precedence.rs
 │   └── quantum_glyph.rs
+├── output.js
+├── test_output.js
+└── README.md
 ```
-Release Notes – v0.2.0
-🚀 Initial Code Drop – Full compiler pipeline implementation (Lexer → Parser → Semantic Analyzer → Code Generator).
-
-🛡 Quantum-Resistant Security Layer integrated into the core design principles.
-
-⚡ Optimized Tokenization & Parsing for complex syntax and AI-driven workflows.
-
-🧪 Automated Test Suite with coverage for precedence rules, control flow, functions, and compiler pipelines.
-
-📦 Binary Output Support – Generates JavaScript output for cross-platform execution.
-
 License
-This software is licensed under the Aeonmi Proprietary Software License Agreement.
-See LICENSE.txt for details.
+This release is governed under a proprietary license.
+You may not:
+
+Copy, distribute, or modify the source code
+
+Reverse engineer, decompile, or attempt to derive the source
+
+Use Aeonmi for commercial purposes without explicit permission
+
+Next Steps
+Controlled distribution to select collaborators
+
+Begin alpha-stage evaluation of QUBE syntax
+
+Expand compiler optimizations and AI integration layer
+
