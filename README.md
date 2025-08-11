@@ -1,3 +1,10 @@
+<p align="center">
+  <img src="https://img.shields.io/github/actions/workflow/status/DarthMetaCrypro/Aeonmi/release.yml?label=build" />
+  <img src="https://img.shields.io/github/v/release/DarthMetaCrypro/Aeonmi?include_prereleases&sort=semver" />
+  <img src="https://img.shields.io/badge/license-Proprietary-red" />
+  <img src="https://img.shields.io/badge/language-Rust-informational" />
+</p>
+
 Aeonmi v0.2.0 – Closed Source Pre-Release
 ⚠️ Notice:
 Aeonmi is currently a closed-source project. No redistribution, modification, reverse engineering, or unauthorized use of any kind is permitted without explicit written consent from the author. All rights reserved. This pre-release is provided for demonstration, evaluation, and controlled collaboration purposes only.
