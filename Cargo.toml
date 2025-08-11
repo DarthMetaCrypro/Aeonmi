@@ -1,18 +1,49 @@
 [package]
 name = "aeonmi_project"
 version = "0.2.0"
-edition = "2024"
+edition = "2021"
 license-file = "LICENSE"
-# Optional: if you're NOT publishing to crates.io right now:
 publish = false
+autobins = false
+default-run = "Aeonmi"
+
+[lib]
+path = "src/lib.rs"
+
+# Pretty, shippable exe (Windows: Aeonmi.exe)
+[[bin]]
+name = "Aeonmi"
+path = "src/main.rs"
+
+# Legacy binary name for tests (expects CARGO_BIN_EXE_aeonmi_project)
+[[bin]]
+name = "aeonmi_project"
+path = "src/bin/aeonmi_project.rs"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
 
 [dependencies]
-unicode-ident = "1.0"
-clap = { version = "4.5", features = ["derive"] }
+# Core
+anyhow = "1"
 colored = "2.1"
+clap = { version = "4.5", features = ["derive"] }
+unicode-ident = "1.0"
+
+# Config / paths
+dirs-next = "2"
+serde = { version = "1", features = ["derive"] }
+toml = "0.8"
+
+# Editor niceties
+ctrlc = "3.4"
+
+# TUI / terminal
+crossterm = "0.27"
+ratatui = "0.26"
 
 [dev-dependencies]
 tempfile = "3.10"
-
-# If your toolchain doesn’t support 2024 yet, temporarily switch to:
-# edition = "2021"

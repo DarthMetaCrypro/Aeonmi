@@ -1,0 +1,7 @@
+// functions.ai
+function add(x, y) {
+  return x + y;
+}
+
+let r = add(2, 3);
+log(r);

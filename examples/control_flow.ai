@@ -1,0 +1,21 @@
+// control_flow.ai
+
+// if / else
+let n = 7;
+if (n == 7) {
+  log("seven");
+} else {
+  log("not seven");
+}
+
+// while
+let i = 0;
+while (i < 3) {
+  log(i);
+  i = i + 1;
+}
+
+// for  (note: init is a full statement; keep the semicolon)
+for (let j = 0; j < 3; j = j + 1) {
+  log(j);
+}

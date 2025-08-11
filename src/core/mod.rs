@@ -8,3 +8,4 @@ pub mod error;
 pub mod semantic_analyzer;
 pub mod code_generator;
 pub mod diagnostics;
+pub mod qpoly;

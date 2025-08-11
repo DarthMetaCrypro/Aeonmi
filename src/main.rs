@@ -1,137 +1,100 @@
-//! Aeonmi/QUBE Main Entry Point
-//! CLI: Lexer → Parser → Compiler, with debug flags.
+/// Aeonmi/QUBE Main — subcommands + back-compat + neon shell by default.
 
 mod core;
+mod cli;
+mod commands;
+mod config;    // you already have this file (default_config_path, resolve_config_path, etc.)
+mod tui;       // contains tui::editor
+mod shell;     // new: our neon Shard shell
 
-use clap::{Arg, Command};
-use colored::Colorize;
+use clap::Parser as ClapParser;
+use std::path::PathBuf;
 
-use crate::core::diagnostics::{print_error, Span};
-use crate::core::lexer::{Lexer, LexerError};
-use crate::core::parser::{Parser, ParserError};
-use crate::core::compiler::Compiler;
+use crate::cli::{AeonmiCli, Command, EmitKind};
+use crate::config::resolve_config_path;
 
-use std::fs;
-use std::process::exit;
+fn set_console_title() {
+    use crossterm::{execute, terminal::SetTitle};
+    let _ = execute!(std::io::stdout(), SetTitle("Aeonmi Shard"));
+}
 
-fn main() {
-    let matches = Command::new("aeonmi")
-        .about("Aeonmi/QUBE/Titan unified compiler")
-        .arg(Arg::new("input")
-             .help("Input source file (.ai)")
-             .required(false))
-        .arg(Arg::new("emit")
-             .long("emit").value_name("KIND")
-             .default_value("js")
-             .help("Emit kind (currently: js)"))
-        .arg(Arg::new("out")
-             .long("out").value_name("FILE")
-             .help("Output file path (e.g., output.js)")
-             .default_value("output.js"))
-        .arg(Arg::new("tokens")
-             .long("tokens")
-             .help("Print tokens").num_args(0))
-        .arg(Arg::new("ast")
-             .long("ast")
-             .help("Print AST").num_args(0))
-        .arg(Arg::new("no-sema")
-             .long("no-sema")
-             .help("Skip semantic analysis").num_args(0))
-        .arg(Arg::new("pretty-errors")
-             .long("pretty-errors")
-             .help("Use pretty, colored diagnostics").num_args(0))
-        .get_matches();
+fn main() -> anyhow::Result<()> {
+    set_console_title();
+    let args = AeonmiCli::parse();
+    let cfg_path = resolve_config_path(&args.config);
 
-    let input_path = matches.get_one::<String>("input")
-        .map(|s| s.as_str())
-        .unwrap_or("examples/hello.ai");
-    let emit_kind = matches.get_one::<String>("emit").map(String::as_str).unwrap_or("js");
-    let out_path  = matches.get_one::<String>("out").map(String::as_str).unwrap_or("output.js");
-    let print_tokens = matches.contains_id("tokens");
-    let print_ast    = matches.contains_id("ast");
-    let skip_sema    = matches.contains_id("no-sema");
-    let pretty       = matches.contains_id("pretty-errors");
-
-    if emit_kind != "js" {
-        eprintln!("{}", format!("Unsupported --emit kind: {}", emit_kind).bright_red());
-        exit(2);
+    // If *no* subcommand and *no* legacy args: open the Aeonmi Shard shell.
+    let no_legacy = args.input_pos.is_none()
+        && args.input_opt.is_none()
+        && args.emit_legacy.is_none()
+        && args.out_legacy.is_none()
+        && !args.tokens_legacy
+        && !args.ast_legacy;
+    if args.cmd.is_none() && no_legacy {
+        return shell::start(cfg_path, args.pretty_errors, args.no_sema);
     }
 
-    let source = match fs::read_to_string(input_path) {
-        Ok(s) => s,
-        Err(_) => {
-            eprintln!("{} Could not read '{}', using default inline code.",
-                      "warn:".yellow().bold(), input_path);
-            "let x = 42; log(x);".to_string()
-        }
-    };
+    // Back-compat: `aeonmi <file.ai>` or `-i <file.ai>` at top-level behaves like compile.
+    if args.cmd.is_none() && (args.input_pos.is_some() || args.input_opt.is_some()) {
+        use std::process::exit as proc_exit;
+        let input = args.input_pos.or(args.input_opt).unwrap();
 
-    if print_tokens || print_ast {
-        println!("=== Source Code ===\n{}\n", source);
+        let emit_kind = match args.emit_legacy.as_deref() {
+            None | Some("js") => EmitKind::Js,
+            Some("ai") => EmitKind::Ai,
+            Some(other) => { eprintln!("Unsupported --emit kind: {}", other); proc_exit(2); }
+        };
+        let default_out = if matches!(emit_kind, EmitKind::Ai) { "output.ai" } else { "output.js" };
+        let out = args.out_legacy.clone().unwrap_or_else(|| PathBuf::from(default_out));
+
+        return commands::compile::compile_pipeline(
+            Some(input),
+            emit_kind,
+            out,
+            args.tokens_legacy,
+            args.ast_legacy,
+            args.pretty_errors,
+            args.no_sema,
+        );
     }
 
-    // Stage 1: Lex
-    let mut lexer = Lexer::new(&source);
-    let tokens = match lexer.tokenize() {
-        Ok(t) => t,
-        Err(e) => {
-            if pretty {
-                match e {
-                    LexerError::UnexpectedCharacter(_, line, col)
-                    | LexerError::UnterminatedString(line, col)
-                    | LexerError::InvalidNumber(_, line, col)
-                    | LexerError::InvalidQubitLiteral(_, line, col)
-                    | LexerError::UnterminatedComment(line, col) => {
-                        print_error(input_path, &source, &format!("{}", e), Span::single(line, col));
-                    }
-                }
-            } else {
-                eprintln!("{} Lexing error: {}", "error:".bright_red(), e);
-            }
-            exit(1);
+    // Subcommands
+    match args.cmd {
+        Some(Command::Compile { input, emit, out, tokens, ast }) => {
+            commands::compile::compile_pipeline(
+                input, emit, out, tokens, ast, args.pretty_errors, args.no_sema
+            )
         }
-    };
-
-    if print_tokens {
-        println!("=== Tokens ===");
-        for token in &tokens { println!("{}", token); }
-        println!();
-    }
-
-    // Stage 2: Parse
-    let mut parser = Parser::new(tokens.clone());
-    let ast = match parser.parse() {
-        Ok(a) => a,
-        Err(e @ ParserError { line, col, .. }) => {
-            if pretty {
-                print_error(input_path, &source, &format!("Parsing error: {}", e.message), Span::single(line, col));
-            } else {
-                eprintln!("{} Parsing error: {}", "error:".bright_red(), e);
-            }
-            exit(1);
+        Some(Command::Run { input, out }) => {
+            commands::run::main_with_opts(input, out, args.pretty_errors, args.no_sema)
         }
-    };
-
-    if print_ast {
-        println!("=== AST ===\n{:#?}\n", ast);
-    }
-
-    // Stage 3: Compile
-    let compiler = Compiler::new();
-    let run_semantic = !skip_sema;
-    let res = compiler.compile_with(&source, out_path, run_semantic);
-    match res {
-        Ok(_) => {
-            println!("{} {}", "ok:".green().bold(), format!("Compilation successful. Output written to '{}'.", out_path));
+        Some(Command::Format { inputs, check }) => {
+            let _ = (inputs, check);
+            println!("(format) placeholder");
+            Ok(())
         }
-        Err(e) => {
-            // CoreError (general string) — no span; show plainly
-            if pretty {
-                eprintln!("{} {}", "error:".bright_red().bold(), e);
-            } else {
-                eprintln!("Compilation failed: {}", e);
-            }
-            exit(1);
+        Some(Command::Lint { inputs, fix }) => {
+            let _ = (inputs, fix);
+            println!("(lint) placeholder");
+            Ok(())
+        }
+        Some(Command::Repl) => commands::repl::main(),
+        Some(Command::Edit { file, tui }) => {
+            commands::edit::main(file, cfg_path, tui)
+        }
+        Some(Command::Tokens { input }) => commands::compile::compile_pipeline(
+            Some(input), EmitKind::Js, PathBuf::from("output.js"),
+            /*tokens*/ true, /*ast*/ false, args.pretty_errors, args.no_sema,
+        ),
+        Some(Command::Ast { input }) => commands::compile::compile_pipeline(
+            Some(input), EmitKind::Js, PathBuf::from("output.js"),
+            /*tokens*/ false, /*ast*/ true, args.pretty_errors, args.no_sema,
+        ),
+        None => {
+            use clap::CommandFactory;
+            AeonmiCli::command().print_help().ok();
+            println!();
+            Ok(())
         }
     }
 }

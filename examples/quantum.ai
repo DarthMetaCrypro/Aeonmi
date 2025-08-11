@@ -1,0 +1,4 @@
+qubit q;
+superpose(q);
+measure(q);
+log("measured");

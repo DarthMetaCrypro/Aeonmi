@@ -1,0 +1,8 @@
+// quantum_glyph.ai
+qubit q;
+superpose(q);
+measure(q);
+
+let x = 1;
+let y = 2;
+𓀀(x, y);   // sample hieroglyphic op with args

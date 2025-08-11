@@ -1,0 +1,8 @@
+// precedence.ai
+let x = 1 + 2 * 3 == 7;
+let y = (1 + 2) * 3 == 9;
+let z = 10 > 5 && 3 < 4; // '&&' isn’t parsed—so do two logs instead:
+log(x);
+log(y);
+log(10 > 5);  // comparison
+log(3 < 4);   // comparison
