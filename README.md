@@ -16,33 +16,39 @@ Copy code
 ## Project Structure
 
 ```plaintext
-📂 Aeonmi-QUBE
-├── 📂 src
-│   ├── 📂 ai
-│   │   ├── neural_network.rs
-│   │   └── inference.rs
-│   ├── 📂 blockchain
-│   │   ├── ledger.rs
-│   │   └── consensus.rs
-│   ├── 📂 cli
-│   │   ├── cli.rs
-│   │   └── commands.rs
-│   ├── 📂 core
-│   │   ├── parser.rs
-│   │   ├── lexer.rs
-│   │   └── runtime.rs
-│   ├── 📂 io
-│   │   ├── files.rs
-│   │   └── quantum_io.rs
-│   ├── 📂 physics
-│   │   ├── quantum_gates.rs
-│   │   └── thermodynamics.rs
-│   ├── main.rs
-│   └── mod.rs
+aeonmi_project/
+├── Cargo.lock
 ├── Cargo.toml
 ├── README.md
-└── .gitignore
-```
+├── src/
+│   ├── core/
+│   │   ├── ast.rs
+│   │   ├── code_generator.rs
+│   │   ├── compiler.rs
+│   │   ├── error.rs
+│   │   ├── lexer.rs
+│   │   ├── semantic_analyzer.rs
+│   │   ├── token.rs
+│   │   └── ...
+│   ├── lib.rs
+│   └── main.rs
+├── target/
+│   └── ...
+├── test/
+│   ├── assign_and_calls.rs
+│   ├── cli_smoke.rs
+│   ├── comparisons.rs
+│   ├── compiler_pipeline.rs
+│   ├── control_flow.rs
+│   ├── diagnostics.rs
+│   ├── errors_extra.rs
+│   ├── functions.rs
+│   ├── precedence.rs
+│   ├── quantum_glyph.rs
+│   └── ...
+└── .github/
+    └── workflows/
+        └── ci.yml
 
 ## Custom CLI
 The Aeonmi CLI provides a streamlined way to interact with the ecosystem. Key commands include:
