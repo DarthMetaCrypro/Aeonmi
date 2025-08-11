@@ -7,9 +7,7 @@ Aeonmi is a next-generation programming language and execution environment desig
 Version 0.2.0 introduces the initial public binary release for limited testing, featuring the core compiler, parser, lexer, and semantic analysis pipeline.
 
 Directory Structure
-pgsql
-Copy
-Edit
+```
 aeonmi_project/
 ├── .github/
 │   └── workflows/
@@ -47,6 +45,7 @@ aeonmi_project/
 │   ├── functions.rs
 │   ├── precedence.rs
 │   └── quantum_glyph.rs
+```
 Release Notes – v0.2.0
 🚀 Initial Code Drop – Full compiler pipeline implementation (Lexer → Parser → Semantic Analyzer → Code Generator).
 
