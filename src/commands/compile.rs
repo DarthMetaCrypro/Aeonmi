@@ -10,6 +10,7 @@ use crate::core::diagnostics::{print_error, Span};
 use crate::core::lexer::{Lexer, LexerError};
 use crate::core::parser::{Parser as AeParser, ParserError};
 
+#[allow(dead_code)]
 pub fn main_with_opts(
     input: PathBuf,
     emit: EmitKind,

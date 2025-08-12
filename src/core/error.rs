@@ -1,6 +1,7 @@
 use std::fmt;
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub enum CoreError {
     InterpretationError(String),
     IoError(String),
@@ -22,6 +23,7 @@ impl fmt::Display for CoreError {
 impl std::error::Error for CoreError {}
 
 impl CoreError {
+	#[allow(dead_code)]
     pub fn interpretation(message: &str) -> Self { CoreError::InterpretationError(message.to_string()) }
     pub fn io_error(message: &str) -> Self { CoreError::IoError(message.to_string()) }
     pub fn invalid_operation(message: &str) -> Self { CoreError::InvalidOperation(message.to_string()) }

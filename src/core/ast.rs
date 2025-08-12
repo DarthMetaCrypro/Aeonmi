@@ -77,6 +77,7 @@ pub enum ASTNode {
     },
 
     // Special
+	#[allow(dead_code)]
     Error(String),
 }
 

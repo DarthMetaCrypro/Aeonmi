@@ -13,6 +13,7 @@ pub fn resolve_config_path(cli_path: &Option<PathBuf>) -> Option<PathBuf> {
     default_config_path()
 }
 
+#[allow(dead_code)]
 pub fn ensure_parent_dir(path: &Path) -> Result<()> {
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent)

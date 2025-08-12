@@ -38,10 +38,29 @@ fn neon() -> (Color, Color, Color, Color) {
 
 #[derive(Copy, Clone)]
 enum EmitMode { Js, Ai }
+
 impl EmitMode {
-    fn toggle(self) -> Self { match self { EmitMode::Js => EmitMode::Ai, EmitMode::Ai => EmitMode::Js } }
-    fn label(self) -> &'static str { match self { EmitMode::Js => "JS", EmitMode::Ai => "AI" } }
-    fn to_emit_kind(self) -> EmitKind { match self { EmitMode::Js => EmitKind::Js, EmitMode::Ai => EmitKind::Ai } }
+    fn toggle(self) -> Self {
+        match self {
+            EmitMode::Js => EmitMode::Ai,
+            EmitMode::Ai => EmitMode::Js,
+        }
+    }
+
+    fn label(self) -> &'static str {
+        match self {
+            EmitMode::Js => "JS",
+            EmitMode::Ai => "AI",
+        }
+    }
+
+    #[allow(dead_code)]
+    fn to_emit_kind(self) -> EmitKind {
+        match self {
+            EmitMode::Js => EmitKind::Js,
+            EmitMode::Ai => EmitKind::Ai,
+        }
+    }
 }
 
 struct App {

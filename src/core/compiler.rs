@@ -21,6 +21,7 @@ impl Compiler {
     pub fn new() -> Self { Compiler }
 
     /// Back-compat: default to running semantic analysis.
+	#[allow(dead_code)]
     pub fn compile(&self, code: &str, output_file: &str) -> Result<(), CoreError> {
         self.compile_with(code, output_file, true)
     }
@@ -66,9 +67,9 @@ impl Compiler {
 
         // 6) Write file
         let mut file = File::create(output_file)
-            .map_err(|e| CoreError::general_error(&format!("Failed to create output file: {}", e)))?;
+            .map_err(|e| CoreError::io_error(&format!("Failed to create output file: {}", e)))?;
         file.write_all(output_code.as_bytes())
-            .map_err(|e| CoreError::general_error(&format!("Failed to write to output file: {}", e)))?;
+            .map_err(|e| CoreError::io_error(&format!("Failed to write to output file: {}", e)))?;
 
         println!("Compilation successful. Output written to '{}'.", output_file);
         Ok(())
@@ -77,7 +78,7 @@ impl Compiler {
     /// Validates code before compilation
     pub fn validate_and_summarize(&self, code: &str) -> Result<String, CoreError> {
         if code.trim().is_empty() {
-            return Err(CoreError::general_error("Code is empty. Nothing to compile."));
+            return Err(CoreError::invalid_operation("No source code provided"));
         }
         let lines = code.lines().count();
         let chars = code.chars().count();
