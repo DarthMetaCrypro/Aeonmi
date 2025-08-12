@@ -1,0 +1,3 @@
+# .cargo/config.toml  (create this file if it doesn't exist)
+[env]
+PYO3_PYTHON = { value = ".venv\\Scripts\\python.exe", relative = true }
