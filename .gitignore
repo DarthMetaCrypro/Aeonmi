@@ -1,1 +1,5 @@
-/target
+/target/
+/.venv/
+**/*.pyc
+aeonmi.run.js
+output.js

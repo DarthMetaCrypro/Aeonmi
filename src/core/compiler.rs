@@ -14,20 +14,29 @@ use crate::core::{
     token::TokenKind,
 };
 
+use crate::core::titan; // Titan math/quantum library entry point
+
 /// Represents the Aeonmi/QUBE/Titan compiler
 pub struct Compiler;
 
 impl Compiler {
     pub fn new() -> Self { Compiler }
 
-    /// Back-compat: default to running semantic analysis.
-	#[allow(dead_code)]
+    /// Back-compat: default to running semantic analysis and no Titan debug.
+    #[allow(dead_code)]
     pub fn compile(&self, code: &str, output_file: &str) -> Result<(), CoreError> {
-        self.compile_with(code, output_file, true)
+        self.compile_with(code, output_file, true, false)
     }
 
     /// Main compilation pipeline with option to skip semantic analysis
-    pub fn compile_with(&self, code: &str, output_file: &str, run_semantic: bool) -> Result<(), CoreError> {
+    /// and optionally run Titan debug integration.
+    pub fn compile_with(
+        &self,
+        code: &str,
+        output_file: &str,
+        run_semantic: bool,
+        debug_titan: bool,
+    ) -> Result<(), CoreError> {
         // 1) Validate input
         let summary = self.validate_and_summarize(code)?;
         println!("{summary}");
@@ -57,6 +66,25 @@ impl Compiler {
             println!("Semantic Analyzer: No semantic errors found.");
         } else {
             println!("Semantic Analyzer: skipped by flag.");
+        }
+
+        // 4.5) Titan library integration test (optional)
+        if debug_titan {
+            println!("--- Titan Debug Mode Active ---");
+            let v1 = vec![1.0, 2.0, 3.0];
+            let v2 = vec![4.0, 5.0, 6.0];
+
+            match titan::linear_algebra::dot_product(&v1, &v2) {
+                Ok(result) => println!("Titan Test - Dot Product of {:?} and {:?} = {}", v1, v2, result),
+                Err(e) => println!("Titan Test - Dot Product Error: {}", e),
+            }
+
+            let identity = titan::linear_algebra::identity_matrix(3);
+            println!("Titan Test - 3x3 Identity Matrix:");
+            for row in &identity {
+                println!("{:?}", row);
+            }
+            println!("--- End Titan Debug ---");
         }
 
         // 5) Code generation

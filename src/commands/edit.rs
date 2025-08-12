@@ -13,9 +13,36 @@ use super::compile::compile_pipeline;
 // NEW
 use crate::tui::editor::run_editor_tui;
 
-pub fn main(file: Option<PathBuf>, config_path: Option<PathBuf>, use_tui: bool) -> anyhow::Result<()> {
+pub fn main(
+    file: Option<PathBuf>,
+    config_path: Option<PathBuf>,
+    use_tui: bool,
+) -> anyhow::Result<()> {
     if use_tui {
-        return run_editor_tui(file, config_path, /*pretty*/ true, /*skip_sema*/ false);
+        // TUI path: ensure we have a filepath (default if none), load QPolyMap, launch TUI.
+        let filepath = file.unwrap_or_else(|| PathBuf::from("untitled.ai"));
+
+        // Load QPoly map: explicit --config > default user path > built-in
+        let qpoly = if let Some(p) = config_path.as_ref() {
+            if p.exists() {
+                match QPolyMap::from_toml_file(p) {
+                    Ok(m) => m,
+                    Err(e) => {
+                        eprintln!("(warn) failed to load config {}: {e}", p.display());
+                        QPolyMap::from_user_default_or_builtin()
+                    }
+                }
+            } else {
+                eprintln!("(warn) config path not found: {}", p.display());
+                QPolyMap::from_user_default_or_builtin()
+            }
+        } else {
+            QPolyMap::from_user_default_or_builtin()
+        };
+
+        // io::Result -> anyhow::Result via `?`
+        run_editor_tui(filepath, qpoly)?;
+        return Ok(());
     }
 
     // -------- legacy line editor below --------
@@ -68,7 +95,10 @@ pub fn main(file: Option<PathBuf>, config_path: Option<PathBuf>, use_tui: bool) 
 
         let mut line = String::new();
         if stdin.read_line(&mut line)? == 0 {
-            if dirty.load(Ordering::Relaxed) { eprintln!("(unsaved changes — use :w or :wq)"); continue; }
+            if dirty.load(Ordering::Relaxed) {
+                eprintln!("(unsaved changes — use :w or :wq)");
+                continue;
+            }
             break;
         }
         let line = line.trim_end_matches(&['\r', '\n'][..]).to_string();
@@ -78,7 +108,9 @@ pub fn main(file: Option<PathBuf>, config_path: Option<PathBuf>, use_tui: bool) 
                 ":p" => {
                     println!("--- buffer start ---");
                     print!("{}", buf);
-                    if !buf.ends_with('\n') { println!(); }
+                    if !buf.ends_with('\n') {
+                        println!();
+                    }
                     println!("--- buffer end ---");
                 }
                 ":w" => {
@@ -100,11 +132,29 @@ pub fn main(file: Option<PathBuf>, config_path: Option<PathBuf>, use_tui: bool) 
                 }
                 ":compile" => {
                     let out = PathBuf::from("output.js");
-                    compile_pipeline(Some(filepath.clone()), EmitKind::Js, out, false, false, true, false)?;
+                    compile_pipeline(
+                        Some(filepath.clone()),
+                        EmitKind::Js,
+                        out,
+                        false, // print_tokens
+                        false, // print_ast
+                        true,  // pretty
+                        false, // skip_sema
+                        false, // debug_titan
+                    )?;
                 }
                 ":run" => {
                     let out = PathBuf::from("aeonmi.run.js");
-                    compile_pipeline(Some(filepath.clone()), EmitKind::Js, out.clone(), false, false, true, false)?;
+                    compile_pipeline(
+                        Some(filepath.clone()),
+                        EmitKind::Js,
+                        out.clone(),
+                        false, // print_tokens
+                        false, // print_ast
+                        true,  // pretty
+                        false, // skip_sema
+                        false, // debug_titan
+                    )?;
                     match std::process::Command::new("node").arg(&out).status() {
                         Ok(s) if !s.success() => eprintln!("(warn) node exit: {s}"),
                         Err(e) => eprintln!("(warn) node not available: {e}"),
@@ -115,7 +165,12 @@ pub fn main(file: Option<PathBuf>, config_path: Option<PathBuf>, use_tui: bool) 
                     let p = other[3..].trim();
                     let newp = PathBuf::from(p);
                     match fs::read_to_string(&newp) {
-                        Ok(s) => { filepath = newp; buf = s; dirty.store(false, Ordering::Relaxed); println!("opened {}", filepath.display()); }
+                        Ok(s) => {
+                            filepath = newp;
+                            buf = s;
+                            dirty.store(false, Ordering::Relaxed);
+                            println!("opened {}", filepath.display());
+                        }
                         Err(e) => eprintln!("(err) open {}: {e}", newp.display()),
                     }
                 }

@@ -146,7 +146,7 @@ pub fn start(config_path: Option<PathBuf>, pretty: bool, skip_sema: bool) -> any
                         other => { input = PathBuf::from(other); j += 1; }
                     }
                 }
-                if let Err(e) = compile_pipeline(Some(input), emit, out, false, false, pretty, skip_sema) {
+                if let Err(e) = compile_pipeline(Some(input), emit, out, false, false, pretty, skip_sema, false) {
                     eprintln!("{} {}", "err:".red().bold(), e);
                 }
             }

@@ -10,10 +10,17 @@ impl Default for EmitKind {
     fn default() -> Self { EmitKind::Js }
 }
 
+#[derive(Copy, Clone, Debug, ValueEnum)]
+pub enum BackendKind {
+    #[clap(alias = "titan")] Titan,
+    #[clap(alias = "aer")]   Aer,
+    #[clap(alias = "ibmq")]  Ibmq,
+}
+
 #[derive(Debug, Parser)]
 #[command(
     name = "aeonmi",
-    about = "Aeonmi/QUBE/Titan unified tool — compile, run, and edit .ai",
+    about = "Aeonmi/QUBE/Titan — compile, run, quantum, and edit .ai",
     version,
     propagate_version = true,
     disable_help_subcommand = true
@@ -27,6 +34,10 @@ pub struct AeonmiCli {
     #[arg(long = "no-sema", action = ArgAction::SetTrue, global = true)]
     pub no_sema: bool,
 
+    /// Global: enable Titan library debug output
+    #[arg(long = "debug-titan", action = ArgAction::SetTrue, global = true)]
+    pub debug_titan: bool,
+
     /// Global: path to config (TOML); default: ~/.aeonmi/qpoly.toml
     #[arg(long = "config", value_name = "FILE", global = true)]
     pub config: Option<PathBuf>,
@@ -37,7 +48,7 @@ pub struct AeonmiCli {
     #[arg(short = 'i', long = "input", value_name = "FILE", hide = true)]
     pub input_opt: Option<PathBuf>,
 
-    // Legacy top-level flags to satisfy old tests/usage
+    // Legacy top-level flags
     #[arg(long = "emit", value_name = "KIND", hide = true)]
     pub emit_legacy: Option<String>,
     #[arg(long = "out", value_name = "FILE", hide = true)]
@@ -61,7 +72,6 @@ pub enum Command {
         #[arg(long = "emit", value_enum, default_value_t = EmitKind::Js)]
         emit: EmitKind,
 
-        // Default out depends on --emit (ai -> output.ai, js -> output.js)
         #[arg(
             long = "out",
             value_name = "FILE",
@@ -75,6 +85,10 @@ pub enum Command {
 
         #[arg(long = "ast", action = ArgAction::SetTrue)]
         ast: bool,
+
+        /// Enable Titan debug mode during compilation
+        #[arg(long = "debug-titan", action = ArgAction::SetTrue)]
+        debug_titan: bool,
     },
 
     /// Run an .ai file directly (compile-to-js + execute with Node if available)
@@ -83,6 +97,25 @@ pub enum Command {
         input: PathBuf,
         #[arg(long = "out", value_name = "FILE")]
         out: Option<PathBuf>,
+    },
+
+    /// Quantum execution (Titan local or Qiskit backends)
+    ///
+    /// Usage:
+    ///   aeonmi quantum titan FILE.ai
+    ///   aeonmi quantum aer   FILE.ai --shots 2000
+    Quantum {
+        /// Backend: titan (local), aer (Qiskit Aer), ibmq (Qiskit cloud)
+        #[arg(value_enum, value_name = "BACKEND")]
+        backend: BackendKind,
+
+        /// Input .ai file
+        #[arg(value_name = "FILE")]
+        file: PathBuf,
+
+        /// Shots for sampling backends (ignored for Titan state simulation)
+        #[arg(long = "shots", value_name = "N")]
+        shots: Option<usize>,
     },
 
     /// Format .ai files

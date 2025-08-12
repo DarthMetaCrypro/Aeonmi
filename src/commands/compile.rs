@@ -19,6 +19,7 @@ pub fn main_with_opts(
     print_ast: bool,
     pretty: bool,
     skip_sema: bool,
+    debug_titan: bool,
 ) -> anyhow::Result<()> {
     compile_pipeline(
         Some(input),
@@ -28,6 +29,7 @@ pub fn main_with_opts(
         print_ast,
         pretty,
         skip_sema,
+        debug_titan,
     )
 }
 
@@ -40,6 +42,7 @@ pub fn compile_pipeline(
     print_ast: bool,
     pretty: bool,
     skip_sema: bool,
+    debug_titan: bool,
 ) -> anyhow::Result<()> {
     let input_path = input
         .as_ref()
@@ -142,7 +145,12 @@ pub fn compile_pipeline(
         EmitKind::Js => {
             let compiler = Compiler::new();
             let run_semantic = !skip_sema;
-            let res = compiler.compile_with(&source, &out.display().to_string(), run_semantic);
+            let res = compiler.compile_with(
+                &source,
+                &out.display().to_string(),
+                run_semantic,
+                debug_titan,
+            );
             match res {
                 Ok(_) => {
                     println!(

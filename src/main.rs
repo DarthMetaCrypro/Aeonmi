@@ -1,16 +1,18 @@
-/// Aeonmi/QUBE Main — subcommands + back-compat + neon shell by default.
+/// Aeonmi/QUBE main — subcommands + back-compat + neon shell by default.
 
 mod core;
 mod cli;
 mod commands;
-mod config;    // you already have this file (default_config_path, resolve_config_path, etc.)
-mod tui;       // contains tui::editor
-mod shell;     // new: our neon Shard shell
+mod config; // resolve_config_path, etc.
+mod tui;    // tui::editor
+mod shell;  // neon Shard shell
 
 use clap::Parser as ClapParser;
 use std::path::PathBuf;
 
 use crate::cli::{AeonmiCli, Command, EmitKind};
+#[cfg(feature = "quantum")]
+use crate::cli::BackendKind;
 use crate::config::resolve_config_path;
 
 fn set_console_title() {
@@ -34,7 +36,7 @@ fn main() -> anyhow::Result<()> {
         return shell::start(cfg_path, args.pretty_errors, args.no_sema);
     }
 
-    // Back-compat: `aeonmi <file.ai>` or `-i <file.ai>` at top-level behaves like compile.
+    // Back-compat: `aeonmi <file.ai>` or `-i <file.ai>` behaves like compile.
     if args.cmd.is_none() && (args.input_pos.is_some() || args.input_opt.is_some()) {
         use std::process::exit as proc_exit;
         let input = args.input_pos.or(args.input_opt).unwrap();
@@ -55,18 +57,35 @@ fn main() -> anyhow::Result<()> {
             args.ast_legacy,
             args.pretty_errors,
             args.no_sema,
+            args.debug_titan, // pass debug flag
         );
     }
 
     // Subcommands
     match args.cmd {
-        Some(Command::Compile { input, emit, out, tokens, ast }) => {
+        Some(Command::Compile { input, emit, out, tokens, ast, debug_titan }) => {
             commands::compile::compile_pipeline(
-                input, emit, out, tokens, ast, args.pretty_errors, args.no_sema
+                input, emit, out, tokens, ast, args.pretty_errors, args.no_sema, debug_titan
             )
         }
         Some(Command::Run { input, out }) => {
             commands::run::main_with_opts(input, out, args.pretty_errors, args.no_sema)
+        }
+        Some(Command::Quantum { backend, file, shots }) => {
+            #[cfg(feature = "quantum")]
+            {
+                let backend_str = match backend {
+                    BackendKind::Titan => "titan",
+                    BackendKind::Aer   => "aer",
+                    BackendKind::Ibmq  => "ibmq",
+                };
+                return commands::quantum::quantum_run(file, backend_str, shots);
+            }
+            #[cfg(not(feature = "quantum"))]
+            {
+                eprintln!("The 'quantum' subcommand requires building with the `--features quantum` flag.");
+                std::process::exit(2);
+            }
         }
         Some(Command::Format { inputs, check }) => {
             let _ = (inputs, check);
@@ -79,16 +98,14 @@ fn main() -> anyhow::Result<()> {
             Ok(())
         }
         Some(Command::Repl) => commands::repl::main(),
-        Some(Command::Edit { file, tui }) => {
-            commands::edit::main(file, cfg_path, tui)
-        }
+        Some(Command::Edit { file, tui }) => commands::edit::main(file, cfg_path, tui),
         Some(Command::Tokens { input }) => commands::compile::compile_pipeline(
             Some(input), EmitKind::Js, PathBuf::from("output.js"),
-            /*tokens*/ true, /*ast*/ false, args.pretty_errors, args.no_sema,
+            /*tokens*/ true, /*ast*/ false, args.pretty_errors, args.no_sema, args.debug_titan,
         ),
         Some(Command::Ast { input }) => commands::compile::compile_pipeline(
             Some(input), EmitKind::Js, PathBuf::from("output.js"),
-            /*tokens*/ false, /*ast*/ true, args.pretty_errors, args.no_sema,
+            /*tokens*/ false, /*ast*/ true, args.pretty_errors, args.no_sema, args.debug_titan,
         ),
         None => {
             use clap::CommandFactory;

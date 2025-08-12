@@ -26,6 +26,12 @@ lto = true
 codegen-units = 1
 strip = true
 
+[features]
+# Keep default build unchanged. Enable when you want the quantum stack.
+default = []
+quantum = ["nalgebra", "num-complex"]
+qiskit = ["quantum", "pyo3", "numpy"]
+
 [dependencies]
 # Core
 anyhow = "1"
@@ -44,6 +50,18 @@ ctrlc = "3.4"
 # TUI / terminal
 crossterm = "0.27"
 ratatui = "0.26"
+
+# Titan math & RNG
+rand = "0.8"
+rand_distr = "0.4"
+
+# Quantum math backend (feature-gated)
+nalgebra = { version = "0.33", optional = true }
+num-complex = { version = "0.4", optional = true }
+
+# Qiskit bridge (feature-gated)
+pyo3 = { version = "0.21", optional = true, features = ["auto-initialize"] }
+numpy = { version = "0.21", optional = true }
 
 [dev-dependencies]
 tempfile = "3.10"

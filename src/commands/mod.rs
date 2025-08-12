@@ -6,3 +6,6 @@ pub mod repl;
 pub mod edit;
 pub mod tokens;
 pub mod ast;
+
+#[cfg(feature = "quantum")]
+pub mod quantum;

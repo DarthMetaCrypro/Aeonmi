@@ -1,0 +1,2 @@
+# placeholder .ai source — our current stub always emits an H on qubit 0
+# real .ai → IR lowering lands next
