@@ -17,11 +17,19 @@ pub fn main_with_opts(
         Some(input.clone()),
         EmitKind::Js,
         out_path.clone(),
+<<<<<<< HEAD
         /*print_tokens*/ false,
         /*print_ast*/ false,
         pretty,
         no_sema,
         /*debug_titan*/ false,
+=======
+        false, // print_tokens
+        false, // print_ast
+        pretty,
+        no_sema,
+        false, // debug_titan (default off here)
+>>>>>>> 57cd645 (feat(cli): integrate new Aeonmi CLI + shard updates)
     )?;
 
     match std::process::Command::new("node").arg(&out_path).status() {
