@@ -3,18 +3,25 @@ use std::path::PathBuf;
 
 #[derive(Copy, Clone, Debug, ValueEnum)]
 pub enum EmitKind {
-    #[clap(alias = "js")] Js,
-    #[clap(alias = "ai")] Ai,
+    #[clap(alias = "js")]
+    Js,
+    #[clap(alias = "ai")]
+    Ai,
 }
 impl Default for EmitKind {
-    fn default() -> Self { EmitKind::Js }
+    fn default() -> Self {
+        EmitKind::Js
+    }
 }
 
 #[derive(Copy, Clone, Debug, ValueEnum)]
 pub enum BackendKind {
-    #[clap(alias = "titan")] Titan,
-    #[clap(alias = "aer")]   Aer,
-    #[clap(alias = "ibmq")]  Ibmq,
+    #[clap(alias = "titan")]
+    Titan,
+    #[clap(alias = "aer")]
+    Aer,
+    #[clap(alias = "ibmq")]
+    Ibmq,
 }
 
 #[derive(Debug, Parser)]
@@ -146,6 +153,12 @@ pub enum Command {
     },
 
     /// Debug helpers
-    Tokens { #[arg(value_name = "INPUT")] input: PathBuf },
-    Ast    { #[arg(value_name = "INPUT")] input: PathBuf },
+    Tokens {
+        #[arg(value_name = "INPUT")]
+        input: PathBuf,
+    },
+    Ast {
+        #[arg(value_name = "INPUT")]
+        input: PathBuf,
+    },
 }

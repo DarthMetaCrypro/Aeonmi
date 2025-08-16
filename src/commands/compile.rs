@@ -156,7 +156,10 @@ pub fn compile_pipeline(
                     println!(
                         "{} {}",
                         "ok:".green().bold(),
-                        format!("Compilation successful. Output written to '{}'.", out.display())
+                        format!(
+                            "Compilation successful. Output written to '{}'.",
+                            out.display()
+                        )
                     );
                     Ok(())
                 }

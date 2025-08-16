@@ -2,8 +2,8 @@ use std::path::PathBuf;
 
 use colored::Colorize;
 
-use crate::cli::EmitKind;
 use super::compile::compile_pipeline;
+use crate::cli::EmitKind;
 
 pub fn main_with_opts(
     input: PathBuf,
@@ -18,11 +18,11 @@ pub fn main_with_opts(
         Some(input.clone()),
         EmitKind::Js,
         out_path.clone(),
-        false,       // print_tokens
-        false,       // print_ast
+        false, // print_tokens
+        false, // print_ast
         pretty,
         no_sema,
-        false,       // debug_titan (default off here)
+        false, // debug_titan (default off here)
     )?;
 
     match std::process::Command::new("node").arg(&out_path).status() {
