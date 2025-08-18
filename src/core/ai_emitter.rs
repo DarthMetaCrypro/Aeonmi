@@ -1,10 +1,48 @@
 #![cfg_attr(test, allow(dead_code, unused_variables))]
 //! Canonical .ai emitter for Aeonmi IR.
-//! Produces deterministic output (sorted decls/imports, 2-space indent, LF, stable formatting)
-//! Header includes a simple FNV-1a 64-bit of the body for reproducible integrity.
+//! - Deterministic output: sorted imports/decls, 2-space indent, LF
+//! - Header embeds FNV-1a 64-bit hash of body for reproducibility
+//!
+//! This module exposes both the legacy free function `emit_ai(&Module)`
+//! and a thin `AiEmitter` facade so other parts of the compiler (e.g. the
+//! code generator front-end) can request canonical `.ai` output.
+//!
+//! Roadmap wiring:
+//!  - `AiEmitter::generate_from_ir(&Module)` is ready.
+//!  - `AiEmitter::generate(&ASTNode)` lowers AST→IR and emits canonical `.ai`.
 
 use crate::core::ir::*;
 use std::fmt::Write as _;
+use crate::core::lowering::lower_ast_to_ir;
+
+// =========================
+// Public facade
+// =========================
+
+/// Thin wrapper to emit canonical `.ai` from IR or AST.
+pub struct AiEmitter;
+
+impl AiEmitter {
+    pub fn new() -> Self {
+        Self
+    }
+
+    /// Preferred entrypoint once you have IR.
+    pub fn generate_from_ir(&mut self, module: &Module) -> Result<String, String> {
+        Ok(emit_ai(module))
+    }
+
+    /// Entry point: emit canonical `.ai` directly from AST.
+    /// Uses `lower_ast_to_ir` to produce IR, then pretty-prints via `emit_ai`.
+    pub fn generate(&mut self, ast: &crate::core::ast::ASTNode) -> Result<String, String> {
+        let module = lower_ast_to_ir(ast, "main").map_err(|e| format!("lowering error: {e}"))?;
+        self.generate_from_ir(&module)
+    }
+}
+
+// =========================
+// Legacy functional API (kept for existing tests)
+// =========================
 
 pub fn emit_ai(module: &Module) -> String {
     // 1) Body (deterministic)

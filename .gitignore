@@ -3,3 +3,5 @@
 **/*.pyc
 aeonmi.run.js
 output.js
+/target
+aeonmi.run.js
