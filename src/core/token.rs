@@ -1,4 +1,3 @@
-// src/core/token.rs
 //! Core lexical items for Aeonmi/QUBE/Titan
 //! Unified token definitions for standard, quantum, and hieroglyphic syntax.
 //! Updated: 2025-08-10

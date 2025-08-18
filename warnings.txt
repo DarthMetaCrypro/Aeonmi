@@ -1,0 +1,580 @@
+warning: method `to_emit_kind` is never used
+  --> src\tui\editor.rs:57:8
+   |
+44 | impl EmitMode {
+   | ------------- method in this implementation
+...
+57 |     fn to_emit_kind(self) -> EmitKind {
+   |        ^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` on by default
+
+warning: `aeonmi_project` (lib) generated 1 warning
+   Compiling aeonmi_project v0.2.0 (C:\Users\wlwil\Project\aeonmi_project)
+warning: unused variable: `backend`
+  --> src\bin\../main.rs:82:33
+   |
+82 |         Some(Command::Quantum { backend, file, shots }) => {
+   |                                 ^^^^^^^ help: try ignoring the field: `backend: _`
+   |
+   = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `file`
+  --> src\bin\../main.rs:82:42
+   |
+82 |         Some(Command::Quantum { backend, file, shots }) => {
+   |                                          ^^^^ help: try ignoring the field: `file: _`
+
+warning: unused variable: `shots`
+  --> src\bin\../main.rs:82:48
+   |
+82 |         Some(Command::Quantum { backend, file, shots }) => {
+   |                                                ^^^^^ help: try ignoring the field: `shots: _`
+
+warning: variant `Ai` is never constructed
+  --> src\bin\..\core\code_generator.rs:26:5
+   |
+24 | pub enum Backend {
+   |          ------- variant in this enum
+25 |     Js,
+26 |     Ai,
+   |     ^^
+   |
+   = note: `Backend` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+   = note: `#[warn(dead_code)]` on by default
+
+warning: associated function `new_ai` is never used
+  --> src\bin\..\core\code_generator.rs:44:12
+   |
+34 | impl CodeGenerator {
+   | ------------------ associated function in this implementation
+...
+44 |     pub fn new_ai() -> Self {
+   |            ^^^^^^
+
+warning: function `compile_file_to_ir` is never used
+   --> src\bin\..\core\compiler.rs:138:8
+    |
+138 | pub fn compile_file_to_ir(path: &Path) -> Result<Module, String> {
+    |        ^^^^^^^^^^^^^^^^^^
+
+warning: function `module_name_from_path` is never used
+   --> src\bin\..\core\compiler.rs:166:4
+    |
+166 | fn module_name_from_path(path: &Path) -> String {
+    |    ^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `compile_and_run_js` is never used
+   --> src\bin\..\core\compiler.rs:177:8
+    |
+177 | pub fn compile_and_run_js(input: &PathBuf) -> Result<(), String> {
+    |        ^^^^^^^^^^^^^^^^^^
+
+warning: function `compile_and_write_js` is never used
+   --> src\bin\..\core\compiler.rs:205:8
+    |
+205 | pub fn compile_and_write_js(input: &PathBuf, out: Option<&PathBuf>) -> Result<(), String> {
+    |        ^^^^^^^^^^^^^^^^^^^^
+
+warning: function `ensure_parent_dir` is never used
+   --> src\bin\..\core\qpoly.rs:113:8
+    |
+113 | pub fn ensure_parent_dir(path: &Path) -> Result<()> {
+    |        ^^^^^^^^^^^^^^^^^
+
+warning: struct `ScratchAst` is never constructed
+  --> src\bin\..\core\lowering.rs:21:12
+   |
+21 | pub struct ScratchAst {
+   |            ^^^^^^^^^^
+
+warning: enum `ScratchDecl` is never used
+  --> src\bin\..\core\lowering.rs:28:10
+   |
+28 | pub enum ScratchDecl {
+   |          ^^^^^^^^^^^
+
+warning: enum `ScratchStmt` is never used
+  --> src\bin\..\core\lowering.rs:39:10
+   |
+39 | pub enum ScratchStmt {
+   |          ^^^^^^^^^^^
+
+warning: enum `ScratchExpr` is never used
+  --> src\bin\..\core\lowering.rs:49:10
+   |
+49 | pub enum ScratchExpr {
+   |          ^^^^^^^^^^^
+
+warning: function `lower_from_scratch` is never used
+  --> src\bin\..\core\lowering.rs:62:8
+   |
+62 | pub fn lower_from_scratch(ast: ScratchAst) -> Module {
+   |        ^^^^^^^^^^^^^^^^^^
+
+warning: function `lower_stmt_scratch` is never used
+   --> src\bin\..\core\lowering.rs:102:4
+    |
+102 | fn lower_stmt_scratch(s: ScratchStmt) -> Stmt {
+    |    ^^^^^^^^^^^^^^^^^^
+
+warning: function `lower_expr_scratch` is never used
+   --> src\bin\..\core\lowering.rs:125:4
+    |
+125 | fn lower_expr_scratch(e: ScratchExpr) -> Expr {
+    |    ^^^^^^^^^^^^^^^^^^
+
+warning: function `map_binop` is never used
+   --> src\bin\..\core\lowering.rs:375:4
+    |
+375 | fn map_binop(op: &str) -> BinOp {
+    |    ^^^^^^^^^
+
+warning: function `map_unop` is never used
+   --> src\bin\..\core\lowering.rs:399:4
+    |
+399 | fn map_unop(op: &str) -> UnOp {
+    |    ^^^^^^^^
+
+warning: enum `Value` is never used
+  --> src\bin\..\core\vm.rs:11:10
+   |
+11 | pub enum Value {
+   |          ^^^^^
+
+warning: struct `Function` is never constructed
+  --> src\bin\..\core\vm.rs:23:12
+   |
+23 | pub struct Function {
+   |            ^^^^^^^^
+
+warning: struct `Builtin` is never constructed
+  --> src\bin\..\core\vm.rs:39:12
+   |
+39 | pub struct Builtin {
+   |            ^^^^^^^
+
+warning: struct `Env` is never constructed
+  --> src\bin\..\core\vm.rs:52:12
+   |
+52 | pub struct Env {
+   |            ^^^
+
+warning: associated items `new`, `push`, `pop`, `define`, `assign`, and `get` are never used
+  --> src\bin\..\core\vm.rs:57:12
+   |
+56 | impl Env {
+   | -------- associated items in this implementation
+57 |     pub fn new() -> Self { Self { frames: vec![HashMap::new()] } }
+   |            ^^^
+58 |     pub fn push(&mut self) { self.frames.push(HashMap::new()); }
+   |            ^^^^
+59 |     pub fn pop(&mut self) { self.frames.pop(); }
+   |            ^^^
+60 |     pub fn define(&mut self, k: String, v: Value) { self.frames.last_mut().unwrap().insert(k, v); }
+   |            ^^^^^^
+61 |
+62 |     pub fn assign(&mut self, k: &str, v: Value) -> bool {
+   |            ^^^^^^
+...
+69 |     pub fn get(&self, k: &str) -> Option<Value> {
+   |            ^^^
+
+warning: struct `Interpreter` is never constructed
+  --> src\bin\..\core\vm.rs:78:12
+   |
+78 | pub struct Interpreter {
+   |            ^^^^^^^^^^^
+
+warning: struct `RuntimeError` is never constructed
+  --> src\bin\..\core\vm.rs:83:12
+   |
+83 | pub struct RuntimeError {
+   |            ^^^^^^^^^^^^
+
+warning: multiple associated items are never used
+   --> src\bin\..\core\vm.rs:88:12
+    |
+87  | impl Interpreter {
+    | ---------------- associated items in this implementation
+88  |     pub fn new() -> Self {
+    |            ^^^
+...
+98  |     pub fn run_module(&mut self, m: &Module) -> Result<(), RuntimeError> {
+    |            ^^^^^^^^^^
+...
+127 |     fn call_ident(&mut self, name: &str, args: Vec<Value>) -> Result<Value, RuntimeError> {
+    |        ^^^^^^^^^^
+...
+132 |     fn call_value(&mut self, callee: Value, args: Vec<Value>) -> Result<Value, RuntimeError> {
+    |        ^^^^^^^^^^
+...
+166 |     fn exec_block(&mut self, b: &Block) -> ControlFlow {
+    |        ^^^^^^^^^^
+...
+181 |     fn exec_stmt(&mut self, s: &Stmt) -> ControlFlow {
+    |        ^^^^^^^^^
+...
+273 |     fn eval_expr(&mut self, e: &Expr) -> Result<Value, RuntimeError> {
+    |        ^^^^^^^^^
+...
+323 |     fn eval_binop(&self, op: &BinOp, l: Value, r: Value) -> Result<Value, RuntimeError> {
+    |        ^^^^^^^^^^
+...
+348 |     fn truthy(&self, v: &Value) -> bool {
+    |        ^^^^^^
+
+warning: enum `ControlFlow` is never used
+   --> src\bin\..\core\vm.rs:361:6
+    |
+361 | enum ControlFlow {
+    |      ^^^^^^^^^^^
+
+warning: function `err` is never used
+   --> src\bin\..\core\vm.rs:371:4
+    |
+371 | fn err(msg: String) -> RuntimeError { RuntimeError { message: msg } }
+    |    ^^^
+
+warning: function `collect_vals` is never used
+   --> src\bin\..\core\vm.rs:373:4
+    |
+373 | fn collect_vals(i: &mut Interpreter, es: &[Expr]) -> Result<Vec<Value>, RuntimeError> {
+    |    ^^^^^^^^^^^^
+
+warning: function `num2` is never used
+   --> src\bin\..\core\vm.rs:379:4
+    |
+379 | fn num2(l: Value, r: Value, f: fn(f64, f64) -> f64) -> Result<Value, RuntimeError> {
+    |    ^^^^
+
+warning: function `cmp2` is never used
+   --> src\bin\..\core\vm.rs:386:4
+    |
+386 | fn cmp2(l: Value, r: Value, f: fn(f64, f64) -> bool) -> Result<Value, RuntimeError> {
+    |    ^^^^
+
+warning: function `eq_val` is never used
+   --> src\bin\..\core\vm.rs:393:4
+    |
+393 | fn eq_val(a: &Value, b: &Value) -> bool {
+    |    ^^^^^^
+
+warning: function `builtin_print` is never used
+   --> src\bin\..\core\vm.rs:430:4
+    |
+430 | fn builtin_print(_i: &mut Interpreter, args: Vec<Value>) -> Result<Value, RuntimeError> {
+    |    ^^^^^^^^^^^^^
+
+warning: function `builtin_time_ms` is never used
+   --> src\bin\..\core\vm.rs:436:4
+    |
+436 | fn builtin_time_ms(_i: &mut Interpreter, _args: Vec<Value>) -> Result<Value, RuntimeError> {
+    |    ^^^^^^^^^^^^^^^
+
+warning: function `builtin_rand` is never used
+   --> src\bin\..\core\vm.rs:441:4
+    |
+441 | fn builtin_rand(_i: &mut Interpreter, _args: Vec<Value>) -> Result<Value, RuntimeError> {
+    |    ^^^^^^^^^^^^
+
+warning: function `display` is never used
+   --> src\bin\..\core\vm.rs:450:4
+    |
+450 | fn display(v: &Value) -> String {
+    |    ^^^^^^^
+
+warning: method `to_emit_kind` is never used
+  --> src\bin\..\tui\editor.rs:57:8
+   |
+44 | impl EmitMode {
+   | ------------- method in this implementation
+...
+57 |     fn to_emit_kind(self) -> EmitKind {
+   |        ^^^^^^^^^^^^
+
+warning: unused variable: `backend`
+  --> src\main.rs:82:33
+   |
+82 |         Some(Command::Quantum { backend, file, shots }) => {
+   |                                 ^^^^^^^ help: try ignoring the field: `backend: _`
+   |
+   = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `file`
+  --> src\main.rs:82:42
+   |
+82 |         Some(Command::Quantum { backend, file, shots }) => {
+   |                                          ^^^^ help: try ignoring the field: `file: _`
+
+warning: unused variable: `shots`
+  --> src\main.rs:82:48
+   |
+82 |         Some(Command::Quantum { backend, file, shots }) => {
+   |                                                ^^^^^ help: try ignoring the field: `shots: _`
+
+warning: variant `Ai` is never constructed
+  --> src\core\code_generator.rs:26:5
+   |
+24 | pub enum Backend {
+   |          ------- variant in this enum
+25 |     Js,
+26 |     Ai,
+   |     ^^
+   |
+   = note: `Backend` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+   = note: `#[warn(dead_code)]` on by default
+
+warning: associated function `new_ai` is never used
+  --> src\core\code_generator.rs:44:12
+   |
+34 | impl CodeGenerator {
+   | ------------------ associated function in this implementation
+...
+44 |     pub fn new_ai() -> Self {
+   |            ^^^^^^
+
+warning: function `compile_file_to_ir` is never used
+   --> src\core\compiler.rs:138:8
+    |
+138 | pub fn compile_file_to_ir(path: &Path) -> Result<Module, String> {
+    |        ^^^^^^^^^^^^^^^^^^
+
+warning: function `module_name_from_path` is never used
+   --> src\core\compiler.rs:166:4
+    |
+166 | fn module_name_from_path(path: &Path) -> String {
+    |    ^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `compile_and_run_js` is never used
+   --> src\core\compiler.rs:177:8
+    |
+177 | pub fn compile_and_run_js(input: &PathBuf) -> Result<(), String> {
+    |        ^^^^^^^^^^^^^^^^^^
+
+warning: function `compile_and_write_js` is never used
+   --> src\core\compiler.rs:205:8
+    |
+205 | pub fn compile_and_write_js(input: &PathBuf, out: Option<&PathBuf>) -> Result<(), String> {
+    |        ^^^^^^^^^^^^^^^^^^^^
+
+warning: function `ensure_parent_dir` is never used
+   --> src\core\qpoly.rs:113:8
+    |
+113 | pub fn ensure_parent_dir(path: &Path) -> Result<()> {
+    |        ^^^^^^^^^^^^^^^^^
+
+warning: struct `ScratchAst` is never constructed
+  --> src\core\lowering.rs:21:12
+   |
+21 | pub struct ScratchAst {
+   |            ^^^^^^^^^^
+
+warning: enum `ScratchDecl` is never used
+  --> src\core\lowering.rs:28:10
+   |
+28 | pub enum ScratchDecl {
+   |          ^^^^^^^^^^^
+
+warning: enum `ScratchStmt` is never used
+  --> src\core\lowering.rs:39:10
+   |
+39 | pub enum ScratchStmt {
+   |          ^^^^^^^^^^^
+
+warning: enum `ScratchExpr` is never used
+  --> src\core\lowering.rs:49:10
+   |
+49 | pub enum ScratchExpr {
+   |          ^^^^^^^^^^^
+
+warning: function `lower_from_scratch` is never used
+  --> src\core\lowering.rs:62:8
+   |
+62 | pub fn lower_from_scratch(ast: ScratchAst) -> Module {
+   |        ^^^^^^^^^^^^^^^^^^
+
+warning: function `lower_stmt_scratch` is never used
+   --> src\core\lowering.rs:102:4
+    |
+102 | fn lower_stmt_scratch(s: ScratchStmt) -> Stmt {
+    |    ^^^^^^^^^^^^^^^^^^
+
+warning: function `lower_expr_scratch` is never used
+   --> src\core\lowering.rs:125:4
+    |
+125 | fn lower_expr_scratch(e: ScratchExpr) -> Expr {
+    |    ^^^^^^^^^^^^^^^^^^
+
+warning: function `map_binop` is never used
+   --> src\core\lowering.rs:375:4
+    |
+375 | fn map_binop(op: &str) -> BinOp {
+    |    ^^^^^^^^^
+
+warning: function `map_unop` is never used
+   --> src\core\lowering.rs:399:4
+    |
+399 | fn map_unop(op: &str) -> UnOp {
+    |    ^^^^^^^^
+
+warning: enum `Value` is never used
+  --> src\core\vm.rs:11:10
+   |
+11 | pub enum Value {
+   |          ^^^^^
+
+warning: struct `Function` is never constructed
+  --> src\core\vm.rs:23:12
+   |
+23 | pub struct Function {
+   |            ^^^^^^^^
+
+warning: struct `Builtin` is never constructed
+  --> src\core\vm.rs:39:12
+   |
+39 | pub struct Builtin {
+   |            ^^^^^^^
+
+warning: struct `Env` is never constructed
+  --> src\core\vm.rs:52:12
+   |
+52 | pub struct Env {
+   |            ^^^
+
+warning: associated items `new`, `push`, `pop`, `define`, `assign`, and `get` are never used
+  --> src\core\vm.rs:57:12
+   |
+56 | impl Env {
+   | -------- associated items in this implementation
+57 |     pub fn new() -> Self { Self { frames: vec![HashMap::new()] } }
+   |            ^^^
+58 |     pub fn push(&mut self) { self.frames.push(HashMap::new()); }
+   |            ^^^^
+59 |     pub fn pop(&mut self) { self.frames.pop(); }
+   |            ^^^
+60 |     pub fn define(&mut self, k: String, v: Value) { self.frames.last_mut().unwrap().insert(k, v); }
+   |            ^^^^^^
+61 |
+62 |     pub fn assign(&mut self, k: &str, v: Value) -> bool {
+   |            ^^^^^^
+...
+69 |     pub fn get(&self, k: &str) -> Option<Value> {
+   |            ^^^
+
+warning: struct `Interpreter` is never constructed
+  --> src\core\vm.rs:78:12
+   |
+78 | pub struct Interpreter {
+   |            ^^^^^^^^^^^
+
+warning: struct `RuntimeError` is never constructed
+  --> src\core\vm.rs:83:12
+   |
+83 | pub struct RuntimeError {
+   |            ^^^^^^^^^^^^
+
+warning: multiple associated items are never used
+   --> src\core\vm.rs:88:12
+    |
+87  | impl Interpreter {
+    | ---------------- associated items in this implementation
+88  |     pub fn new() -> Self {
+    |            ^^^
+...
+98  |     pub fn run_module(&mut self, m: &Module) -> Result<(), RuntimeError> {
+    |            ^^^^^^^^^^
+...
+127 |     fn call_ident(&mut self, name: &str, args: Vec<Value>) -> Result<Value, RuntimeError> {
+    |        ^^^^^^^^^^
+...
+132 |     fn call_value(&mut self, callee: Value, args: Vec<Value>) -> Result<Value, RuntimeError> {
+    |        ^^^^^^^^^^
+...
+166 |     fn exec_block(&mut self, b: &Block) -> ControlFlow {
+    |        ^^^^^^^^^^
+...
+181 |     fn exec_stmt(&mut self, s: &Stmt) -> ControlFlow {
+    |        ^^^^^^^^^
+...
+273 |     fn eval_expr(&mut self, e: &Expr) -> Result<Value, RuntimeError> {
+    |        ^^^^^^^^^
+...
+323 |     fn eval_binop(&self, op: &BinOp, l: Value, r: Value) -> Result<Value, RuntimeError> {
+    |        ^^^^^^^^^^
+...
+348 |     fn truthy(&self, v: &Value) -> bool {
+    |        ^^^^^^
+
+warning: enum `ControlFlow` is never used
+   --> src\core\vm.rs:361:6
+    |
+361 | enum ControlFlow {
+    |      ^^^^^^^^^^^
+
+warning: function `err` is never used
+   --> src\core\vm.rs:371:4
+    |
+371 | fn err(msg: String) -> RuntimeError { RuntimeError { message: msg } }
+    |    ^^^
+
+warning: function `collect_vals` is never used
+   --> src\core\vm.rs:373:4
+    |
+373 | fn collect_vals(i: &mut Interpreter, es: &[Expr]) -> Result<Vec<Value>, RuntimeError> {
+    |    ^^^^^^^^^^^^
+
+warning: function `num2` is never used
+   --> src\core\vm.rs:379:4
+    |
+379 | fn num2(l: Value, r: Value, f: fn(f64, f64) -> f64) -> Result<Value, RuntimeError> {
+    |    ^^^^
+
+warning: function `cmp2` is never used
+   --> src\core\vm.rs:386:4
+    |
+386 | fn cmp2(l: Value, r: Value, f: fn(f64, f64) -> bool) -> Result<Value, RuntimeError> {
+    |    ^^^^
+
+warning: function `eq_val` is never used
+   --> src\core\vm.rs:393:4
+    |
+393 | fn eq_val(a: &Value, b: &Value) -> bool {
+    |    ^^^^^^
+
+warning: function `builtin_print` is never used
+   --> src\core\vm.rs:430:4
+    |
+430 | fn builtin_print(_i: &mut Interpreter, args: Vec<Value>) -> Result<Value, RuntimeError> {
+    |    ^^^^^^^^^^^^^
+
+warning: function `builtin_time_ms` is never used
+   --> src\core\vm.rs:436:4
+    |
+436 | fn builtin_time_ms(_i: &mut Interpreter, _args: Vec<Value>) -> Result<Value, RuntimeError> {
+    |    ^^^^^^^^^^^^^^^
+
+warning: function `builtin_rand` is never used
+   --> src\core\vm.rs:441:4
+    |
+441 | fn builtin_rand(_i: &mut Interpreter, _args: Vec<Value>) -> Result<Value, RuntimeError> {
+    |    ^^^^^^^^^^^^
+
+warning: function `display` is never used
+   --> src\core\vm.rs:450:4
+    |
+450 | fn display(v: &Value) -> String {
+    |    ^^^^^^^
+
+warning: method `to_emit_kind` is never used
+  --> src\tui\editor.rs:57:8
+   |
+44 | impl EmitMode {
+   | ------------- method in this implementation
+...
+57 |     fn to_emit_kind(self) -> EmitKind {
+   |        ^^^^^^^^^^^^
+
+warning: `aeonmi_project` (bin "aeonmi_project") generated 38 warnings
+warning: `aeonmi_project` (bin "Aeonmi") generated 38 warnings
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.62s

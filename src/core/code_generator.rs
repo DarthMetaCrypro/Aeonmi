@@ -129,10 +129,10 @@ impl CodeGenerator {
             } => {
                 let mut s = String::new();
                 s.push_str(&format!("if ({}) ", self.emit_expr_js(condition)));
-                s.push_str(&self.wrap_stmt_js(then_branch));
+                s.push_str(&self.wrap_stmt_js(then_branch)); // no trailing \n
                 if let Some(e) = else_branch {
                     s.push_str(" else ");
-                    s.push_str(&self.wrap_stmt_js(e));
+                    s.push_str(&self.wrap_stmt_js(e)); // no trailing \n
                 }
                 s.push('\n');
                 s
@@ -140,7 +140,7 @@ impl CodeGenerator {
             ASTNode::While { condition, body } => {
                 let mut s = String::new();
                 s.push_str(&format!("while ({}) ", self.emit_expr_js(condition)));
-                s.push_str(&self.wrap_stmt_js(body));
+                s.push_str(&self.wrap_stmt_js(body)); // no trailing \n
                 s.push('\n');
                 s
             }
@@ -168,7 +168,7 @@ impl CodeGenerator {
 
                 let mut s = String::new();
                 s.push_str(&format!("for ({}; {}; {}) ", init_s, cond_s, inc_s));
-                s.push_str(&self.wrap_stmt_js(body));
+                s.push_str(&self.wrap_stmt_js(body)); // no trailing \n
                 s.push('\n');
                 s
             }
@@ -252,17 +252,26 @@ impl CodeGenerator {
         }
     }
 
+    /// Returns a JS statement block string **without** a trailing newline.
     fn wrap_stmt_js(&mut self, n: &ASTNode) -> String {
         match n {
-            ASTNode::Block(_) => self.emit_js(n),
+            ASTNode::Block(_) => {
+                // Use existing block emission but drop the trailing newline.
+                let mut b = self.emit_js(n);
+                if b.ends_with('\n') {
+                    b.pop();
+                }
+                b
+            }
             _ => {
+                // Wrap a single statement in a block, no trailing newline.
                 let mut s = String::new();
                 s.push_str("{\n");
                 self.indent += 1;
                 s.push_str(&self.indent_str());
-                s.push_str(&self.emit_js(n));
+                s.push_str(&self.emit_js(n)); // inner includes its own newline
                 self.indent -= 1;
-                s.push_str("}");
+                s.push('}');
                 s
             }
         }

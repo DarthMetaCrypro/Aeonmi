@@ -1,5 +1,4 @@
 use std::path::PathBuf;
-
 use colored::Colorize;
 
 use super::compile::compile_pipeline;
@@ -13,16 +12,16 @@ pub fn main_with_opts(
 ) -> anyhow::Result<()> {
     let out_path = out.unwrap_or_else(|| PathBuf::from("aeonmi.run.js"));
 
-    // Added `false` for debug_titan by default
+    // Compile to JS, then try to run with Node
     compile_pipeline(
         Some(input.clone()),
         EmitKind::Js,
         out_path.clone(),
-        false, // print_tokens
-        false, // print_ast
+        /*print_tokens*/ false,
+        /*print_ast*/ false,
         pretty,
         no_sema,
-        false, // debug_titan (default off here)
+        /*debug_titan*/ false,
     )?;
 
     match std::process::Command::new("node").arg(&out_path).status() {

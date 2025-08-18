@@ -3,28 +3,20 @@
 //! - Deterministic output: sorted imports/decls, 2-space indent, LF
 //! - Header embeds FNV-1a 64-bit hash of body for reproducibility
 //!
-//! This module exposes both the legacy free function `emit_ai(&Module)`
-//! and a thin `AiEmitter` facade so other parts of the compiler (e.g. the
-//! code generator front-end) can request canonical `.ai` output.
-//!
-//! Roadmap wiring:
-//!  - `AiEmitter::generate_from_ir(&Module)` is ready.
-//!  - `AiEmitter::generate(&ASTNode)` lowers AST→IR and emits canonical `.ai`.
+//! Exposes both the legacy free function `emit_ai(&Module)` and a thin
+//! `AiEmitter` facade so other parts of the compiler can request canonical `.ai`.
 
 use crate::core::ir::*;
-use std::fmt::Write as _;
 use crate::core::lowering::lower_ast_to_ir;
-
-// =========================
-// Public facade
-// =========================
+use std::fmt::Write as _;
 
 /// Thin wrapper to emit canonical `.ai` from IR or AST.
+#[derive(Default)]
 pub struct AiEmitter;
 
 impl AiEmitter {
     pub fn new() -> Self {
-        Self
+        Self::default()
     }
 
     /// Preferred entrypoint once you have IR.
@@ -40,37 +32,37 @@ impl AiEmitter {
     }
 }
 
-// =========================
-// Legacy functional API (kept for existing tests)
-// =========================
-
+/// Legacy functional API (kept for existing tests)
 pub fn emit_ai(module: &Module) -> String {
     // 1) Body (deterministic)
     let mut body = String::new();
     write_module(&mut body, module);
 
-    // 2) Hash header (FNV-1a 64-bit, implemented here to avoid external deps)
+    // 2) Hash header (FNV-1a 64-bit)
     let hash = fnv1a64(body.as_bytes());
 
-    // 3) Final output with header
+    // 3) Final output with header (LF newlines only)
     let mut out = String::new();
-    writeln!(&mut out, "// aeonmi:1").unwrap();
-    writeln!(&mut out, "// hash:{:016x}", hash).unwrap();
-    writeln!(&mut out, "// tool:aeonmi unknown").unwrap();
+    let _ = writeln!(&mut out, "// aeonmi:1");
+    let _ = writeln!(&mut out, "// hash:{:016x}", hash);
+    let _ = writeln!(&mut out, "// tool:aeonmi unknown");
     out.push('\n');
     out.push_str(&body);
     out
 }
 
 fn write_module(dst: &mut String, m: &Module) {
-    // Imports first (sorted by path/alias externally; re-sort here to be safe)
+    // Imports first (sorted)
     let mut imports = m.imports.clone();
     imports.sort_by(|a, b| (a.path.as_str(), a.alias.as_deref()).cmp(&(b.path.as_str(), b.alias.as_deref())));
     for im in imports {
-        if let Some(alias) = im.alias {
-            writeln!(dst, "import {} as {};", escape_sym(&im.path), escape_sym(&alias)).unwrap();
-        } else {
-            writeln!(dst, "import {};", escape_sym(&im.path)).unwrap();
+        match im.alias {
+            Some(alias) => {
+                let _ = writeln!(dst, "import {} as {};", escape_sym(&im.path), escape_sym(&alias));
+            }
+            None => {
+                let _ = writeln!(dst, "import {};", escape_sym(&im.path));
+            }
         }
     }
     if !m.imports.is_empty() {
@@ -84,12 +76,12 @@ fn write_module(dst: &mut String, m: &Module) {
     for (i, d) in decls.iter().enumerate() {
         match d {
             Decl::Const(c) => {
-                write!(dst, "const {} = ", escape_sym(&c.name)).unwrap();
+                let _ = write!(dst, "const {} = ", escape_sym(&c.name));
                 write_expr(dst, &c.value, 0);
                 dst.push_str(";\n");
             }
             Decl::Let(l) => {
-                write!(dst, "let {}", escape_sym(&l.name)).unwrap();
+                let _ = write!(dst, "let {}", escape_sym(&l.name));
                 if let Some(v) = &l.value {
                     dst.push_str(" = ");
                     write_expr(dst, v, 0);
@@ -97,10 +89,10 @@ fn write_module(dst: &mut String, m: &Module) {
                 dst.push_str(";\n");
             }
             Decl::Fn(f) => {
-                write!(dst, "fn {}(", escape_sym(&f.name)).unwrap();
+                let _ = write!(dst, "fn {}(", escape_sym(&f.name));
                 for (pi, p) in f.params.iter().enumerate() {
                     if pi > 0 { dst.push_str(", "); }
-                    write!(dst, "{}", escape_sym(p)).unwrap();
+                    let _ = write!(dst, "{}", escape_sym(p));
                 }
                 dst.push_str(") ");
                 write_block(dst, &f.body, 0);
@@ -162,7 +154,7 @@ fn write_stmt(dst: &mut String, s: &Stmt, indent: usize) {
             dst.push('\n');
         }
         For { init, cond, step, body } => {
-            // Canonical for: lowered form: for (init; cond; step) { ... }
+            // Canonical for: for (init; cond; step) { ... }
             indent_spaces(dst, indent);
             dst.push_str("for (");
             if let Some(init_s) = init {
@@ -182,7 +174,7 @@ fn write_stmt(dst: &mut String, s: &Stmt, indent: usize) {
         }
         Let { name, value } => {
             indent_spaces(dst, indent);
-            write!(dst, "let {}", escape_sym(name)).unwrap();
+            let _ = write!(dst, "let {}", escape_sym(name));
             if let Some(v) = value {
                 dst.push_str(" = ");
                 write_expr(dst, v, indent);
@@ -200,10 +192,10 @@ fn write_stmt(dst: &mut String, s: &Stmt, indent: usize) {
 }
 
 fn write_stmt_inline(dst: &mut String, s: &Stmt, indent: usize) {
-    // Used in for(...) init; keep it single-line without trailing semicolon duplication
+    // Used in for(...) init; keep single-line; no trailing semicolon duplication
     match s {
         Stmt::Let { name, value } => {
-            write!(dst, "let {}", escape_sym(name)).unwrap();
+            let _ = write!(dst, "let {}", escape_sym(name));
             if let Some(v) = value {
                 dst.push_str(" = ");
                 write_expr(dst, v, indent);
@@ -217,9 +209,7 @@ fn write_stmt_inline(dst: &mut String, s: &Stmt, indent: usize) {
         Stmt::Expr(e) => {
             write_expr(dst, e, indent);
         }
-        _ => {
-            // Fallback: emit nothing (unsupported inline)
-        }
+        _ => { /* unsupported inline; emit nothing */ }
     }
 }
 
@@ -239,7 +229,7 @@ fn write_expr(dst: &mut String, e: &Expr, indent: usize) {
         }
         Binary { left, op, right } => {
             write_expr(dst, left, indent);
-            write!(dst, " {} ", op).unwrap();
+            let _ = write!(dst, " {} ", op);
             write_expr(dst, right, indent);
         }
         Unary { op, expr } => {
@@ -261,7 +251,7 @@ fn write_expr(dst: &mut String, e: &Expr, indent: usize) {
             dst.push('{');
             for (i, (k, v)) in kvs.iter().enumerate() {
                 if i > 0 { dst.push_str(", "); }
-                write!(dst, "{}: ", escape_sym(k)).unwrap();
+                let _ = write!(dst, "{}: ", escape_sym(k));
                 write_expr(dst, v, indent);
             }
             dst.push('}');
@@ -275,9 +265,9 @@ fn write_lit(dst: &mut String, l: &Lit) {
         Lit::Bool(b) => dst.push_str(if *b { "true" } else { "false" }),
         Lit::Number(n) => {
             if n.fract() == 0.0 {
-                write!(dst, "{}", *n as i64).unwrap();
+                let _ = write!(dst, "{}", *n as i64);
             } else {
-                write!(dst, "{}", n).unwrap();
+                let _ = write!(dst, "{}", n);
             }
         }
         Lit::String(s) => {
@@ -285,7 +275,7 @@ fn write_lit(dst: &mut String, l: &Lit) {
             for ch in s.chars() {
                 match ch {
                     '\\' => dst.push_str("\\\\"),
-                    '"' => dst.push_str("\\\""),
+                    '"'  => dst.push_str("\\\""),
                     '\n' => dst.push_str("\\n"),
                     '\r' => dst.push_str("\\r"),
                     '\t' => dst.push_str("\\t"),
@@ -297,12 +287,14 @@ fn write_lit(dst: &mut String, l: &Lit) {
     }
 }
 
+#[inline]
 fn indent_spaces(dst: &mut String, n: usize) {
+    // cheaper than " ".repeat(n) allocation
     for _ in 0..n { dst.push(' '); }
 }
 
 fn escape_sym(sym: &str) -> String {
-    // Minimal: keep glyphs/Unicode; escape spaces and control chars with `_`.
+    // Keep Unicode; replace whitespace/control with underscores.
     if sym.chars().all(|c| !c.is_whitespace() && !c.is_control()) {
         sym.to_string()
     } else {
@@ -312,11 +304,31 @@ fn escape_sym(sym: &str) -> String {
 
 fn fnv1a64(bytes: &[u8]) -> u64 {
     const FNV_OFFSET: u64 = 0xcbf29ce484222325;
-    const FNV_PRIME: u64 = 0x100000001b3;
+    const FNV_PRIME:  u64 = 0x00000100000001B3;
     let mut hash = FNV_OFFSET;
     for b in bytes {
         hash ^= *b as u64;
         hash = hash.wrapping_mul(FNV_PRIME);
     }
     hash
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::core::ast::ASTNode;
+
+    #[test]
+    fn emitter_roundtrip_minimal() {
+        // Smoke test the AST → IR → .ai path remains wired.
+        let ast = ASTNode::Program(vec![
+            ASTNode::new_variable_decl("x", ASTNode::NumberLiteral(1.0)),
+            ASTNode::new_variable_decl("y", ASTNode::NumberLiteral(2.0)),
+        ]);
+        let mut em = AiEmitter::new();
+        let out = em.generate(&ast).expect("ai emit");
+        assert!(out.contains("let x = 1;"));
+        assert!(out.contains("let y = 2;"));
+        assert!(out.lines().next().unwrap().starts_with("// aeonmi:1"));
+    }
 }

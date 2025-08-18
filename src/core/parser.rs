@@ -1,4 +1,3 @@
-// src/core/parser.rs
 //! Parser for Aeonmi/QUBE/Titan with precedence parsing + spanned errors.
 
 use crate::core::ast::ASTNode;
@@ -24,7 +23,19 @@ pub struct Parser {
 }
 
 impl Parser {
-    pub fn new(tokens: Vec<Token>) -> Self {
+    pub fn new(mut tokens: Vec<Token>) -> Self {
+        // Ensure there is always a trailing EOF to keep peek()/advance() safe
+        let needs_eof = match tokens.last() {
+            Some(t) => !matches!(t.kind, TokenKind::EOF),
+            None => true,
+        };
+        if needs_eof {
+            tokens.push(Token {
+                kind: TokenKind::EOF,
+                line: 0,
+                column: 0,
+            });
+        }
         Parser { tokens, pos: 0 }
     }
 
@@ -158,7 +169,7 @@ impl Parser {
         let init = if !self.check(&TokenKind::Semicolon) {
             Some(self.parse_statement()?)
         } else {
-            self.advance();
+            self.advance(); // consume ';'
             None
         };
 
@@ -225,7 +236,6 @@ impl Parser {
     fn parse_assignment(&mut self) -> Result<ASTNode, ParserError> {
         let expr = self.parse_equality()?;
         if self.match_token(&[TokenKind::Equals]) {
-            // left must be identifier to be a valid assignment target
             match expr {
                 ASTNode::Identifier(name) => {
                     let value = self.parse_assignment()?;
@@ -343,15 +353,24 @@ impl Parser {
         }
         self.previous()
     }
+
     fn previous(&self) -> &Token {
-        &self.tokens[self.pos - 1]
+        if self.pos == 0 {
+            &self.tokens[0]
+        } else {
+            &self.tokens[self.pos - 1]
+        }
     }
+
     fn peek(&self) -> &Token {
-        &self.tokens[self.pos]
+        // Safe: we ensure there's always an EOF at the end
+        &self.tokens[self.pos.min(self.tokens.len() - 1)]
     }
+
     fn check(&self, kind: &TokenKind) -> bool {
         !self.is_at_end() && &self.peek().kind == kind
     }
+
     fn match_token(&mut self, kinds: &[TokenKind]) -> bool {
         for kind in kinds {
             if self.check(kind) {
@@ -361,6 +380,7 @@ impl Parser {
         }
         false
     }
+
     fn consume(&mut self, kind: TokenKind, msg: &str) -> Result<&Token, ParserError> {
         if self.check(&kind) {
             Ok(self.advance())
@@ -368,6 +388,7 @@ impl Parser {
             Err(self.err_at(msg, self.peek().line, self.peek().column))
         }
     }
+
     fn consume_identifier(&mut self, msg: &str) -> Result<String, ParserError> {
         if let TokenKind::Identifier(name) = self.peek().kind.clone() {
             self.advance();
@@ -376,13 +397,15 @@ impl Parser {
             Err(self.err_at(msg, self.peek().line, self.peek().column))
         }
     }
+
     fn is_at_end(&self) -> bool {
-        self.peek().kind == TokenKind::EOF
+        matches!(self.peek().kind, TokenKind::EOF)
     }
 
     fn err_here(&self, msg: &str) -> ParserError {
         self.err_at(msg, self.peek().line, self.peek().column)
     }
+
     fn err_at(&self, msg: &str, line: usize, col: usize) -> ParserError {
         ParserError {
             message: msg.into(),
