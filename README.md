@@ -5,7 +5,7 @@
   <img src="https://img.shields.io/badge/language-Rust-informational" />
 </p>
 
-# Aeonmi v0.2.0 – Closed Source Pre-Release
+# Aeonmi v0.2.0 – Closed Source Pre-Release.
 
 > **Notice**
 > Aeonmi is a closed-source project. No redistribution, modification, reverse engineering, or unauthorized use is permitted without explicit written consent from the author. All rights reserved. This pre-release is provided for demonstration, evaluation, and controlled collaboration.
