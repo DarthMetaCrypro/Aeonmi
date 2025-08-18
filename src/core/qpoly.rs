@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(dead_code, unused_variables))]
 //! QPolygraphic keymap: built-in defaults + optional TOML config.
 //!
 //! - `QPolyMap::default()` → small built-in chords
@@ -40,15 +41,15 @@ impl QPolyMap {
             (">>>".to_string(), "⟫".to_string()),
             ("<=>".to_string(), "⇔".to_string()),
             // arrows & comps
-            ("->".to_string(),  "→".to_string()),
-            ("<-".to_string(),  "←".to_string()),
-            ("<=".to_string(),  "≤".to_string()),
-            (">=".to_string(),  "≥".to_string()),
-            ("!=".to_string(),  "≠".to_string()),
-            ("==".to_string(),  "＝".to_string()),
+            ("->".to_string(), "→".to_string()),
+            ("<-".to_string(), "←".to_string()),
+            ("<=".to_string(), "≤".to_string()),
+            (">=".to_string(), "≥".to_string()),
+            ("!=".to_string(), "≠".to_string()),
+            ("==".to_string(), "＝".to_string()),
             // QUBE-ish
-            ("::".to_string(),  "∷".to_string()),
-            (":=".to_string(),  "≔".to_string()),
+            ("::".to_string(), "∷".to_string()),
+            (":=".to_string(), "≔".to_string()),
             // quantum hints
             ("|0>".to_string(), "∣0⟩".to_string()),
             ("|1>".to_string(), "∣1⟩".to_string()),
@@ -60,16 +61,13 @@ impl QPolyMap {
 
     /// Load from TOML file.
     pub fn from_toml_file(path: &Path) -> Result<Self> {
-        let txt = fs::read_to_string(path)
-            .with_context(|| format!("reading {}", path.display()))?;
-        let cfg: QPolyConfig = toml::from_str(&txt)
-            .with_context(|| format!("parsing {}", path.display()))?;
+        let txt =
+            fs::read_to_string(path).with_context(|| format!("reading {}", path.display()))?;
+        let cfg: QPolyConfig =
+            toml::from_str(&txt).with_context(|| format!("parsing {}", path.display()))?;
 
-        let mut rules: Vec<(String, String)> = cfg
-            .rules
-            .into_iter()
-            .map(|r| (r.chord, r.glyph))
-            .collect();
+        let mut rules: Vec<(String, String)> =
+            cfg.rules.into_iter().map(|r| (r.chord, r.glyph)).collect();
 
         // If user file is empty, fall back to builtin so the editor still works.
         if rules.is_empty() {

@@ -1,6 +1,4 @@
-use aeonmi_project::core::titan::linear_algebra::{
-    matrix_multiply, transpose, determinant,
-};
+use aeonmi_project::core::titan::linear_algebra::{determinant, matrix_multiply, transpose};
 
 fn approx_eq(a: f64, b: f64, eps: f64) -> bool {
     (a - b).abs() <= eps

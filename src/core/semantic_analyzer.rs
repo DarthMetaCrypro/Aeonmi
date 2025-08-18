@@ -4,8 +4,8 @@
 //! - Errors on re-declaration in same scope (existing behavior)
 //! - NEW: Errors on assignment to undeclared identifier
 
-use std::collections::HashSet;
 use crate::core::ast::ASTNode;
+use std::collections::HashSet;
 
 #[derive(Default)]
 pub struct SemanticAnalyzer {
@@ -15,16 +15,27 @@ pub struct SemanticAnalyzer {
 
 impl SemanticAnalyzer {
     pub fn new() -> Self {
-        Self { scopes: vec![HashSet::new()], errors: vec![] }
+        Self {
+            scopes: vec![HashSet::new()],
+            errors: vec![],
+        }
     }
 
     pub fn analyze(&mut self, ast: &ASTNode) -> Result<(), String> {
         self.visit(ast);
-        if self.errors.is_empty() { Ok(()) } else { Err(self.errors.join("\n")) }
+        if self.errors.is_empty() {
+            Ok(())
+        } else {
+            Err(self.errors.join("\n"))
+        }
     }
 
-    fn begin_scope(&mut self) { self.scopes.push(HashSet::new()); }
-    fn end_scope(&mut self) { self.scopes.pop(); }
+    fn begin_scope(&mut self) {
+        self.scopes.push(HashSet::new());
+    }
+    fn end_scope(&mut self) {
+        self.scopes.pop();
+    }
 
     fn declare(&mut self, name: &str) {
         let scope = self.scopes.last_mut().unwrap();
@@ -37,7 +48,9 @@ impl SemanticAnalyzer {
 
     fn is_declared(&self, name: &str) -> bool {
         for scope in self.scopes.iter().rev() {
-            if scope.contains(name) { return true; }
+            if scope.contains(name) {
+                return true;
+            }
         }
         false
     }
@@ -45,17 +58,29 @@ impl SemanticAnalyzer {
     fn visit(&mut self, node: &ASTNode) {
         match node {
             ASTNode::Program(items) => {
-                for it in items { self.visit(it); }
+                for it in items {
+                    self.visit(it);
+                }
             }
             ASTNode::Block(items) => {
                 self.begin_scope();
-                for it in items { self.visit(it); }
+                for it in items {
+                    self.visit(it);
+                }
                 self.end_scope();
             }
-            ASTNode::Function { name: _, params, body } => {
+            ASTNode::Function {
+                name: _,
+                params,
+                body,
+            } => {
                 self.begin_scope();
-                for p in params { self.declare(p); }
-                for it in body { self.visit(it); }
+                for p in params {
+                    self.declare(p);
+                }
+                for it in body {
+                    self.visit(it);
+                }
                 self.end_scope();
             }
             ASTNode::VariableDecl { name, value } => {
@@ -64,25 +89,46 @@ impl SemanticAnalyzer {
             }
             ASTNode::Assignment { name, value } => {
                 if !self.is_declared(name) {
-                    self.errors.push(format!("Assignment to undeclared variable '{}'", name));
+                    self.errors
+                        .push(format!("Assignment to undeclared variable '{}'", name));
                 }
                 self.visit(value);
             }
-            ASTNode::Return(expr) |
-            ASTNode::Log(expr) |
-            ASTNode::While { condition: expr, body: _ } => {
+            ASTNode::Return(expr)
+            | ASTNode::Log(expr)
+            | ASTNode::While {
+                condition: expr,
+                body: _,
+            } => {
                 self.visit(expr);
             }
-            ASTNode::If { condition, then_branch, else_branch } => {
+            ASTNode::If {
+                condition,
+                then_branch,
+                else_branch,
+            } => {
                 self.visit(condition);
                 self.visit(then_branch);
-                if let Some(e) = else_branch { self.visit(e); }
+                if let Some(e) = else_branch {
+                    self.visit(e);
+                }
             }
-            ASTNode::For { init, condition, increment, body } => {
+            ASTNode::For {
+                init,
+                condition,
+                increment,
+                body,
+            } => {
                 self.begin_scope();
-                if let Some(i) = init { self.visit(i); }
-                if let Some(c) = condition { self.visit(c); }
-                if let Some(inc) = increment { self.visit(inc); }
+                if let Some(i) = init {
+                    self.visit(i);
+                }
+                if let Some(c) = condition {
+                    self.visit(c);
+                }
+                if let Some(inc) = increment {
+                    self.visit(inc);
+                }
                 self.visit(body);
                 self.end_scope();
             }
@@ -93,17 +139,19 @@ impl SemanticAnalyzer {
             ASTNode::UnaryExpr { expr, .. } => self.visit(expr),
             ASTNode::Call { callee, args } => {
                 self.visit(callee);
-                for a in args { self.visit(a); }
+                for a in args {
+                    self.visit(a);
+                }
             }
 
             // literals / identifiers / quantum/glyph / error
-            ASTNode::Identifier(_) |
-            ASTNode::NumberLiteral(_) |
-            ASTNode::StringLiteral(_) |
-            ASTNode::BooleanLiteral(_) |
-            ASTNode::QuantumOp {..} |
-            ASTNode::HieroglyphicOp {..} |
-            ASTNode::Error(_) => {}
+            ASTNode::Identifier(_)
+            | ASTNode::NumberLiteral(_)
+            | ASTNode::StringLiteral(_)
+            | ASTNode::BooleanLiteral(_)
+            | ASTNode::QuantumOp { .. }
+            | ASTNode::HieroglyphicOp { .. }
+            | ASTNode::Error(_) => {}
         }
     }
 }
@@ -125,9 +173,10 @@ mod tests {
 
     #[test]
     fn assignment_to_undeclared_fails() {
-        let ast = ASTNode::Program(vec![
-            ASTNode::new_assignment("x", ASTNode::NumberLiteral(1.0)),
-        ]);
+        let ast = ASTNode::Program(vec![ASTNode::new_assignment(
+            "x",
+            ASTNode::NumberLiteral(1.0),
+        )]);
         let mut a = SemanticAnalyzer::new();
         assert!(a.analyze(&ast).is_err());
     }

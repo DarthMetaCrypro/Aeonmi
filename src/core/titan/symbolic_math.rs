@@ -22,7 +22,9 @@ impl Expr {
             Expr::Sub(lhs, rhs) => lhs.evaluate(variables) - rhs.evaluate(variables),
             Expr::Mul(lhs, rhs) => lhs.evaluate(variables) * rhs.evaluate(variables),
             Expr::Div(lhs, rhs) => lhs.evaluate(variables) / rhs.evaluate(variables),
-            Expr::Pow(base, exponent) => base.evaluate(variables).powf(exponent.evaluate(variables)),
+            Expr::Pow(base, exponent) => {
+                base.evaluate(variables).powf(exponent.evaluate(variables))
+            }
         }
     }
 
@@ -45,13 +47,25 @@ impl Expr {
                 Box::new(rhs.differentiate(var)),
             ),
             Expr::Mul(lhs, rhs) => Expr::Add(
-                Box::new(Expr::Mul((*lhs).clone(), Box::new((*rhs).differentiate(var)))),
-                Box::new(Expr::Mul((*rhs).clone(), Box::new((*lhs).differentiate(var)))),
+                Box::new(Expr::Mul(
+                    (*lhs).clone(),
+                    Box::new((*rhs).differentiate(var)),
+                )),
+                Box::new(Expr::Mul(
+                    (*rhs).clone(),
+                    Box::new((*lhs).differentiate(var)),
+                )),
             ),
             Expr::Div(lhs, rhs) => Expr::Div(
                 Box::new(Expr::Sub(
-                    Box::new(Expr::Mul(Box::new((*lhs).differentiate(var)), (*rhs).clone())),
-                    Box::new(Expr::Mul(Box::new((*rhs).differentiate(var)), (*lhs).clone())),
+                    Box::new(Expr::Mul(
+                        Box::new((*lhs).differentiate(var)),
+                        (*rhs).clone(),
+                    )),
+                    Box::new(Expr::Mul(
+                        Box::new((*rhs).differentiate(var)),
+                        (*lhs).clone(),
+                    )),
                 )),
                 Box::new(Expr::Mul((*rhs).clone(), (*rhs).clone())),
             ),
@@ -62,8 +76,8 @@ impl Expr {
                         (*base).clone(),
                         Box::new(Expr::Sub(
                             Box::new(*(*exponent).clone()),
-                            Box::new(Expr::Constant(1.0))
-                        ))
+                            Box::new(Expr::Constant(1.0)),
+                        )),
                     )),
                 )),
                 Box::new((*base).differentiate(var)),

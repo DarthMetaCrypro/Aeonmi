@@ -1,5 +1,5 @@
-use std::process::Command;
 use std::fs;
+use std::process::Command;
 
 fn bin() -> String {
     env!("CARGO_BIN_EXE_aeonmi_project").to_string()
@@ -21,9 +21,15 @@ fn pretty_lexer_error_shows_span() {
     assert!(!output.status.success());
     let err = String::from_utf8_lossy(&output.stderr);
     assert!(err.contains("error:"), "no 'error:' in stderr\n{err}");
-    assert!(err.contains("Unterminated string"), "no message in stderr\n{err}");
+    assert!(
+        err.contains("Unterminated string"),
+        "no message in stderr\n{err}"
+    );
     // accept any line/col, but file + colon must be present
-    assert!(err.contains("bad_lexer.ai:"), "no file:line:col in stderr\n{err}");
+    assert!(
+        err.contains("bad_lexer.ai:"),
+        "no file:line:col in stderr\n{err}"
+    );
 }
 
 #[test]

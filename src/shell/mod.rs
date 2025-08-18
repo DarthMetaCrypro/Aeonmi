@@ -28,11 +28,15 @@ pub fn start(config_path: Option<PathBuf>, pretty: bool, skip_sema: bool) -> any
             break;
         }
         let line = line.trim();
-        if line.is_empty() { continue; }
+        if line.is_empty() {
+            continue;
+        }
 
         // Parse
         let mut parts = shell_words(line);
-        if parts.is_empty() { continue; }
+        if parts.is_empty() {
+            continue;
+        }
         let cmd = parts.remove(0);
 
         match cmd.as_str() {
@@ -42,7 +46,9 @@ pub fn start(config_path: Option<PathBuf>, pretty: bool, skip_sema: bool) -> any
             // Navigation
             "pwd" => println!("{}", cwd.display()),
             "cd" => {
-                let target = parts.get(0).map(PathBuf::from)
+                let target = parts
+                    .get(0)
+                    .map(PathBuf::from)
                     .unwrap_or_else(|| dirs_next::home_dir().unwrap_or(cwd.clone()));
                 if let Err(e) = std::env::set_current_dir(&target) {
                     eprintln!("{} {}", "err:".red().bold(), e);
@@ -51,7 +57,10 @@ pub fn start(config_path: Option<PathBuf>, pretty: bool, skip_sema: bool) -> any
                 }
             }
             "ls" | "dir" => {
-                let path = parts.get(0).map(PathBuf::from).unwrap_or_else(|| cwd.clone());
+                let path = parts
+                    .get(0)
+                    .map(PathBuf::from)
+                    .unwrap_or_else(|| cwd.clone());
                 match fs::read_dir(&path) {
                     Ok(rd) => {
                         for entry in rd.flatten() {
@@ -74,24 +83,36 @@ pub fn start(config_path: Option<PathBuf>, pretty: bool, skip_sema: bool) -> any
                     if let Err(e) = fs::create_dir_all(p) {
                         eprintln!("{} {}", "err:".red().bold(), e);
                     }
-                } else { usage("mkdir <path>"); }
+                } else {
+                    usage("mkdir <path>");
+                }
             }
             "rm" => {
                 if let Some(p) = parts.get(0) {
                     let pb = Path::new(p);
-                    let res = if pb.is_dir() { fs::remove_dir_all(pb) } else { fs::remove_file(pb) };
-                    if let Err(e) = res { eprintln!("{} {}", "err:".red().bold(), e); }
-                } else { usage("rm <path>"); }
+                    let res = if pb.is_dir() {
+                        fs::remove_dir_all(pb)
+                    } else {
+                        fs::remove_file(pb)
+                    };
+                    if let Err(e) = res {
+                        eprintln!("{} {}", "err:".red().bold(), e);
+                    }
+                } else {
+                    usage("rm <path>");
+                }
             }
             "mv" => {
-                if parts.len() < 2 { usage("mv <src> <dst>"); }
-                else if let Err(e) = fs::rename(&parts[0], &parts[1]) {
+                if parts.len() < 2 {
+                    usage("mv <src> <dst>");
+                } else if let Err(e) = fs::rename(&parts[0], &parts[1]) {
                     eprintln!("{} {}", "err:".red().bold(), e);
                 }
             }
             "cp" => {
-                if parts.len() < 2 { usage("cp <src> <dst>"); }
-                else if let Err(e) = fs::copy(&parts[0], &parts[1]).map(|_|()) {
+                if parts.len() < 2 {
+                    usage("cp <src> <dst>");
+                } else if let Err(e) = fs::copy(&parts[0], &parts[1]).map(|_| ()) {
                     eprintln!("{} {}", "err:".red().bold(), e);
                 }
             }
@@ -101,7 +122,9 @@ pub fn start(config_path: Option<PathBuf>, pretty: bool, skip_sema: bool) -> any
                         Ok(s) => print!("{s}"),
                         Err(e) => eprintln!("{} {}", "err:".red().bold(), e),
                     }
-                } else { usage("cat <file>"); }
+                } else {
+                    usage("cat <file>");
+                }
             }
 
             // IDE-ish
@@ -113,13 +136,22 @@ pub fn start(config_path: Option<PathBuf>, pretty: bool, skip_sema: bool) -> any
                 let mut i = 0;
                 while i < parts.len() {
                     match parts[i].as_str() {
-                        "--tui" => { tui = true; i += 1; }
+                        "--tui" => {
+                            tui = true;
+                            i += 1;
+                        }
                         "--config" => {
-                            if i+1 >= parts.len() { eprintln!("--config needs FILE"); break; }
-                            cfg = Some(PathBuf::from(&parts[i+1]));
+                            if i + 1 >= parts.len() {
+                                eprintln!("--config needs FILE");
+                                break;
+                            }
+                            cfg = Some(PathBuf::from(&parts[i + 1]));
                             i += 2;
                         }
-                        other => { file = Some(PathBuf::from(other)); i += 1; }
+                        other => {
+                            file = Some(PathBuf::from(other));
+                            i += 1;
+                        }
                     }
                 }
                 if let Err(e) = commands::edit::main(file, cfg, tui) {
@@ -129,38 +161,72 @@ pub fn start(config_path: Option<PathBuf>, pretty: bool, skip_sema: bool) -> any
 
             "compile" => {
                 // compile <file.ai> [--emit js|ai] [--out FILE] [--no-sema]
-                if parts.is_empty() { usage("compile <file.ai> [--emit js|ai] [--out FILE] [--no-sema]"); continue; }
+                if parts.is_empty() {
+                    usage("compile <file.ai> [--emit js|ai] [--out FILE] [--no-sema]");
+                    continue;
+                }
                 let mut input = PathBuf::from(&parts[0]);
                 let mut emit = EmitKind::Js;
                 let mut out = PathBuf::from("output.js");
                 let mut j = 1;
                 while j < parts.len() {
                     match parts[j].as_str() {
-                        "--emit" if j+1 < parts.len() => {
-                            emit = match parts[j+1].as_str() { "ai" => EmitKind::Ai, _ => EmitKind::Js };
-                            if matches!(emit, EmitKind::Ai) { out = PathBuf::from("output.ai"); }
+                        "--emit" if j + 1 < parts.len() => {
+                            emit = match parts[j + 1].as_str() {
+                                "ai" => EmitKind::Ai,
+                                _ => EmitKind::Js,
+                            };
+                            if matches!(emit, EmitKind::Ai) {
+                                out = PathBuf::from("output.ai");
+                            }
                             j += 2;
                         }
-                        "--out" if j+1 < parts.len() => { out = PathBuf::from(&parts[j+1]); j += 2; }
-                        "--no-sema" => { /* handled via skip_sema */ j += 1; }
-                        other => { input = PathBuf::from(other); j += 1; }
+                        "--out" if j + 1 < parts.len() => {
+                            out = PathBuf::from(&parts[j + 1]);
+                            j += 2;
+                        }
+                        "--no-sema" => {
+                            /* handled via skip_sema */
+                            j += 1;
+                        }
+                        other => {
+                            input = PathBuf::from(other);
+                            j += 1;
+                        }
                     }
                 }
-                if let Err(e) = compile_pipeline(Some(input), emit, out, false, false, pretty, skip_sema, false) {
+                if let Err(e) = compile_pipeline(
+                    Some(input),
+                    emit,
+                    out,
+                    false,
+                    false,
+                    pretty,
+                    skip_sema,
+                    false,
+                ) {
                     eprintln!("{} {}", "err:".red().bold(), e);
                 }
             }
 
             "run" => {
                 // run <file.ai> [--out FILE]
-                if parts.is_empty() { usage("run <file.ai> [--out FILE]"); continue; }
+                if parts.is_empty() {
+                    usage("run <file.ai> [--out FILE]");
+                    continue;
+                }
                 let input = PathBuf::from(&parts[0]);
                 let mut out: Option<PathBuf> = None;
                 let mut j = 1;
                 while j < parts.len() {
                     match parts[j].as_str() {
-                        "--out" if j+1 < parts.len() => { out = Some(PathBuf::from(&parts[j+1])); j += 2; }
-                        _ => { j += 1; }
+                        "--out" if j + 1 < parts.len() => {
+                            out = Some(PathBuf::from(&parts[j + 1]));
+                            j += 2;
+                        }
+                        _ => {
+                            j += 1;
+                        }
                     }
                 }
                 if let Err(e) = commands::run::main_with_opts(input, out, pretty, skip_sema) {
@@ -179,15 +245,17 @@ pub fn start(config_path: Option<PathBuf>, pretty: bool, skip_sema: bool) -> any
 fn banner() {
     println!(
         "\n{}  {}\n{}  {}\n",
-        "╔══════════════════════════════════════════════════╗".truecolor(225,0,180),
+        "╔══════════════════════════════════════════════════╗".truecolor(225, 0, 180),
         "",
-        "║                A e o n m i   S h a r d          ║".truecolor(255,240,0).bold(),
+        "║                A e o n m i   S h a r d          ║"
+            .truecolor(255, 240, 0)
+            .bold(),
         "",
     );
     println!(
         "{}  {}",
-        "╚══════════════════════════════════════════════════╝".truecolor(225,0,180),
-        "type 'help' for commands".truecolor(130,0,200)
+        "╚══════════════════════════════════════════════════╝".truecolor(225, 0, 180),
+        "type 'help' for commands".truecolor(130, 0, 200)
     );
 }
 
@@ -199,25 +267,22 @@ fn print_help() {
          {}\n  {}\n  {}\n\
          {}\n  {}\n",
         "Aeonmi Shard — commands".bold(),
-        "Navigation:".truecolor(130,0,200),
+        "Navigation:".truecolor(130, 0, 200),
         "pwd                 # print working dir",
         "cd [dir]            # change directory",
         "ls [dir]            # list directory",
         "mkdir <path>        # make directory",
         "mv <src> <dst>      # move/rename",
         "cp <src> <dst>      # copy file/dir",
-
-        "Files:".truecolor(130,0,200),
+        "Files:".truecolor(130, 0, 200),
         "cat <file>          # show file",
         "rm <path>           # remove file/dir",
         "edit [--tui] [FILE] # open editor (TUI with --tui)",
         "exit                # quit shell",
-
-        "Build:".truecolor(130,0,200),
+        "Build:".truecolor(130, 0, 200),
         "compile <file.ai> [--emit js|ai] [--out FILE] [--no-sema]",
         "run <file.ai> [--out FILE]     # compile to JS and try Node",
-
-        "Help:".truecolor(130,0,200),
+        "Help:".truecolor(130, 0, 200),
         "help                # show this help",
     );
 }
@@ -234,13 +299,17 @@ fn shell_words(s: &str) -> Vec<String> {
     for c in s.chars() {
         match (c, in_q) {
             ('"', false) => in_q = true,
-            ('"', true)  => in_q = false,
+            ('"', true) => in_q = false,
             (c, _) if c.is_whitespace() && !in_q => {
-                if !buf.is_empty() { out.push(std::mem::take(&mut buf)); }
+                if !buf.is_empty() {
+                    out.push(std::mem::take(&mut buf));
+                }
             }
             (c, _) => buf.push(c),
         }
     }
-    if !buf.is_empty() { out.push(buf); }
+    if !buf.is_empty() {
+        out.push(buf);
+    }
     out
 }

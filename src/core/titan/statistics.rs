@@ -17,12 +17,7 @@ pub fn variance(data: &[f64]) -> Result<f64, &'static str> {
         Err("Data array cannot be empty.")
     } else {
         let mean_value = mean(data)?;
-        Ok(
-            data.iter()
-                .map(|x| (x - mean_value).powi(2))
-                .sum::<f64>()
-                / data.len() as f64,
-        )
+        Ok(data.iter().map(|x| (x - mean_value).powi(2)).sum::<f64>() / data.len() as f64)
     }
 }
 

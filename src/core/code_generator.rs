@@ -6,11 +6,17 @@
 use crate::core::ast::ASTNode;
 use crate::core::token::TokenKind;
 
-pub struct CodeGenerator { indent: usize }
+pub struct CodeGenerator {
+    indent: usize,
+}
 
 impl CodeGenerator {
-    pub fn new() -> Self { Self { indent: 0 } }
-    pub fn generate(&mut self, ast: &ASTNode) -> Result<String, String> { Ok(self.emit(ast)) }
+    pub fn new() -> Self {
+        Self { indent: 0 }
+    }
+    pub fn generate(&mut self, ast: &ASTNode) -> Result<String, String> {
+        Ok(self.emit(ast))
+    }
 
     fn emit(&mut self, node: &ASTNode) -> String {
         match node {
@@ -18,7 +24,9 @@ impl CodeGenerator {
                 let mut out = String::new();
                 for item in items {
                     out.push_str(&self.emit(item));
-                    if !out.ends_with('\n') { out.push('\n'); }
+                    if !out.ends_with('\n') {
+                        out.push('\n');
+                    }
                 }
                 out
             }
@@ -29,7 +37,9 @@ impl CodeGenerator {
                 for it in items {
                     s.push_str(&self.indent_str());
                     s.push_str(&self.emit(it));
-                    if !s.ends_with('\n') { s.push('\n'); }
+                    if !s.ends_with('\n') {
+                        s.push('\n');
+                    }
                 }
                 self.indent -= 1;
                 s.push_str("}\n");
@@ -37,8 +47,9 @@ impl CodeGenerator {
             }
 
             // declarations / statements
-            ASTNode::VariableDecl { name, value } =>
-                format!("let {} = {};\n", name, self.emit_expr(value)),
+            ASTNode::VariableDecl { name, value } => {
+                format!("let {} = {};\n", name, self.emit_expr(value))
+            }
             ASTNode::Function { name, params, body } => {
                 let mut s = String::new();
                 s.push_str(&format!("function {}({}) ", name, params.join(", ")));
@@ -50,12 +61,16 @@ impl CodeGenerator {
             ASTNode::Log(expr) => format!("console.log({});\n", self.emit_expr(expr)),
 
             // NEW: emit assignments/calls as statements (no extra parens)
-            ASTNode::Assignment { name, value } =>
-                format!("{} = {};\n", name, self.emit_expr(value)),
-            ASTNode::Call { .. } =>
-                format!("{};\n", self.emit_expr(node)),
+            ASTNode::Assignment { name, value } => {
+                format!("{} = {};\n", name, self.emit_expr(value))
+            }
+            ASTNode::Call { .. } => format!("{};\n", self.emit_expr(node)),
 
-            ASTNode::If { condition, then_branch, else_branch } => {
+            ASTNode::If {
+                condition,
+                then_branch,
+                else_branch,
+            } => {
                 let mut s = String::new();
                 s.push_str(&format!("if ({}) ", self.emit_expr(condition)));
                 s.push_str(&self.wrap_stmt(then_branch));
@@ -73,7 +88,12 @@ impl CodeGenerator {
                 s.push('\n');
                 s
             }
-            ASTNode::For { init, condition, increment, body } => {
+            ASTNode::For {
+                init,
+                condition,
+                increment,
+                body,
+            } => {
                 // avoid overlapping borrows: compute piecewise
                 let init_s = if let Some(i) = init.as_ref() {
                     let tmp = self.emit(i);
@@ -81,8 +101,14 @@ impl CodeGenerator {
                 } else {
                     String::new()
                 };
-                let cond_s = condition.as_ref().map(|c| self.emit_expr(c)).unwrap_or_default();
-                let inc_s  = increment.as_ref().map(|i| self.emit_expr(i)).unwrap_or_default();
+                let cond_s = condition
+                    .as_ref()
+                    .map(|c| self.emit_expr(c))
+                    .unwrap_or_default();
+                let inc_s = increment
+                    .as_ref()
+                    .map(|i| self.emit_expr(i))
+                    .unwrap_or_default();
 
                 let mut s = String::new();
                 s.push_str(&format!("for ({}; {}; {}) ", init_s, cond_s, inc_s));
@@ -108,11 +134,19 @@ impl CodeGenerator {
                     TokenKind::Dod => "dod",
                     _ => "qop",
                 };
-                let args = qubits.iter().map(|q| self.emit_expr(q)).collect::<Vec<_>>().join(", ");
+                let args = qubits
+                    .iter()
+                    .map(|q| self.emit_expr(q))
+                    .collect::<Vec<_>>()
+                    .join(", ");
                 format!("{}({});\n", opname, args)
             }
             ASTNode::HieroglyphicOp { symbol, args } => {
-                let a = args.iter().map(|e| self.emit_expr(e)).collect::<Vec<_>>().join(", ");
+                let a = args
+                    .iter()
+                    .map(|e| self.emit_expr(e))
+                    .collect::<Vec<_>>()
+                    .join(", ");
                 format!("__glyph('{}', {});\n", symbol, a)
             }
 
@@ -124,23 +158,37 @@ impl CodeGenerator {
         match node {
             ASTNode::Identifier(s) => s.clone(),
             ASTNode::NumberLiteral(n) => {
-                if n.fract() == 0.0 { format!("{}", *n as i64) } else { format!("{}", n) }
+                if n.fract() == 0.0 {
+                    format!("{}", *n as i64)
+                } else {
+                    format!("{}", n)
+                }
             }
             ASTNode::StringLiteral(s) => format!("{:?}", s),
             ASTNode::BooleanLiteral(b) => b.to_string(),
 
-            ASTNode::UnaryExpr { op, expr } =>
-                format!("({}{})", self.op_str(op), self.emit_expr(expr)),
-            ASTNode::BinaryExpr { op, left, right } =>
-                format!("({} {} {})", self.emit_expr(left), self.op_str(op), self.emit_expr(right)),
+            ASTNode::UnaryExpr { op, expr } => {
+                format!("({}{})", self.op_str(op), self.emit_expr(expr))
+            }
+            ASTNode::BinaryExpr { op, left, right } => format!(
+                "({} {} {})",
+                self.emit_expr(left),
+                self.op_str(op),
+                self.emit_expr(right)
+            ),
 
             // keep parens when used inside other expressions
-            ASTNode::Assignment { name, value } =>
-                format!("({} = {})", name, self.emit_expr(value)),
+            ASTNode::Assignment { name, value } => {
+                format!("({} = {})", name, self.emit_expr(value))
+            }
 
             ASTNode::Call { callee, args } => {
                 let c = self.emit_expr(callee);
-                let a = args.iter().map(|e| self.emit_expr(e)).collect::<Vec<_>>().join(", ");
+                let a = args
+                    .iter()
+                    .map(|e| self.emit_expr(e))
+                    .collect::<Vec<_>>()
+                    .join(", ");
                 format!("{}({})", c, a)
             }
 
@@ -171,7 +219,7 @@ impl CodeGenerator {
             Minus => "-",
             Star => "*",
             Slash => "/",
-            Equals => "=",          // used in decls; assignments have their own node
+            Equals => "=", // used in decls; assignments have their own node
             DoubleEquals => "==",
             NotEquals => "!=",
             LessThan => "<",
@@ -182,10 +230,16 @@ impl CodeGenerator {
         }
     }
 
-    fn indent_str(&self) -> String { "  ".repeat(self.indent) }
+    fn indent_str(&self) -> String {
+        "  ".repeat(self.indent)
+    }
     fn strip_trailing(&self, mut s: String) -> String {
-        if s.ends_with('\n') { s.pop(); }
-        if s.ends_with(';') { s.pop(); }
+        if s.ends_with('\n') {
+            s.pop();
+        }
+        if s.ends_with(';') {
+            s.pop();
+        }
         s
     }
 }
@@ -211,7 +265,7 @@ mod tests {
     fn gen_assignment_and_call() {
         let call = ASTNode::new_call(
             ASTNode::Identifier("add".into()),
-            vec![ASTNode::NumberLiteral(2.0), ASTNode::NumberLiteral(3.0)]
+            vec![ASTNode::NumberLiteral(2.0), ASTNode::NumberLiteral(3.0)],
         );
         let prog = ASTNode::Program(vec![ASTNode::new_assignment("x", call)]);
         let mut g = CodeGenerator::new();

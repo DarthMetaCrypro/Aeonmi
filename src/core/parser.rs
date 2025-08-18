@@ -1,8 +1,8 @@
 // src/core/parser.rs
 //! Parser for Aeonmi/QUBE/Titan with precedence parsing + spanned errors.
 
-use crate::core::token::{Token, TokenKind};
 use crate::core::ast::ASTNode;
+use crate::core::token::{Token, TokenKind};
 
 #[derive(Debug, Clone)]
 pub struct ParserError {
@@ -51,7 +51,9 @@ impl Parser {
             TokenKind::OpenBrace => Ok(self.parse_block()?),
 
             // quantum & glyph
-            TokenKind::Superpose | TokenKind::Entangle | TokenKind::Measure | TokenKind::Dod => self.parse_quantum_op(),
+            TokenKind::Superpose | TokenKind::Entangle | TokenKind::Measure | TokenKind::Dod => {
+                self.parse_quantum_op()
+            }
             TokenKind::HieroglyphicOp(_) => self.parse_hieroglyphic_op(),
 
             _ => {
@@ -78,7 +80,10 @@ impl Parser {
         let name = self.consume_identifier("Expected variable name")?;
         self.consume(TokenKind::Equals, "Expected '=' in variable declaration")?;
         let value = self.parse_expression()?;
-        self.consume(TokenKind::Semicolon, "Expected ';' after variable declaration")?;
+        self.consume(
+            TokenKind::Semicolon,
+            "Expected ';' after variable declaration",
+        )?;
         Ok(ASTNode::new_variable_decl(&name, value))
     }
 
@@ -90,7 +95,9 @@ impl Parser {
         if !self.check(&TokenKind::CloseParen) {
             loop {
                 params.push(self.consume_identifier("Expected parameter name")?);
-                if !self.match_token(&[TokenKind::Comma]) { break; }
+                if !self.match_token(&[TokenKind::Comma]) {
+                    break;
+                }
             }
         }
         self.consume(TokenKind::CloseParen, "Expected ')' after parameters")?;
@@ -98,7 +105,11 @@ impl Parser {
             ASTNode::Block(stmts) => stmts,
             _ => return Err(self.err_here("Function body must be a block")),
         };
-        Ok(ASTNode::new_function(&name, params.iter().map(|s| s.as_str()).collect(), body))
+        Ok(ASTNode::new_function(
+            &name,
+            params.iter().map(|s| s.as_str()).collect(),
+            body,
+        ))
     }
 
     fn parse_return(&mut self) -> Result<ASTNode, ParserError> {
@@ -125,7 +136,9 @@ impl Parser {
         let then_branch = self.parse_statement()?;
         let else_branch = if self.match_token(&[TokenKind::Else]) {
             Some(self.parse_statement()?)
-        } else { None };
+        } else {
+            None
+        };
         Ok(ASTNode::new_if(cond, then_branch, else_branch))
     }
 
@@ -144,16 +157,23 @@ impl Parser {
 
         let init = if !self.check(&TokenKind::Semicolon) {
             Some(self.parse_statement()?)
-        } else { self.advance(); None };
+        } else {
+            self.advance();
+            None
+        };
 
         let condition = if !self.check(&TokenKind::Semicolon) {
             Some(self.parse_expression()?)
-        } else { None };
+        } else {
+            None
+        };
         self.consume(TokenKind::Semicolon, "Expected ';' after loop condition")?;
 
         let increment = if !self.check(&TokenKind::CloseParen) {
             Some(self.parse_expression()?)
-        } else { None };
+        } else {
+            None
+        };
         self.consume(TokenKind::CloseParen, "Expected ')' after for clauses")?;
 
         let body = self.parse_statement()?;
@@ -166,7 +186,9 @@ impl Parser {
         if self.match_token(&[TokenKind::OpenParen]) {
             while !self.check(&TokenKind::CloseParen) {
                 qubits.push(self.parse_expression()?);
-                if !self.match_token(&[TokenKind::Comma]) { break; }
+                if !self.match_token(&[TokenKind::Comma]) {
+                    break;
+                }
             }
             self.consume(TokenKind::CloseParen, "Expected ')' after qubits")?;
         }
@@ -183,7 +205,9 @@ impl Parser {
         if self.match_token(&[TokenKind::OpenParen]) {
             while !self.check(&TokenKind::CloseParen) {
                 args.push(self.parse_expression()?);
-                if !self.match_token(&[TokenKind::Comma]) { break; }
+                if !self.match_token(&[TokenKind::Comma]) {
+                    break;
+                }
             }
             self.consume(TokenKind::CloseParen, "Expected ')' after args")?;
         }
@@ -227,8 +251,10 @@ impl Parser {
     fn parse_comparison(&mut self) -> Result<ASTNode, ParserError> {
         let mut expr = self.parse_term()?;
         while self.match_token(&[
-            TokenKind::LessThan, TokenKind::LessEqual,
-            TokenKind::GreaterThan, TokenKind::GreaterEqual
+            TokenKind::LessThan,
+            TokenKind::LessEqual,
+            TokenKind::GreaterThan,
+            TokenKind::GreaterEqual,
         ]) {
             let op = self.previous().kind.clone();
             let right = self.parse_term()?;
@@ -275,7 +301,9 @@ impl Parser {
                 if !self.check(&TokenKind::CloseParen) {
                     loop {
                         args.push(self.parse_expression()?);
-                        if !self.match_token(&[TokenKind::Comma]) { break; }
+                        if !self.match_token(&[TokenKind::Comma]) {
+                            break;
+                        }
                     }
                 }
                 self.consume(TokenKind::CloseParen, "Expected ')' after arguments")?;
@@ -299,36 +327,67 @@ impl Parser {
                 self.consume(TokenKind::CloseParen, "Expected ')'")?;
                 Ok(expr)
             }
-            _ => Err(ParserError { message: format!("Unexpected token {}", tok.kind), line: tok.line, col: tok.column }),
+            _ => Err(ParserError {
+                message: format!("Unexpected token {}", tok.kind),
+                line: tok.line,
+                col: tok.column,
+            }),
         }
     }
 
     /* ── Token utils ─────────────────────────────────────── */
 
-    fn advance(&mut self) -> &Token { if !self.is_at_end() { self.pos += 1; } self.previous() }
-    fn previous(&self) -> &Token { &self.tokens[self.pos - 1] }
-    fn peek(&self) -> &Token { &self.tokens[self.pos] }
-    fn check(&self, kind: &TokenKind) -> bool { !self.is_at_end() && &self.peek().kind == kind }
+    fn advance(&mut self) -> &Token {
+        if !self.is_at_end() {
+            self.pos += 1;
+        }
+        self.previous()
+    }
+    fn previous(&self) -> &Token {
+        &self.tokens[self.pos - 1]
+    }
+    fn peek(&self) -> &Token {
+        &self.tokens[self.pos]
+    }
+    fn check(&self, kind: &TokenKind) -> bool {
+        !self.is_at_end() && &self.peek().kind == kind
+    }
     fn match_token(&mut self, kinds: &[TokenKind]) -> bool {
         for kind in kinds {
-            if self.check(kind) { self.advance(); return true; }
+            if self.check(kind) {
+                self.advance();
+                return true;
+            }
         }
         false
     }
     fn consume(&mut self, kind: TokenKind, msg: &str) -> Result<&Token, ParserError> {
-        if self.check(&kind) { Ok(self.advance()) }
-        else { Err(self.err_at(msg, self.peek().line, self.peek().column)) }
+        if self.check(&kind) {
+            Ok(self.advance())
+        } else {
+            Err(self.err_at(msg, self.peek().line, self.peek().column))
+        }
     }
     fn consume_identifier(&mut self, msg: &str) -> Result<String, ParserError> {
-        if let TokenKind::Identifier(name) = self.peek().kind.clone() { self.advance(); Ok(name) }
-        else { Err(self.err_at(msg, self.peek().line, self.peek().column)) }
+        if let TokenKind::Identifier(name) = self.peek().kind.clone() {
+            self.advance();
+            Ok(name)
+        } else {
+            Err(self.err_at(msg, self.peek().line, self.peek().column))
+        }
     }
-    fn is_at_end(&self) -> bool { self.peek().kind == TokenKind::EOF }
+    fn is_at_end(&self) -> bool {
+        self.peek().kind == TokenKind::EOF
+    }
 
     fn err_here(&self, msg: &str) -> ParserError {
         self.err_at(msg, self.peek().line, self.peek().column)
     }
     fn err_at(&self, msg: &str, line: usize, col: usize) -> ParserError {
-        ParserError { message: msg.into(), line, col }
+        ParserError {
+            message: msg.into(),
+            line,
+            col,
+        }
     }
 }

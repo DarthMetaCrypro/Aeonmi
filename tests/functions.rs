@@ -16,7 +16,8 @@ fn function_decl_and_body() {
     let _ = std::fs::remove_file(&out);
 
     let c = Compiler::new();
-    c.compile(code, out.to_str().unwrap()).expect("compile should succeed");
+    c.compile(code, out.to_str().unwrap())
+        .expect("compile should succeed");
 
     let js = std::fs::read_to_string(&out).expect("output exists");
 

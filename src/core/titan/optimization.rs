@@ -39,7 +39,7 @@ where
     // Golden ratio section: ϕ = (sqrt(5)-1)/2 ≈ 0.618
     // We use the complementary (1-ϕ) ≈ 0.382 for placement.
     let phi = (5.0f64.sqrt() - 1.0) * 0.5; // ~0.6180339887
-    let inv_phi = 1.0 - phi;               // ~0.3819660113
+    let inv_phi = 1.0 - phi; // ~0.3819660113
 
     // Initial interior points
     let mut x1 = a + inv_phi * (b - a);

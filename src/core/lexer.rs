@@ -20,16 +20,21 @@ pub enum LexerError {
 impl std::fmt::Display for LexerError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            LexerError::UnexpectedCharacter(ch, line, col) =>
-                write!(f, "Unexpected character '{}' at {}:{}", ch, line, col),
-            LexerError::UnterminatedString(line, col) =>
-                write!(f, "Unterminated string at {}:{}", line, col),
-            LexerError::InvalidNumber(num, line, col) =>
-                write!(f, "Invalid number '{}' at {}:{}", num, line, col),
-            LexerError::InvalidQubitLiteral(q, line, col) =>
-                write!(f, "Invalid qubit literal '{}' at {}:{}", q, line, col),
-            LexerError::UnterminatedComment(line, col) =>
-                write!(f, "Unterminated multi-line comment at {}:{}", line, col),
+            LexerError::UnexpectedCharacter(ch, line, col) => {
+                write!(f, "Unexpected character '{}' at {}:{}", ch, line, col)
+            }
+            LexerError::UnterminatedString(line, col) => {
+                write!(f, "Unterminated string at {}:{}", line, col)
+            }
+            LexerError::InvalidNumber(num, line, col) => {
+                write!(f, "Invalid number '{}' at {}:{}", num, line, col)
+            }
+            LexerError::InvalidQubitLiteral(q, line, col) => {
+                write!(f, "Invalid qubit literal '{}' at {}:{}", q, line, col)
+            }
+            LexerError::UnterminatedComment(line, col) => {
+                write!(f, "Unterminated multi-line comment at {}:{}", line, col)
+            }
         }
     }
 }
@@ -63,24 +68,47 @@ impl<'a> Lexer<'a> {
             match ch {
                 // whitespace & BOMs/ZWSP
                 ' ' | '\t' | '\r' | '\u{FEFF}' | '\u{200B}' => self.advance(),
-                '\n' => { self.line += 1; self.col = 0; self.advance(); }
+                '\n' => {
+                    self.line += 1;
+                    self.col = 0;
+                    self.advance();
+                }
 
                 // hieroglyphics
-                '𓀀' => { tokens.push(self.mk(TokenKind::HieroglyphicOp("𓀀".into()))); self.advance(); }
-                '𓁀' => { tokens.push(self.mk(TokenKind::HieroglyphicOp("𓁀".into()))); self.advance(); }
-                '𓂀' => { tokens.push(self.mk(TokenKind::HieroglyphicOp("𓂀".into()))); self.advance(); }
+                '𓀀' => {
+                    tokens.push(self.mk(TokenKind::HieroglyphicOp("𓀀".into())));
+                    self.advance();
+                }
+                '𓁀' => {
+                    tokens.push(self.mk(TokenKind::HieroglyphicOp("𓁀".into())));
+                    self.advance();
+                }
+                '𓂀' => {
+                    tokens.push(self.mk(TokenKind::HieroglyphicOp("𓂀".into())));
+                    self.advance();
+                }
 
                 // operators & delimiters
-                '+' => { tokens.push(self.mk(TokenKind::Plus)); self.advance(); }
-                '-' => { tokens.push(self.mk(TokenKind::Minus)); self.advance(); }
-                '*' => { tokens.push(self.mk(TokenKind::Star)); self.advance(); }
-                '/' => {
-                    match self.peek() {
-                        Some('/') => self.skip_single_comment(),
-                        Some('*') => self.skip_multi_comment()?,
-                        _ => { tokens.push(self.mk(TokenKind::Slash)); self.advance(); }
-                    }
+                '+' => {
+                    tokens.push(self.mk(TokenKind::Plus));
+                    self.advance();
                 }
+                '-' => {
+                    tokens.push(self.mk(TokenKind::Minus));
+                    self.advance();
+                }
+                '*' => {
+                    tokens.push(self.mk(TokenKind::Star));
+                    self.advance();
+                }
+                '/' => match self.peek() {
+                    Some('/') => self.skip_single_comment(),
+                    Some('*') => self.skip_multi_comment()?,
+                    _ => {
+                        tokens.push(self.mk(TokenKind::Slash));
+                        self.advance();
+                    }
+                },
                 '=' => {
                     self.advance();
                     if self.match_char('=') {
@@ -121,21 +149,45 @@ impl<'a> Lexer<'a> {
                         tokens.push(self.mk(TokenKind::GreaterThan));
                     }
                 }
-                ';' => { tokens.push(self.mk(TokenKind::Semicolon)); self.advance(); }
-                ',' => { tokens.push(self.mk(TokenKind::Comma)); self.advance(); }
-                '(' => { tokens.push(self.mk(TokenKind::OpenParen)); self.advance(); }
-                ')' => { tokens.push(self.mk(TokenKind::CloseParen)); self.advance(); }
-                '{' => { tokens.push(self.mk(TokenKind::OpenBrace)); self.advance(); }
-                '}' => { tokens.push(self.mk(TokenKind::CloseBrace)); self.advance(); }
+                ';' => {
+                    tokens.push(self.mk(TokenKind::Semicolon));
+                    self.advance();
+                }
+                ',' => {
+                    tokens.push(self.mk(TokenKind::Comma));
+                    self.advance();
+                }
+                '(' => {
+                    tokens.push(self.mk(TokenKind::OpenParen));
+                    self.advance();
+                }
+                ')' => {
+                    tokens.push(self.mk(TokenKind::CloseParen));
+                    self.advance();
+                }
+                '{' => {
+                    tokens.push(self.mk(TokenKind::OpenBrace));
+                    self.advance();
+                }
+                '}' => {
+                    tokens.push(self.mk(TokenKind::CloseBrace));
+                    self.advance();
+                }
 
                 // qubit literal
-                '|' => { tokens.push(self.lex_qubit()?); }
+                '|' => {
+                    tokens.push(self.lex_qubit()?);
+                }
 
                 // string literal
-                '"' => { tokens.push(self.lex_string()?); }
+                '"' => {
+                    tokens.push(self.lex_string()?);
+                }
 
                 // numbers
-                ch if ch.is_ascii_digit() => { tokens.push(self.lex_number()?); }
+                ch if ch.is_ascii_digit() => {
+                    tokens.push(self.lex_number()?);
+                }
 
                 // identifiers & keywords
                 ch if is_identifier_start(ch) => {
@@ -197,7 +249,9 @@ impl<'a> Lexer<'a> {
 
     fn skip_single_comment(&mut self) {
         while let Some(ch) = self.current {
-            if ch == '\n' { break; }
+            if ch == '\n' {
+                break;
+            }
             self.advance();
         }
     }
@@ -211,7 +265,10 @@ impl<'a> Lexer<'a> {
                 self.advance();
                 return Ok(());
             }
-            if ch == '\n' { self.line += 1; self.col = 0; }
+            if ch == '\n' {
+                self.line += 1;
+                self.col = 0;
+            }
             self.advance();
         }
         Err(LexerError::UnterminatedComment(self.line, self.col))
@@ -229,8 +286,12 @@ impl<'a> Lexer<'a> {
                 self.advance();
                 if let Some(esc) = self.current {
                     content.push(match esc {
-                        'n' => '\n', 't' => '\t', 'r' => '\r',
-                        '\\' => '\\', '"' => '"', other => other,
+                        'n' => '\n',
+                        't' => '\t',
+                        'r' => '\r',
+                        '\\' => '\\',
+                        '"' => '"',
+                        other => other,
                     });
                     self.advance();
                 } else {
@@ -336,11 +397,17 @@ mod tests {
     fn double_and_relational_detected() {
         let mut lx = Lexer::new("a == b != c < d <= e > f >= g");
         let toks = lx.tokenize().unwrap();
-        assert!(toks.iter().any(|t| matches!(t.kind, TokenKind::DoubleEquals)));
+        assert!(toks
+            .iter()
+            .any(|t| matches!(t.kind, TokenKind::DoubleEquals)));
         assert!(toks.iter().any(|t| matches!(t.kind, TokenKind::NotEquals)));
         assert!(toks.iter().any(|t| matches!(t.kind, TokenKind::LessThan)));
         assert!(toks.iter().any(|t| matches!(t.kind, TokenKind::LessEqual)));
-        assert!(toks.iter().any(|t| matches!(t.kind, TokenKind::GreaterThan)));
-        assert!(toks.iter().any(|t| matches!(t.kind, TokenKind::GreaterEqual)));
+        assert!(toks
+            .iter()
+            .any(|t| matches!(t.kind, TokenKind::GreaterThan)));
+        assert!(toks
+            .iter()
+            .any(|t| matches!(t.kind, TokenKind::GreaterEqual)));
     }
 }

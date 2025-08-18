@@ -11,7 +11,8 @@ fn pipeline_end_to_end_basic() {
     let _ = std::fs::remove_file(&out);
 
     let c = Compiler::new();
-    c.compile(code, out.to_str().unwrap()).expect("compile should succeed");
+    c.compile(code, out.to_str().unwrap())
+        .expect("compile should succeed");
 
     let js = std::fs::read_to_string(&out).expect("output exists");
     assert!(js.contains("let x = (2 + 3);") || js.contains("let x = 2 + 3;"));
@@ -30,7 +31,8 @@ fn pipeline_quantum_and_glyph_ops() {
     let _ = std::fs::remove_file(&out);
 
     let c = Compiler::new();
-    c.compile(code, out.to_str().unwrap()).expect("compile should succeed");
+    c.compile(code, out.to_str().unwrap())
+        .expect("compile should succeed");
 
     let js = std::fs::read_to_string(&out).expect("output exists");
     assert!(js.contains("superpose(q1);"));

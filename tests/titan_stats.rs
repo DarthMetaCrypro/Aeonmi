@@ -1,5 +1,5 @@
 use aeonmi_project::core::titan::probability_statistics::{
-    random_sample_uniform, random_sample_normal,
+    random_sample_normal, random_sample_uniform,
 };
 
 #[test]

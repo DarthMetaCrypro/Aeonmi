@@ -63,9 +63,17 @@ fn main() -> anyhow::Result<()> {
 
     // Subcommands
     match args.cmd {
-        Some(Command::Compile { input, emit, out, tokens, ast, debug_titan }) => {
+        // Your CLI defines `Emit`, not `Compile`
+        Some(Command::Emit { input, emit, out, tokens, ast, debug_titan }) => {
             commands::compile::compile_pipeline(
-                input, emit, out, tokens, ast, args.pretty_errors, args.no_sema, debug_titan
+                Some(input),           // <-- fix: wrap in Some(...) to match Option<PathBuf>
+                emit,
+                out,
+                tokens,
+                ast,
+                args.pretty_errors,
+                args.no_sema,
+                debug_titan,
             )
         }
         Some(Command::Run { input, out }) => {

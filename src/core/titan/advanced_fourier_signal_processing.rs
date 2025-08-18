@@ -25,14 +25,8 @@ pub fn fast_fourier_transform(data: &[f64]) -> Vec<(f64, f64)> {
             angle.sin() * fft_odd[k].0 + angle.cos() * fft_odd[k].1,
         );
 
-        result[k] = (
-            fft_even[k].0 + twiddle.0,
-            fft_even[k].1 + twiddle.1,
-        );
-        result[k + n / 2] = (
-            fft_even[k].0 - twiddle.0,
-            fft_even[k].1 - twiddle.1,
-        );
+        result[k] = (fft_even[k].0 + twiddle.0, fft_even[k].1 + twiddle.1);
+        result[k + n / 2] = (fft_even[k].0 - twiddle.0, fft_even[k].1 - twiddle.1);
     }
 
     result
@@ -43,7 +37,8 @@ pub fn inverse_fast_fourier_transform(data: &[(f64, f64)]) -> Vec<f64> {
     let n = data.len();
     let conjugates: Vec<(f64, f64)> = data.iter().map(|&(re, im)| (re, -im)).collect(); // Removed mut
 
-    let fft_result = fast_fourier_transform(&conjugates.iter().map(|&(re, _)| re).collect::<Vec<f64>>());
+    let fft_result =
+        fast_fourier_transform(&conjugates.iter().map(|&(re, _)| re).collect::<Vec<f64>>());
     fft_result
         .iter()
         .map(|&(re, _)| re / n as f64) // Changed im to _ to silence warning

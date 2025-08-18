@@ -1,8 +1,8 @@
 #[cfg(feature = "quantum")]
 fn main() -> anyhow::Result<()> {
+    use aeonmi_project::commands::quantum::quantum_run;
     use std::env;
     use std::path::PathBuf;
-    use aeonmi_project::commands::quantum::quantum_run;
 
     // args: backend [titan|aer]  file(ai)  [shots]
     let args = env::args().skip(1).collect::<Vec<_>>();

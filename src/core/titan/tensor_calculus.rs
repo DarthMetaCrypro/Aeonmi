@@ -1,4 +1,7 @@
-pub fn tensor_addition(tensor1: &[Vec<Vec<f64>>], tensor2: &[Vec<Vec<f64>>]) -> Result<Vec<Vec<Vec<f64>>>, &'static str> {
+pub fn tensor_addition(
+    tensor1: &[Vec<Vec<f64>>],
+    tensor2: &[Vec<Vec<f64>>],
+) -> Result<Vec<Vec<Vec<f64>>>, &'static str> {
     // Performs element-wise addition of two tensors
     if tensor1.len() != tensor2.len()
         || tensor1[0].len() != tensor2[0].len()
@@ -26,7 +29,11 @@ pub fn tensor_addition(tensor1: &[Vec<Vec<f64>>], tensor2: &[Vec<Vec<f64>>]) -> 
     Ok(result)
 }
 
-pub fn tensor_contraction(tensor: &[Vec<Vec<f64>>], axis1: usize, axis2: usize) -> Result<Vec<Vec<f64>>, &'static str> {
+pub fn tensor_contraction(
+    tensor: &[Vec<Vec<f64>>],
+    axis1: usize,
+    axis2: usize,
+) -> Result<Vec<Vec<f64>>, &'static str> {
     // Contracts a tensor along two specified axes
     if axis1 >= tensor.len() || axis2 >= tensor.len() {
         return Err("Invalid axes for contraction.");

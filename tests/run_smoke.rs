@@ -1,5 +1,5 @@
-use std::process::Command;
 use std::path::Path;
+use std::process::Command;
 
 #[test]
 fn run_subcommand_compiles_even_without_node() {

@@ -23,30 +23,45 @@ impl fmt::Display for CoreError {
 impl std::error::Error for CoreError {}
 
 impl CoreError {
-	#[allow(dead_code)]
-    pub fn interpretation(message: &str) -> Self { CoreError::InterpretationError(message.to_string()) }
-    pub fn io_error(message: &str) -> Self { CoreError::IoError(message.to_string()) }
-    pub fn invalid_operation(message: &str) -> Self { CoreError::InvalidOperation(message.to_string()) }
-    pub fn general_error(message: &str) -> Self { CoreError::GeneralError(message.to_string()) }
+    #[allow(dead_code)]
+    pub fn interpretation(message: &str) -> Self {
+        CoreError::InterpretationError(message.to_string())
+    }
+    pub fn io_error(message: &str) -> Self {
+        CoreError::IoError(message.to_string())
+    }
+    pub fn invalid_operation(message: &str) -> Self {
+        CoreError::InvalidOperation(message.to_string())
+    }
+    pub fn general_error(message: &str) -> Self {
+        CoreError::GeneralError(message.to_string())
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    #[test] fn test_interpretation_error() {
+    #[test]
+    fn test_interpretation_error() {
         let err = CoreError::interpretation("Invalid syntax");
         assert_eq!(format!("{}", err), "Interpretation Error: Invalid syntax");
     }
-    #[test] fn test_io_error() {
+    #[test]
+    fn test_io_error() {
         let err = CoreError::io_error("File not found");
         assert_eq!(format!("{}", err), "IO Error: File not found");
     }
-    #[test] fn test_invalid_operation_error() {
+    #[test]
+    fn test_invalid_operation_error() {
         let err = CoreError::invalid_operation("Cannot divide by zero");
-        assert_eq!(format!("{}", err), "Invalid Operation: Cannot divide by zero");
+        assert_eq!(
+            format!("{}", err),
+            "Invalid Operation: Cannot divide by zero"
+        );
     }
-    #[test] fn test_general_error() {
+    #[test]
+    fn test_general_error() {
         let err = CoreError::general_error("Something went wrong");
         assert_eq!(format!("{}", err), "Error: Something went wrong");
     }

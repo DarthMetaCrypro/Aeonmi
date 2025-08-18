@@ -6,8 +6,8 @@
 #![allow(dead_code)]
 
 /* ───────────────────────────────────────────────────────────
-   TOKEN ENUM
-   ───────────────────────────────────────────────────────── */
+TOKEN ENUM
+───────────────────────────────────────────────────────── */
 #[derive(Debug, Clone, PartialEq)]
 pub enum TokenKind {
     /* Keywords */
@@ -27,35 +27,35 @@ pub enum TokenKind {
     In,
 
     /* Operators */
-    Plus,           // +
-    Minus,          // -
-    Star,           // *
-    Slash,          // /
-    Equals,         // =
-    DoubleEquals,   // ==
-    NotEquals,      // !=
-    LessThan,       // <
-    LessEqual,      // <=
-    GreaterThan,    // >
-    GreaterEqual,   // >=
-    ColonEquals,    // :=
-    Pipe,           // |
+    Plus,         // +
+    Minus,        // -
+    Star,         // *
+    Slash,        // /
+    Equals,       // =
+    DoubleEquals, // ==
+    NotEquals,    // !=
+    LessThan,     // <
+    LessEqual,    // <=
+    GreaterThan,  // >
+    GreaterEqual, // >=
+    ColonEquals,  // :=
+    Pipe,         // |
 
     /* Delimiters */
-    Semicolon,      // ;
-    Comma,          // ,
-    OpenParen,      // (
-    CloseParen,     // )
-    OpenBrace,      // {
-    CloseBrace,     // }
+    Semicolon,  // ;
+    Comma,      // ,
+    OpenParen,  // (
+    CloseParen, // )
+    OpenBrace,  // {
+    CloseBrace, // }
 
     /* Literals & identifiers */
     Identifier(String),
     NumberLiteral(f64),
     StringLiteral(String),
     BooleanLiteral(bool),
-    QubitLiteral(String),       // e.g. |0>, |ψ>, |+>, |->
-    HieroglyphicOp(String),     // e.g. 𓀀, 𓁀, 𓂀
+    QubitLiteral(String),   // e.g. |0>, |ψ>, |+>, |->
+    HieroglyphicOp(String), // e.g. 𓀀, 𓁀, 𓂀
 
     /* End of file */
     EOF,
@@ -120,8 +120,8 @@ impl std::fmt::Display for TokenKind {
 }
 
 /* ───────────────────────────────────────────────────────────
-   TOKEN STRUCT
-   ───────────────────────────────────────────────────────── */
+TOKEN STRUCT
+───────────────────────────────────────────────────────── */
 #[derive(Debug, Clone)]
 pub struct Token {
     pub kind: TokenKind,
@@ -137,60 +137,64 @@ impl Token {
 
     /* Classification helpers */
     pub fn is_keyword(&self) -> bool {
-        matches!(self.kind,
+        matches!(
+            self.kind,
             TokenKind::Let
-            | TokenKind::Function
-            | TokenKind::Return
-            | TokenKind::Log
-            | TokenKind::Qubit
-            | TokenKind::Superpose
-            | TokenKind::Entangle
-            | TokenKind::Measure
-            | TokenKind::Dod
-            | TokenKind::If
-            | TokenKind::Else
-            | TokenKind::For
-            | TokenKind::While
-            | TokenKind::In
+                | TokenKind::Function
+                | TokenKind::Return
+                | TokenKind::Log
+                | TokenKind::Qubit
+                | TokenKind::Superpose
+                | TokenKind::Entangle
+                | TokenKind::Measure
+                | TokenKind::Dod
+                | TokenKind::If
+                | TokenKind::Else
+                | TokenKind::For
+                | TokenKind::While
+                | TokenKind::In
         )
     }
 
     pub fn is_operator(&self) -> bool {
-        matches!(self.kind,
+        matches!(
+            self.kind,
             TokenKind::Plus
-            | TokenKind::Minus
-            | TokenKind::Star
-            | TokenKind::Slash
-            | TokenKind::Equals
-            | TokenKind::DoubleEquals
-            | TokenKind::NotEquals
-            | TokenKind::LessThan
-            | TokenKind::LessEqual
-            | TokenKind::GreaterThan
-            | TokenKind::GreaterEqual
-            | TokenKind::ColonEquals
-            | TokenKind::Pipe
+                | TokenKind::Minus
+                | TokenKind::Star
+                | TokenKind::Slash
+                | TokenKind::Equals
+                | TokenKind::DoubleEquals
+                | TokenKind::NotEquals
+                | TokenKind::LessThan
+                | TokenKind::LessEqual
+                | TokenKind::GreaterThan
+                | TokenKind::GreaterEqual
+                | TokenKind::ColonEquals
+                | TokenKind::Pipe
         )
     }
 
     pub fn is_delimiter(&self) -> bool {
-        matches!(self.kind,
+        matches!(
+            self.kind,
             TokenKind::Semicolon
-            | TokenKind::Comma
-            | TokenKind::OpenParen
-            | TokenKind::CloseParen
-            | TokenKind::OpenBrace
-            | TokenKind::CloseBrace
+                | TokenKind::Comma
+                | TokenKind::OpenParen
+                | TokenKind::CloseParen
+                | TokenKind::OpenBrace
+                | TokenKind::CloseBrace
         )
     }
 
     pub fn is_literal(&self) -> bool {
-        matches!(self.kind,
+        matches!(
+            self.kind,
             TokenKind::Identifier(_)
-            | TokenKind::NumberLiteral(_)
-            | TokenKind::StringLiteral(_)
-            | TokenKind::BooleanLiteral(_)
-            | TokenKind::QubitLiteral(_)
+                | TokenKind::NumberLiteral(_)
+                | TokenKind::StringLiteral(_)
+                | TokenKind::BooleanLiteral(_)
+                | TokenKind::QubitLiteral(_)
         )
     }
 
@@ -207,8 +211,8 @@ impl std::fmt::Display for Token {
 }
 
 /* ───────────────────────────────────────────────────────────
-   TESTS
-   ───────────────────────────────────────────────────────── */
+TESTS
+───────────────────────────────────────────────────────── */
 #[cfg(test)]
 mod tests {
     use super::*;

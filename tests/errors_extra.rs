@@ -6,8 +6,10 @@ fn unterminated_string_reports() {
     let mut lx = Lexer::new("let s = \"oops;");
     let err = lx.tokenize().unwrap_err();
     let msg = err.to_string();
-    assert!(msg.contains("Unterminated string") && msg.contains(":"),
-        "got: {msg}");
+    assert!(
+        msg.contains("Unterminated string") && msg.contains(":"),
+        "got: {msg}"
+    );
 }
 
 #[test]
@@ -16,6 +18,8 @@ fn bad_qubit_literal_reports() {
     let mut lx = Lexer::new("|psi");
     let err = lx.tokenize().unwrap_err();
     let msg = err.to_string();
-    assert!(msg.contains("Invalid qubit literal") || msg.contains("qubit"),
-        "got: {msg}");
+    assert!(
+        msg.contains("Invalid qubit literal") || msg.contains("qubit"),
+        "got: {msg}"
+    );
 }

@@ -59,13 +59,12 @@ pub fn matrix_inverse(matrix: &[Vec<f64>]) -> Result<Vec<Vec<f64>>, &'static str
     }
 
     // Extract inverse matrix
-    Ok(augmented
-        .iter()
-        .map(|row| row[n..2 * n].to_vec())
-        .collect())
+    Ok(augmented.iter().map(|row| row[n..2 * n].to_vec()).collect())
 }
 
-pub fn singular_value_decomposition(_matrix: &[Vec<f64>]) -> Result<(Vec<Vec<f64>>, Vec<f64>, Vec<Vec<f64>>), &'static str> {
+pub fn singular_value_decomposition(
+    _matrix: &[Vec<f64>],
+) -> Result<(Vec<Vec<f64>>, Vec<f64>, Vec<Vec<f64>>), &'static str> {
     // Placeholder for SVD computation
     Err("Singular value decomposition is not yet implemented.")
 }

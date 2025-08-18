@@ -57,5 +57,9 @@ pub fn inner_product(state1: &[f64], state2: &[f64]) -> f64 {
     if state1.len() != state2.len() {
         panic!("States must have the same length for inner product calculation.");
     }
-    state1.iter().zip(state2.iter()).map(|(&s1, &s2)| s1 * s2).sum()
+    state1
+        .iter()
+        .zip(state2.iter())
+        .map(|(&s1, &s2)| s1 * s2)
+        .sum()
 }

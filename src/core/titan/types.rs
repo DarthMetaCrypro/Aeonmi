@@ -28,10 +28,14 @@ impl QState {
     }
 
     pub fn zeros(n: usize) -> Self {
-        Self { data: DVector::from_element(n, C64::new(0.0, 0.0)) }
+        Self {
+            data: DVector::from_element(n, C64::new(0.0, 0.0)),
+        }
     }
 
-    pub fn len(&self) -> usize { self.data.len() }
+    pub fn len(&self) -> usize {
+        self.data.len()
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -62,6 +66,8 @@ impl QOp {
         if self.m.ncols() != psi.len() {
             return Err("dimension mismatch in QOp::apply".into());
         }
-        Ok(QState { data: &self.m * &psi.data })
+        Ok(QState {
+            data: &self.m * &psi.data,
+        })
     }
 }
