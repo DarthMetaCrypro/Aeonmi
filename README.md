@@ -135,7 +135,7 @@ Aeonmi/
    │  ├─ semantic_analyzer.rs
    │  └─ token.rs
    ├─ io/
-   ├─ pkysics/
+   ├─ physics/
    ├─ shell/
    │  └─ mod.rs
    ├─ titan/
