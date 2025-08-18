@@ -9,9 +9,7 @@ pub enum EmitKind {
     Ai,
 }
 impl Default for EmitKind {
-    fn default() -> Self {
-        EmitKind::Js
-    }
+    fn default() -> Self { EmitKind::Js }
 }
 
 #[derive(Copy, Clone, Debug, ValueEnum)]
@@ -154,12 +152,6 @@ pub enum Command {
     },
 
     /// Debug helpers
-    Tokens {
-        #[arg(value_name = "INPUT")]
-        input: PathBuf,
-    },
-    Ast {
-        #[arg(value_name = "INPUT")]
-        input: PathBuf,
-    },
+    Tokens { #[arg(value_name = "INPUT")] input: PathBuf },
+    Ast    { #[arg(value_name = "INPUT")] input: PathBuf },
 }

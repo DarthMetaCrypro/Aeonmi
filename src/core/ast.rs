@@ -114,23 +114,52 @@ mod tests {
         let then_b = ASTNode::NumberLiteral(1.0);
         let else_b = ASTNode::NumberLiteral(0.0);
         let node = ASTNode::new_if(cond.clone(), then_b.clone(), Some(else_b.clone()));
+<<<<<<< HEAD
         let ASTNode::If { condition, then_branch, else_branch } = node else { panic!("Expected If") };
         assert_eq!(*condition, cond);
         assert_eq!(*then_branch, then_b);
         assert_eq!(*else_branch.unwrap(), else_b);
+=======
+        if let ASTNode::If {
+            condition,
+            then_branch,
+            else_branch,
+        } = node
+        {
+            assert_eq!(*condition, cond);
+            assert_eq!(*then_branch, then_b);
+            assert_eq!(*else_branch.unwrap(), else_b);
+        } else {
+            panic!("Expected If node");
+        }
+>>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
     }
 
     #[test]
     fn test_quantum_op_node() {
+<<<<<<< HEAD
         let qop = ASTNode::new_quantum_op(TokenKind::Superpose, vec![ASTNode::Identifier("q1".into())]);
         let ASTNode::QuantumOp { op, qubits } = qop else { panic!("Expected QuantumOp") };
         assert_eq!(op, TokenKind::Superpose);
         assert_eq!(*qubits[0], ASTNode::Identifier("q1".into()));
+=======
+        let qop =
+            ASTNode::new_quantum_op(TokenKind::Superpose, vec![ASTNode::Identifier("q1".into())]);
+        if let ASTNode::QuantumOp { op, qubits } = qop {
+            assert_eq!(op, TokenKind::Superpose);
+            assert_eq!(*qubits[0], ASTNode::Identifier("q1".into()));
+        } else {
+            panic!("Expected QuantumOp node");
+        }
+>>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
     }
 
     #[test]
     fn test_assignment_and_call_nodes() {
-        let call = ASTNode::new_call(ASTNode::Identifier("f".into()), vec![ASTNode::NumberLiteral(1.0)]);
+        let call = ASTNode::new_call(
+            ASTNode::Identifier("f".into()),
+            vec![ASTNode::NumberLiteral(1.0)],
+        );
         let asn = ASTNode::new_assignment("x", call);
         let ASTNode::Assignment { name, value } = asn else { panic!("Expected Assignment") };
         assert_eq!(name, "x");

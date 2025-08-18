@@ -169,7 +169,11 @@ impl Parser {
         let init = if !self.check(&TokenKind::Semicolon) {
             Some(self.parse_statement()?)
         } else {
+<<<<<<< HEAD
             self.advance(); // consume ';'
+=======
+            self.advance();
+>>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
             None
         };
 
@@ -353,6 +357,7 @@ impl Parser {
         }
         self.previous()
     }
+<<<<<<< HEAD
 
     fn previous(&self) -> &Token {
         if self.pos == 0 {
@@ -371,6 +376,17 @@ impl Parser {
         !self.is_at_end() && &self.peek().kind == kind
     }
 
+=======
+    fn previous(&self) -> &Token {
+        &self.tokens[self.pos - 1]
+    }
+    fn peek(&self) -> &Token {
+        &self.tokens[self.pos]
+    }
+    fn check(&self, kind: &TokenKind) -> bool {
+        !self.is_at_end() && &self.peek().kind == kind
+    }
+>>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
     fn match_token(&mut self, kinds: &[TokenKind]) -> bool {
         for kind in kinds {
             if self.check(kind) {
@@ -397,9 +413,14 @@ impl Parser {
             Err(self.err_at(msg, self.peek().line, self.peek().column))
         }
     }
+<<<<<<< HEAD
 
     fn is_at_end(&self) -> bool {
         matches!(self.peek().kind, TokenKind::EOF)
+=======
+    fn is_at_end(&self) -> bool {
+        self.peek().kind == TokenKind::EOF
+>>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
     }
 
     fn err_here(&self, msg: &str) -> ParserError {

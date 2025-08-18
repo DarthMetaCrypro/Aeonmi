@@ -66,10 +66,17 @@ fn main() -> anyhow::Result<()> {
 
     // Subcommands
     match args.cmd {
+<<<<<<< HEAD
         // CLI defines `Emit`
         Some(Command::Emit { input, emit, out, tokens, ast, debug_titan }) => {
             commands::compile::compile_pipeline(
                 Some(input),
+=======
+        // Your CLI defines `Emit`, not `Compile`
+        Some(Command::Emit { input, emit, out, tokens, ast, debug_titan }) => {
+            commands::compile::compile_pipeline(
+                Some(input),           // <-- fix: wrap in Some(...) to match Option<PathBuf>
+>>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
                 emit,
                 out,
                 tokens,

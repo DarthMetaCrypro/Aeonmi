@@ -16,6 +16,7 @@
 use crate::core::ast::ASTNode;
 use crate::core::token::TokenKind;
 
+<<<<<<< HEAD
 // Pull in the pretty-printing .ai emitter.
 // This file already exists in your tree: src/core/ai_emitter.rs
 use crate::core::ai_emitter::AiEmitter;
@@ -38,6 +39,18 @@ impl CodeGenerator {
             indent: 0,
             backend: Backend::Js,
         }
+=======
+pub struct CodeGenerator {
+    indent: usize,
+}
+
+impl CodeGenerator {
+    pub fn new() -> Self {
+        Self { indent: 0 }
+    }
+    pub fn generate(&mut self, ast: &ASTNode) -> Result<String, String> {
+        Ok(self.emit(ast))
+>>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
     }
 
     /// New generator with **AI** backend (canonical .ai output).
@@ -79,7 +92,11 @@ impl CodeGenerator {
             ASTNode::Program(items) => {
                 let mut out = String::new();
                 for item in items {
+<<<<<<< HEAD
                     out.push_str(&self.emit_js(item));
+=======
+                    out.push_str(&self.emit(item));
+>>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
                     if !out.ends_with('\n') {
                         out.push('\n');
                     }
@@ -92,7 +109,11 @@ impl CodeGenerator {
                 self.indent += 1;
                 for it in items {
                     s.push_str(&self.indent_str());
+<<<<<<< HEAD
                     s.push_str(&self.emit_js(it));
+=======
+                    s.push_str(&self.emit(it));
+>>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
                     if !s.ends_with('\n') {
                         s.push('\n');
                     }
@@ -104,7 +125,11 @@ impl CodeGenerator {
 
             // declarations / statements
             ASTNode::VariableDecl { name, value } => {
+<<<<<<< HEAD
                 format!("let {} = {};\n", name, self.emit_expr_js(value))
+=======
+                format!("let {} = {};\n", name, self.emit_expr(value))
+>>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
             }
             ASTNode::Function { name, params, body } => {
                 let mut s = String::new();
@@ -116,11 +141,19 @@ impl CodeGenerator {
             ASTNode::Return(expr) => format!("return {};\n", self.emit_expr_js(expr)),
             ASTNode::Log(expr) => format!("console.log({});\n", self.emit_expr_js(expr)),
 
+<<<<<<< HEAD
             // assignments/calls as statements
             ASTNode::Assignment { name, value } => {
                 format!("{} = {};\n", name, self.emit_expr_js(value))
             }
             ASTNode::Call { .. } => format!("{};\n", self.emit_expr_js(node)),
+=======
+            // NEW: emit assignments/calls as statements (no extra parens)
+            ASTNode::Assignment { name, value } => {
+                format!("{} = {};\n", name, self.emit_expr(value))
+            }
+            ASTNode::Call { .. } => format!("{};\n", self.emit_expr(node)),
+>>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
 
             ASTNode::If {
                 condition,
@@ -159,11 +192,19 @@ impl CodeGenerator {
                 };
                 let cond_s = condition
                     .as_ref()
+<<<<<<< HEAD
                     .map(|c| self.emit_expr_js(c))
                     .unwrap_or_default();
                 let inc_s = increment
                     .as_ref()
                     .map(|i| self.emit_expr_js(i))
+=======
+                    .map(|c| self.emit_expr(c))
+                    .unwrap_or_default();
+                let inc_s = increment
+                    .as_ref()
+                    .map(|i| self.emit_expr(i))
+>>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
                     .unwrap_or_default();
 
                 let mut s = String::new();
@@ -192,7 +233,11 @@ impl CodeGenerator {
                 };
                 let args = qubits
                     .iter()
+<<<<<<< HEAD
                     .map(|q| self.emit_expr_js(q))
+=======
+                    .map(|q| self.emit_expr(q))
+>>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
                     .collect::<Vec<_>>()
                     .join(", ");
                 format!("{}({});\n", opname, args)
@@ -200,7 +245,11 @@ impl CodeGenerator {
             ASTNode::HieroglyphicOp { symbol, args } => {
                 let a = args
                     .iter()
+<<<<<<< HEAD
                     .map(|e| self.emit_expr_js(e))
+=======
+                    .map(|e| self.emit_expr(e))
+>>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
                     .collect::<Vec<_>>()
                     .join(", ");
                 format!("__glyph('{}', {});\n", symbol, a)
@@ -224,6 +273,7 @@ impl CodeGenerator {
             ASTNode::BooleanLiteral(b) => b.to_string(),
 
             ASTNode::UnaryExpr { op, expr } => {
+<<<<<<< HEAD
                 format!("({}{})", self.op_str(op), self.emit_expr_js(expr))
             }
             ASTNode::BinaryExpr { op, left, right } => format!(
@@ -231,10 +281,20 @@ impl CodeGenerator {
                 self.emit_expr_js(left),
                 self.op_str(op),
                 self.emit_expr_js(right)
+=======
+                format!("({}{})", self.op_str(op), self.emit_expr(expr))
+            }
+            ASTNode::BinaryExpr { op, left, right } => format!(
+                "({} {} {})",
+                self.emit_expr(left),
+                self.op_str(op),
+                self.emit_expr(right)
+>>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
             ),
 
             // keep parens when used inside other expressions
             ASTNode::Assignment { name, value } => {
+<<<<<<< HEAD
                 format!("({} = {})", name, self.emit_expr_js(value))
             }
 
@@ -243,6 +303,16 @@ impl CodeGenerator {
                 let a = args
                     .iter()
                     .map(|e| self.emit_expr_js(e))
+=======
+                format!("({} = {})", name, self.emit_expr(value))
+            }
+
+            ASTNode::Call { callee, args } => {
+                let c = self.emit_expr(callee);
+                let a = args
+                    .iter()
+                    .map(|e| self.emit_expr(e))
+>>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
                     .collect::<Vec<_>>()
                     .join(", ");
                 format!("{}({})", c, a)

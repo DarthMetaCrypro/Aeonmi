@@ -1,5 +1,6 @@
 #![cfg_attr(test, allow(dead_code, unused_variables))]
 //! Lowering: AST -> IR (desugaring + deterministic ordering)
+<<<<<<< HEAD
 //! Provides a stable IR surface regardless of AST evolution.
 //!
 //! Public entrypoints:
@@ -17,6 +18,15 @@ use crate::core::ir::*;
 // Legacy "scratch" path
 // =======================
 
+=======
+//! This file gives you a stable surface even if your external AST evolves.
+//!
+//! If you already have `crate::core::ast`, implement `From<ast::Program>`;
+//! if not, use `lower_from_scratch` for quick tests.
+
+use crate::core::ir::*;
+
+>>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
 #[derive(Debug, Clone)]
 pub struct ScratchAst {
     pub name: String,
@@ -61,26 +71,41 @@ pub enum ScratchExpr {
 
 pub fn lower_from_scratch(ast: ScratchAst) -> Module {
     // Imports
+<<<<<<< HEAD
     let imports = ast
         .imports
         .into_iter()
         .map(|(p, a)| Import { path: p, alias: a })
         .collect();
+=======
+    let imports = ast.imports.into_iter().map(|(p, a)| Import { path: p, alias: a }).collect();
+>>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
 
     // Decls
     let mut decls: Vec<Decl> = Vec::new();
     for d in ast.decls {
         match d {
             ScratchDecl::Const(name, e) => {
+<<<<<<< HEAD
                 decls.push(Decl::Const(ConstDecl { name, value: lower_expr_scratch(e) }));
             }
             ScratchDecl::Let(name, maybe_e) => {
                 decls.push(Decl::Let(LetDecl { name, value: maybe_e.map(lower_expr_scratch) }));
+=======
+                decls.push(Decl::Const(ConstDecl { name, value: lower_expr(e) }));
+            }
+            ScratchDecl::Let(name, maybe_e) => {
+                decls.push(Decl::Let(LetDecl { name, value: maybe_e.map(lower_expr) }));
+>>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
             }
             ScratchDecl::Fn { name, params, body } => {
                 let mut stmts = Vec::new();
                 for s in body {
+<<<<<<< HEAD
                     stmts.push(lower_stmt_scratch(s));
+=======
+                    stmts.push(lower_stmt(s));
+>>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
                 }
                 decls.push(Decl::Fn(FnDecl {
                     name,
@@ -93,12 +118,17 @@ pub fn lower_from_scratch(ast: ScratchAst) -> Module {
 
     let mut m = Module { name: ast.name, imports, decls };
     // Deterministic sort
+<<<<<<< HEAD
     m.imports
         .sort_by(|a, b| (a.path.as_str(), a.alias.as_deref()).cmp(&(b.path.as_str(), b.alias.as_deref())));
+=======
+    m.imports.sort_by(|a, b| (a.path.as_str(), a.alias.as_deref()).cmp(&(b.path.as_str(), b.alias.as_deref())));
+>>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
     m.decls.sort_by(|a, b| a.name().cmp(b.name()));
     m
 }
 
+<<<<<<< HEAD
 fn lower_stmt_scratch(s: ScratchStmt) -> Stmt {
     use ScratchStmt::*;
     match s {
@@ -123,6 +153,29 @@ fn lower_stmt_scratch(s: ScratchStmt) -> Stmt {
 }
 
 fn lower_expr_scratch(e: ScratchExpr) -> Expr {
+=======
+fn lower_stmt(s: ScratchStmt) -> Stmt {
+    use ScratchStmt::*;
+    match s {
+        Expr(e) => Stmt::Expr(lower_expr(e)),
+        Return(e) => Stmt::Return(e.map(lower_expr)),
+        If { cond, then_body, else_body } => {
+            Stmt::If {
+                cond: lower_expr(cond),
+                then_block: Block { stmts: then_body.into_iter().map(lower_stmt).collect() },
+                else_block: if else_body.is_empty() { None } else { Some(Block { stmts: else_body.into_iter().map(lower_stmt).collect() }) },
+            }
+        }
+        While { cond, body } => {
+            Stmt::While { cond: lower_expr(cond), body: Block { stmts: body.into_iter().map(lower_stmt).collect() } }
+        }
+        Let(name, v) => Stmt::Let { name, value: v.map(lower_expr) },
+        Assign(a, b) => Stmt::Assign { target: lower_expr(a), value: lower_expr(b) },
+    }
+}
+
+fn lower_expr(e: ScratchExpr) -> Expr {
+>>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
     use ScratchExpr::*;
     match e {
         Null => Expr::Lit(Lit::Null),
@@ -130,6 +183,7 @@ fn lower_expr_scratch(e: ScratchExpr) -> Expr {
         Number(n) => Expr::Lit(Lit::Number(n)),
         String(s) => Expr::Lit(Lit::String(s)),
         Ident(s) => Expr::Ident(s),
+<<<<<<< HEAD
         Call(c, args) => Expr::Call {
             callee: Box::new(lower_expr_scratch(*c)),
             args: args.into_iter().map(lower_expr_scratch).collect(),
@@ -391,6 +445,25 @@ fn map_binop(op: &str) -> BinOp {
         // "=" (assignment) is not a BinOp in IR; handled as Stmt::Assign.
         _ => {
             eprintln!("[lowering] unknown binop `{}` -> Eq", op);
+=======
+        Call(c, args) => Expr::Call { callee: Box::new(lower_expr(*c)), args: args.into_iter().map(lower_expr).collect() },
+        Binary(l, op, r) => Expr::Binary { left: Box::new(lower_expr(*l)), op: map_binop(op), right: Box::new(lower_expr(*r)) },
+        Unary(op, x) => Expr::Unary { op: map_unop(op), expr: Box::new(lower_expr(*x)) },
+        Array(xs) => Expr::Array(xs.into_iter().map(lower_expr).collect()),
+        Object(kvs) => Expr::Object(kvs.into_iter().map(|(k, v)| (k, lower_expr(v))).collect()),
+    }
+}
+
+fn map_binop(op: &str) -> BinOp {
+    use BinOp::*;
+    match op {
+        "+" => Add, "-" => Sub, "*" => Mul, "/" => Div, "%" => Mod,
+        "==" => Eq, "!=" => Ne, "<" => Lt, "<=" => Le, ">" => Gt, ">=" => Ge,
+        "&&" => And, "||" => Or,
+        other => {
+            // Unknown => default to Eq for now; adjust as grammar expands
+            eprintln!("[lowering] unknown binop `{}` -> Eq", other);
+>>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
             Eq
         }
     }
@@ -400,12 +473,18 @@ fn map_unop(op: &str) -> UnOp {
     match op {
         "-" => UnOp::Neg,
         "!" => UnOp::Not,
+<<<<<<< HEAD
         _ => {
             eprintln!("[lowering] unknown unop `{}` -> Not", op);
+=======
+        other => {
+            eprintln!("[lowering] unknown unop `{}` -> Not", other);
+>>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
             UnOp::Not
         }
     }
 }
+<<<<<<< HEAD
 
 // Map from token kinds in real AST to IR ops.
 // Adjust to actual TokenKind variants present in your grammar.
@@ -461,3 +540,5 @@ fn map_quantum_op(
     }
     Ok((fname, lowered))
 }
+=======
+>>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
