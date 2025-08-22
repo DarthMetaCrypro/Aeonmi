@@ -5,8 +5,8 @@ use std::fs;
 use std::path::PathBuf;
 use anyhow::Result;
 
-use crate::core::formatter::format_ai;
-use crate::io::atomic::atomic_write;
+use aeonmi_project::core::formatter::format_ai;
+use aeonmi_project::io::atomic::atomic_write;
 
 pub fn main(paths: Vec<PathBuf>, check: bool) -> Result<i32> {
     let mut changed = 0usize;
