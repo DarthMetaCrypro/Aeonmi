@@ -5,3 +5,7 @@ pub mod commands;
 pub mod config;
 pub mod core;
 pub mod tui;
+
+pub mod io {
+    pub mod atomic;
+}

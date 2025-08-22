@@ -63,5 +63,9 @@ num-complex = { version = "0.4", optional = true }
 pyo3 = { version = "0.21", optional = true, features = ["auto-initialize"] }
 numpy = { version = "0.21", optional = true }
 
+# For atomic file operations
+tempfile = "3.10"
+
 [dev-dependencies]
 tempfile = "3.10"
+insta = { version = "1.39", features = ["glob"] }

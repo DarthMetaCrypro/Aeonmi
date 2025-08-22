@@ -28,3 +28,6 @@ pub mod probability_statistics;
 pub mod stochastic_processes;
 pub mod debugger;           // Debugger tooling
 pub mod compiler;           // Full compile pipeline
+
+// ...existing mod declarations...
+pub mod formatter; // canonical .ai pretty-printer
