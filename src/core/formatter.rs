@@ -6,8 +6,6 @@
 //! - Indentation with 4 spaces, newline rules around braces.
 //! - Idempotent: format(format(src)) == format(src)
 
-use std::fmt::Write as _;
-
 #[derive(Debug, Clone, Copy)]
 pub struct FormatOptions {
     /// Spaces per indent level.
@@ -96,7 +94,10 @@ pub fn format_ai_with(src: &str, opt: &FormatOptions) -> String {
             // Braces/newline/indent rules
             '{' => {
                 push_pending_space(&mut out, &mut need_space, &mut was_space);
-                out.push(' ');
+                // ensure a single space before '{' when appropriate
+                if !out.ends_with(' ') && !out.ends_with('\n') && !out.is_empty() {
+                    out.push(' ');
+                }
                 out.push('{');
                 out.push('\n');
                 indent += 1;
