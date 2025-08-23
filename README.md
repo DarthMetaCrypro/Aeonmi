@@ -1,162 +1,44 @@
-<p align="center">
-  <img src="https://img.shields.io/github/actions/workflow/status/DarthMetaCrypro/Aeonmi/release.yml?label=build" />
-  <img src="https://img.shields.io/github/v/release/DarthMetaCrypro/Aeonmi?include_prereleases&sort=semver" />
-  <img src="https://img.shields.io/badge/license-Proprietary-red" />
-  <img src="https://img.shields.io/badge/language-Rust-informational" />
-</p>
+# Aeonmi
 
-# Aeonmi v0.2.0 – Closed Source Pre-Release.
+Aeonmi is a compiler/runtime toolkit for quantum and AI-assisted code generation and execution. This repository contains the compiler, runtime pieces, and tooling used in development and testing.
 
-> **Notice**
-> Aeonmi is a closed-source project. No redistribution, modification, reverse engineering, or unauthorized use is permitted without explicit written consent from the author. All rights reserved. This pre-release is provided for demonstration, evaluation, and controlled collaboration.
+## Quickstart
 
-## Overview
+1. Install Rust (recommended stable toolchain).
+2. Clone the repo:
+   git clone https://github.com/DarthMetaCrypro/Aeonmi.git
+3. Build:
+   cd Aeonmi
+   cargo build
 
-Aeonmi is an advanced programming language and compiler framework designed for AI‑native, secure, and multi‑dimensional computing. It introduces **QUBE**, a symbolic/hieroglyphic inner‑core language aimed at adaptive, self‑modifying operations with quantum‑resistant security and deep AI integration.
+## Running tests
 
-## What’s in v0.2.0
+- Run unit and integration tests:
+  cargo test
 
-* **Core compiler pipeline**: lexer → parser → semantic analyzer → code generator.
-* **Diagnostics** with rich, contextual error reporting.
-* **QUBE integration layer** foundations (symbolic / glyph parsing).
-* **Examples** showing control flow, functions, glyphs, and basics.
-* **Strict proprietary licensing**.
+- Run snapshot review (insta):
+  cargo insta review
+  - While reviewing snapshots you can:
+    - a to accept the new snapshot
+    - r to reject
+    - s to skip and keep both versions
 
-## Binaries
+The recent branch `fix/remove-librs` required updating the glyph formatting snapshot; the new snapshot was accepted and included in the changelog.
 
-This workspace builds two executables:
+## Notable changes in this branch
+- Exported `io` module (atomic)
+- Cleanups related to removing library references (branch `fix/remove-librs`)
+- Snapshot updates for glyph formatting
 
-* **`Aeonmi`** – primary CLI (default run target)
-* **`aeonmi_project`** – legacy/test binary kept for compatibility
+## Developer notes / TODOs
+- Address small warnings reported by the compiler:
+  - `to_emit_kind` method is currently unused (dead_code).
+  - A few unused variables in CLI command handling (prefix with `_` or remove).
+- Decide on version bump strategy:
+  - Patch release (0.2.1) recommended for these internal fixes and API stabilization.
+- Verify CI matrix runs on Windows/Linux/macOS if not already present.
 
-> Tip: Use `cargo run` for the default target, or `cargo run --bin aeonmi_project` to run the legacy binary.
-
-## Install & Build
-
-```bash
-# 1) Clone
-git clone https://github.com/DarthMetaCrypro/Aeonmi.git
-cd Aeonmi
-
-# 2) Build
-cargo build --release
-
-# 3) Run (help)
-cargo run -- --help
-
-# Legacy/test binary
-cargo run --bin aeonmi_project -- --help
-```
-
-## CLI Usage (subject to change)
-
-High‑level subcommands currently wired into the CLI:
-
-```text
-run <file.ai> [--out FILE] [--pretty-errors] [--no-sema]
-# compile to JS and try executing with Node
-
-tokens <file.ai>
-# emit lexer tokens
-
-ast <file.ai>
-# emit parsed AST
-
-edit [--tui] [FILE]
-# open editor (TUI with --tui)
-
-repl
-# interactive REPL
-
-format [--check] <inputs...>
-# formatter (WIP)
-
-lint [--fix] <inputs...>
-# linter (WIP)
-```
-
-## Interactive Shell (experimental)
-
-An **Aeonmi Shard** interactive shell is available for quick file navigation and build actions (e.g., `compile`, `run`, `ls`, `cd`, `edit --tui`). Use the CLI help to discover the entrypoint and available commands.
-
-## Directory Structure
-
-```text
-Aeonmi/
-├─ .github/
-│  └─ workflows/
-│     └─ release.yml
-├─ Cargo.toml
-├─ Cargo.lock
-├─ LICENSE
-├─ SECURITY.md
-├─ README.md
-├─ aeonmi.run.js
-├─ output.js
-├─ test_output.js
-├─ examples/
-│  ├─ hello.ai
-│  ├─ control_flow.ai
-│  ├─ functions.ai
-│  ├─ glyph.ai
-│  └─ ...
-└─ src/
-   ├─ cli.rs
-   ├─ config.rs
-   ├─ lib.rs
-   ├─ main.rs
-   ├─ bin/
-   │  ├─ aeonmi.rs
-   │  └─ aeonmi_project.rs
-   ├─ ai/
-   ├─ blockchain/
-   ├─ cli/
-   ├─ commands/
-   │  ├─ ast.rs
-   │  ├─ compile.rs
-   │  ├─ edit.rs
-   │  ├─ format.rs
-   │  ├─ lint.rs
-   │  ├─ mod.rs
-   │  ├─ repl.rs
-   │  ├─ run.rs
-   │  └─ tokens.rs
-   ├─ core/
-   │  ├─ ast.rs
-   │  ├─ code_generator.rs
-   │  ├─ compiler.rs
-   │  ├─ diagnostics.rs
-   │  ├─ error.rs
-   │  ├─ lexer.rs
-   │  ├─ lib.rs
-   │  ├─ mod.rs
-   │  ├─ parser.rs
-   │  ├─ qpoly.rs
-   │  ├─ semantic_analyzer.rs
-   │  └─ token.rs
-   ├─ io/
-   ├─ physics/
-   ├─ shell/
-   │  └─ mod.rs
-   ├─ titan/
-   └─ tui/
-      ├─ editor.rs
-      └─ mod.rs
-```
-
-## Examples
-
-```bash
-# Token stream of a program
-cargo run -- tokens examples/hello.ai
-
-# AST of a program
-cargo run -- ast examples/functions.ai
-
-# Compile & run in one shot (JS target -> node)
-cargo run -- run examples/hello.ai --out output.js
-```
-
-## License
-
-This software is licensed under the Aeonmi Proprietary Software License Agreement. See **LICENSE** for details.
+## Contributing
+- Fork, branch, run tests locally, open PR against `main`.
+- Ensure `cargo test` and `cargo insta review` pass before requesting merge.
+- Keep commits small and descriptive; for small fixes prefer a squash-merge.
