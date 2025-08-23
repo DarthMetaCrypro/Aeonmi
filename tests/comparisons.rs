@@ -18,7 +18,8 @@ fn equality_and_comparison_in_if_and_while() {
     let _ = std::fs::remove_file(&out);
 
     let c = Compiler::new();
-    c.compile(code, out.to_str().unwrap()).expect("compile should succeed");
+    c.compile(code, out.to_str().unwrap())
+        .expect("compile should succeed");
 
     let js = std::fs::read_to_string(&out).expect("output exists");
 

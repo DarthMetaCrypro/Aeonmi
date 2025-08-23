@@ -7,42 +7,23 @@ use std::sync::{
 };
 
 use crate::cli::EmitKind;
-use crate::core::qpoly::{QPolyMap, default_config_path, ensure_parent_dir};
+use crate::core::qpoly::QPolyMap;
+use crate::config::{default_config_path, ensure_parent_dir}; // <- config helpers
 use super::compile::compile_pipeline;
 
-// NEW
+// TUI entry (when --tui)
 use crate::tui::editor::run_editor_tui;
 
+/// Minimal line editor + QPoly + Ctrl-C handling
+/// When `use_tui` is true, we launch the TUI. Otherwise we run the legacy line-mode editor.
 pub fn main(
     file: Option<PathBuf>,
     config_path: Option<PathBuf>,
     use_tui: bool,
 ) -> anyhow::Result<()> {
     if use_tui {
-        // TUI path: ensure we have a filepath (default if none), load QPolyMap, launch TUI.
-        let filepath = file.unwrap_or_else(|| PathBuf::from("untitled.ai"));
-
-        // Load QPoly map: explicit --config > default user path > built-in
-        let qpoly = if let Some(p) = config_path.as_ref() {
-            if p.exists() {
-                match QPolyMap::from_toml_file(p) {
-                    Ok(m) => m,
-                    Err(e) => {
-                        eprintln!("(warn) failed to load config {}: {e}", p.display());
-                        QPolyMap::from_user_default_or_builtin()
-                    }
-                }
-            } else {
-                eprintln!("(warn) config path not found: {}", p.display());
-                QPolyMap::from_user_default_or_builtin()
-            }
-        } else {
-            QPolyMap::from_user_default_or_builtin()
-        };
-
-        // io::Result -> anyhow::Result via `?`
-        run_editor_tui(filepath, qpoly)?;
-        return Ok(());
+        // TUI wants: file, config_path, pretty, skip_sema
+        return run_editor_tui(file, config_path, /*pretty*/ true, /*skip_sema*/ false);
     }
 
     // -------- legacy line editor below --------
@@ -131,16 +112,18 @@ pub fn main(
                     break;
                 }
                 ":compile" => {
+                    // default to JS out unless you want to toggle like the TUI does
                     let out = PathBuf::from("output.js");
+                    // compile_pipeline now takes an extra bool — pass false
                     compile_pipeline(
                         Some(filepath.clone()),
                         EmitKind::Js,
                         out,
-                        false, // print_tokens
-                        false, // print_ast
-                        true,  // pretty
-                        false, // skip_sema
-                        false, // debug_titan
+                        false,
+                        false,
+                        /*pretty*/ true,
+                        /*skip_sema*/ false,
+                        /*debug_titan*/ false,
                     )?;
                 }
                 ":run" => {
@@ -149,11 +132,11 @@ pub fn main(
                         Some(filepath.clone()),
                         EmitKind::Js,
                         out.clone(),
-                        false, // print_tokens
-                        false, // print_ast
-                        true,  // pretty
-                        false, // skip_sema
-                        false, // debug_titan
+                        false,
+                        false,
+                        /*pretty*/ true,
+                        /*skip_sema*/ false,
+                        /*debug_titan*/ false,
                     )?;
                     match std::process::Command::new("node").arg(&out).status() {
                         Ok(s) if !s.success() => eprintln!("(warn) node exit: {s}"),

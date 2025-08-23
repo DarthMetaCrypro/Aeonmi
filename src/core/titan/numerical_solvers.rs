@@ -1,9 +1,4 @@
-pub fn finite_difference_1d<F>(
-    func: F,
-    x_min: f64,
-    x_max: f64,
-    steps: usize,
-) -> Vec<f64>
+pub fn finite_difference_1d<F>(func: F, x_min: f64, x_max: f64, steps: usize) -> Vec<f64>
 where
     F: Fn(f64) -> f64,
 {
@@ -45,12 +40,7 @@ where
     results
 }
 
-pub fn spectral_method<F>(
-    func: F,
-    x_min: f64,
-    x_max: f64,
-    modes: usize,
-) -> Vec<f64>
+pub fn spectral_method<F>(func: F, x_min: f64, x_max: f64, modes: usize) -> Vec<f64>
 where
     F: Fn(f64) -> f64,
 {

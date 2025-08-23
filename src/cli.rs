@@ -3,8 +3,10 @@ use std::path::PathBuf;
 
 #[derive(Copy, Clone, Debug, ValueEnum)]
 pub enum EmitKind {
-    #[clap(alias = "js")] Js,
-    #[clap(alias = "ai")] Ai,
+    #[clap(alias = "js")]
+    Js,
+    #[clap(alias = "ai")]
+    Ai,
 }
 impl Default for EmitKind {
     fn default() -> Self { EmitKind::Js }
@@ -12,9 +14,12 @@ impl Default for EmitKind {
 
 #[derive(Copy, Clone, Debug, ValueEnum)]
 pub enum BackendKind {
-    #[clap(alias = "titan")] Titan,
-    #[clap(alias = "aer")]   Aer,
-    #[clap(alias = "ibmq")]  Ibmq,
+    #[clap(alias = "titan")]
+    Titan,
+    #[clap(alias = "aer")]
+    Aer,
+    #[clap(alias = "ibmq")]
+    Ibmq,
 }
 
 #[derive(Debug, Parser)]
@@ -64,15 +69,23 @@ pub struct AeonmiCli {
 
 #[derive(Debug, Subcommand)]
 pub enum Command {
-    /// Compile .ai to JS or validated .ai
-    Compile {
+    /// Emit compiled output
+    ///
+    /// Examples:
+    ///   aeonmi emit --format ai demo.qube -o out.ai
+    ///   aeonmi emit demo.qube --format js -o out.js
+    Emit {
+        /// Input file (.qube / .ai)
         #[arg(value_name = "INPUT")]
-        input: Option<PathBuf>,
+        input: PathBuf,
 
-        #[arg(long = "emit", value_enum, default_value_t = EmitKind::Js)]
+        /// Output format (alias: --format)
+        #[arg(long = "emit", value_enum, default_value_t = EmitKind::Js, visible_alias = "format")]
         emit: EmitKind,
 
+        /// Output file path (short: -o). Defaults by format.
         #[arg(
+            short = 'o',
             long = "out",
             value_name = "FILE",
             default_value = "output.js",
@@ -80,13 +93,15 @@ pub enum Command {
         )]
         out: PathBuf,
 
+        /// Dump tokens (debug)
         #[arg(long = "tokens", action = ArgAction::SetTrue)]
         tokens: bool,
 
+        /// Dump AST (debug)
         #[arg(long = "ast", action = ArgAction::SetTrue)]
         ast: bool,
 
-        /// Enable Titan debug mode during compilation
+        /// Enable Titan debug mode during compilation (overrides global if set)
         #[arg(long = "debug-titan", action = ArgAction::SetTrue)]
         debug_titan: bool,
     },
@@ -100,20 +115,11 @@ pub enum Command {
     },
 
     /// Quantum execution (Titan local or Qiskit backends)
-    ///
-    /// Usage:
-    ///   aeonmi quantum titan FILE.ai
-    ///   aeonmi quantum aer   FILE.ai --shots 2000
     Quantum {
-        /// Backend: titan (local), aer (Qiskit Aer), ibmq (Qiskit cloud)
         #[arg(value_enum, value_name = "BACKEND")]
         backend: BackendKind,
-
-        /// Input .ai file
         #[arg(value_name = "FILE")]
         file: PathBuf,
-
-        /// Shots for sampling backends (ignored for Titan state simulation)
         #[arg(long = "shots", value_name = "N")]
         shots: Option<usize>,
     },

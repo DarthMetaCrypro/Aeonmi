@@ -2,12 +2,12 @@
 //! Many public APIs aren’t referenced yet; keep builds clean while we wire them in.
 #![allow(dead_code)]
 
-pub mod algebra;
-pub mod arithmetic;
-pub mod advanced_linear_algebra;
 pub mod advanced_fourier_signal_processing;
+pub mod advanced_linear_algebra;
 pub mod advanced_quantum_math;
 pub mod advanced_tensor_calculus;
+pub mod algebra;
+pub mod arithmetic;
 pub mod calculus;
 pub mod chaos_theory_dynamical_systems;
 pub mod complex_numbers;

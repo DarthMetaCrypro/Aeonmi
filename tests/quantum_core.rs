@@ -1,20 +1,21 @@
 #[cfg(feature = "quantum")]
 mod q {
+    use aeonmi_project::core::titan::{
+        gates, ops,
+        types::{QOp, QState},
+    };
     use nalgebra::DVector;
     use num_complex::Complex64 as C64;
-    use aeonmi_project::core::titan::{
-        types::{QState, QOp},
-        gates, ops
-    };
 
     #[test]
     fn hadamard_on_zero() {
         let h = gates::h();
         let op = QOp::try_new_unitary(h).unwrap();
         let psi0 = QState::try_new(
-            DVector::from_vec(vec![C64::new(1.0,0.0), C64::new(0.0,0.0)]),
-            false
-        ).unwrap();
+            DVector::from_vec(vec![C64::new(1.0, 0.0), C64::new(0.0, 0.0)]),
+            false,
+        )
+        .unwrap();
         let psi1 = op.apply(&psi0).unwrap();
         // |+> amplitudes ~ [1/√2, 1/√2]
         let a0 = psi1.data[0].re;

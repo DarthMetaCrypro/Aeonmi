@@ -1,6 +1,6 @@
+use aeonmi_project::core::code_generator::CodeGenerator;
 use aeonmi_project::core::lexer::Lexer;
 use aeonmi_project::core::parser::Parser;
-use aeonmi_project::core::code_generator::CodeGenerator;
 
 #[test]
 fn arithmetic_and_comparisons_precedence() {

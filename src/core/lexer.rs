@@ -1,4 +1,3 @@
-// src/core/lexer.rs
 //! Unified Lexer for Aeonmi + Q.U.B.E.
 //! Integrates standard syntax, quantum syntax, and hieroglyphics.
 //! Updated: 2025-08-10 (DoubleEquals, <=, >=, multi-line comments, BOM handling)
@@ -20,16 +19,21 @@ pub enum LexerError {
 impl std::fmt::Display for LexerError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            LexerError::UnexpectedCharacter(ch, line, col) =>
-                write!(f, "Unexpected character '{}' at {}:{}", ch, line, col),
-            LexerError::UnterminatedString(line, col) =>
-                write!(f, "Unterminated string at {}:{}", line, col),
-            LexerError::InvalidNumber(num, line, col) =>
-                write!(f, "Invalid number '{}' at {}:{}", num, line, col),
-            LexerError::InvalidQubitLiteral(q, line, col) =>
-                write!(f, "Invalid qubit literal '{}' at {}:{}", q, line, col),
-            LexerError::UnterminatedComment(line, col) =>
-                write!(f, "Unterminated multi-line comment at {}:{}", line, col),
+            LexerError::UnexpectedCharacter(ch, line, col) => {
+                write!(f, "Unexpected character '{}' at {}:{}", ch, line, col)
+            }
+            LexerError::UnterminatedString(line, col) => {
+                write!(f, "Unterminated string at {}:{}", line, col)
+            }
+            LexerError::InvalidNumber(num, line, col) => {
+                write!(f, "Invalid number '{}' at {}:{}", num, line, col)
+            }
+            LexerError::InvalidQubitLiteral(q, line, col) => {
+                write!(f, "Invalid qubit literal '{}' at {}:{}", q, line, col)
+            }
+            LexerError::UnterminatedComment(line, col) => {
+                write!(f, "Unterminated multi-line comment at {}:{}", line, col)
+            }
         }
     }
 }
@@ -61,26 +65,28 @@ impl<'a> Lexer<'a> {
 
         while let Some(ch) = self.current {
             match ch {
-                // whitespace & BOMs/ZWSP
+                // whitespace & BOMs/ZWSP (CR handled here; CRLF becomes CR then NL below)
                 ' ' | '\t' | '\r' | '\u{FEFF}' | '\u{200B}' => self.advance(),
-                '\n' => { self.line += 1; self.col = 0; self.advance(); }
+                '\n' => {
+                    self.line += 1;
+                    self.col = 0;
+                    self.advance();
+                }
 
-                // hieroglyphics
+                // hieroglyphics (extend as needed)
                 '𓀀' => { tokens.push(self.mk(TokenKind::HieroglyphicOp("𓀀".into()))); self.advance(); }
                 '𓁀' => { tokens.push(self.mk(TokenKind::HieroglyphicOp("𓁀".into()))); self.advance(); }
                 '𓂀' => { tokens.push(self.mk(TokenKind::HieroglyphicOp("𓂀".into()))); self.advance(); }
 
                 // operators & delimiters
-                '+' => { tokens.push(self.mk(TokenKind::Plus)); self.advance(); }
+                '+' => { tokens.push(self.mk(TokenKind::Plus));  self.advance(); }
                 '-' => { tokens.push(self.mk(TokenKind::Minus)); self.advance(); }
-                '*' => { tokens.push(self.mk(TokenKind::Star)); self.advance(); }
-                '/' => {
-                    match self.peek() {
-                        Some('/') => self.skip_single_comment(),
-                        Some('*') => self.skip_multi_comment()?,
-                        _ => { tokens.push(self.mk(TokenKind::Slash)); self.advance(); }
-                    }
-                }
+                '*' => { tokens.push(self.mk(TokenKind::Star));  self.advance(); }
+                '/' => match self.peek() {
+                    Some('/') => self.skip_single_comment(),
+                    Some('*') => self.skip_multi_comment()?,
+                    _ => { tokens.push(self.mk(TokenKind::Slash)); self.advance(); }
+                },
                 '=' => {
                     self.advance();
                     if self.match_char('=') {
@@ -121,11 +127,11 @@ impl<'a> Lexer<'a> {
                         tokens.push(self.mk(TokenKind::GreaterThan));
                     }
                 }
-                ';' => { tokens.push(self.mk(TokenKind::Semicolon)); self.advance(); }
-                ',' => { tokens.push(self.mk(TokenKind::Comma)); self.advance(); }
-                '(' => { tokens.push(self.mk(TokenKind::OpenParen)); self.advance(); }
+                ';' => { tokens.push(self.mk(TokenKind::Semicolon));  self.advance(); }
+                ',' => { tokens.push(self.mk(TokenKind::Comma));      self.advance(); }
+                '(' => { tokens.push(self.mk(TokenKind::OpenParen));  self.advance(); }
                 ')' => { tokens.push(self.mk(TokenKind::CloseParen)); self.advance(); }
-                '{' => { tokens.push(self.mk(TokenKind::OpenBrace)); self.advance(); }
+                '{' => { tokens.push(self.mk(TokenKind::OpenBrace));  self.advance(); }
                 '}' => { tokens.push(self.mk(TokenKind::CloseBrace)); self.advance(); }
 
                 // qubit literal
@@ -196,10 +202,17 @@ impl<'a> Lexer<'a> {
     }
 
     fn skip_single_comment(&mut self) {
+        // We are currently on the first '/', and we know next is '/'.
+        // Consume both slashes, then eat until (and not including) newline.
+        self.advance(); // consume first '/'
+        self.advance(); // consume second '/'
         while let Some(ch) = self.current {
-            if ch == '\n' { break; }
+            if ch == '\n' {
+                break;
+            }
             self.advance();
         }
+        // leave '\n' for the main loop to handle line/col reset
     }
 
     fn skip_multi_comment(&mut self) -> Result<(), LexerError> {
@@ -207,18 +220,21 @@ impl<'a> Lexer<'a> {
         self.advance(); // consume '*'
         while let Some(ch) = self.current {
             if ch == '*' && self.peek() == Some('/') {
-                self.advance();
-                self.advance();
+                self.advance(); // '*'
+                self.advance(); // '/'
                 return Ok(());
             }
-            if ch == '\n' { self.line += 1; self.col = 0; }
+            if ch == '\n' {
+                self.line += 1;
+                self.col = 0;
+            }
             self.advance();
         }
         Err(LexerError::UnterminatedComment(self.line, self.col))
     }
 
     fn lex_string(&mut self) -> Result<Token, LexerError> {
-        self.advance(); // skip "
+        self.advance(); // skip opening '"'
         let mut content = String::new();
 
         while let Some(ch) = self.current {
@@ -229,8 +245,12 @@ impl<'a> Lexer<'a> {
                 self.advance();
                 if let Some(esc) = self.current {
                     content.push(match esc {
-                        'n' => '\n', 't' => '\t', 'r' => '\r',
-                        '\\' => '\\', '"' => '"', other => other,
+                        'n' => '\n',
+                        't' => '\t',
+                        'r' => '\r',
+                        '\\' => '\\',
+                        '"' => '"',
+                        other => other,
                     });
                     self.advance();
                 } else {

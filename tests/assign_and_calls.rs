@@ -15,7 +15,8 @@ fn assignment_and_function_call_pipeline() {
     let _ = fs::remove_file(&out);
 
     let c = Compiler::new();
-    c.compile(code, out.to_str().unwrap()).expect("compile should succeed");
+    c.compile(code, out.to_str().unwrap())
+        .expect("compile should succeed");
 
     let js = fs::read_to_string(&out).expect("output exists");
     assert!(js.contains("function add(a, b)"));

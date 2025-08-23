@@ -1,4 +1,7 @@
-pub fn add_tensors(tensor1: &[Vec<Vec<f64>>], tensor2: &[Vec<Vec<f64>>]) -> Result<Vec<Vec<Vec<f64>>>, &'static str> {
+pub fn add_tensors(
+    tensor1: &[Vec<Vec<f64>>],
+    tensor2: &[Vec<Vec<f64>>],
+) -> Result<Vec<Vec<Vec<f64>>>, &'static str> {
     // Adds two tensors element-wise
     if tensor1.len() != tensor2.len()
         || tensor1[0].len() != tensor2[0].len()
@@ -39,7 +42,10 @@ pub fn scalar_multiply_tensor(tensor: &[Vec<Vec<f64>>], scalar: f64) -> Vec<Vec<
         .collect()
 }
 
-pub fn dot_product_tensors(tensor1: &[Vec<Vec<f64>>], tensor2: &[Vec<Vec<f64>>]) -> Result<f64, &'static str> {
+pub fn dot_product_tensors(
+    tensor1: &[Vec<Vec<f64>>],
+    tensor2: &[Vec<Vec<f64>>],
+) -> Result<f64, &'static str> {
     // Computes the dot product of two tensors
     if tensor1.len() != tensor2.len()
         || tensor1[0].len() != tensor2[0].len()

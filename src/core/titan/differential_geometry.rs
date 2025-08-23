@@ -1,4 +1,7 @@
-pub fn metric_tensor(dimensions: usize, metric_func: impl Fn(usize, usize) -> f64) -> Vec<Vec<f64>> {
+pub fn metric_tensor(
+    dimensions: usize,
+    metric_func: impl Fn(usize, usize) -> f64,
+) -> Vec<Vec<f64>> {
     // Constructs a metric tensor given a custom metric function
     let mut tensor = vec![vec![0.0; dimensions]; dimensions];
     for i in 0..dimensions {

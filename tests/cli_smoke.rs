@@ -1,5 +1,5 @@
-use std::process::Command;
 use std::fs;
+use std::process::Command;
 
 fn bin() -> String {
     // Cargo sets this for bin targets in integration tests
@@ -14,19 +14,24 @@ fn cli_compiles_basic_file() {
     "#;
     let dir = tempfile::tempdir().unwrap();
     let input = dir.path().join("ok.ai");
-    let out   = dir.path().join("out.js");
+    let out = dir.path().join("out.js");
     fs::write(&input, src).unwrap();
 
     let output = Command::new(bin())
         .arg("--tokens")
         .arg("--ast")
-        .arg("--out").arg(out.to_str().unwrap())
+        .arg("--out")
+        .arg(out.to_str().unwrap())
         .arg(input.to_str().unwrap())
         .output()
         .expect("run");
 
-    assert!(output.status.success(), "stdout:\n{}\nstderr:\n{}",
-        String::from_utf8_lossy(&output.stdout), String::from_utf8_lossy(&output.stderr));
+    assert!(
+        output.status.success(),
+        "stdout:\n{}\nstderr:\n{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
 
     let js = fs::read_to_string(&out).expect("out.js exists");
     assert!(js.contains("let x = (2 + 3);") || js.contains("let x = 2 + 3;"));
@@ -38,29 +43,36 @@ fn cli_skips_semantic_when_flagged() {
     let src = "let x = 1; log(x);";
     let dir = tempfile::tempdir().unwrap();
     let input = dir.path().join("ok.ai");
-    let out   = dir.path().join("out.js");
+    let out = dir.path().join("out.js");
     fs::write(&input, src).unwrap();
 
     let output = Command::new(bin())
         .arg("--no-sema")
-        .arg("--out").arg(out.to_str().unwrap())
+        .arg("--out")
+        .arg(out.to_str().unwrap())
         .arg(input.to_str().unwrap())
         .output()
         .expect("run");
 
-    assert!(output.status.success(), "stderr:\n{}", String::from_utf8_lossy(&output.stderr));
+    assert!(
+        output.status.success(),
+        "stderr:\n{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
 
     // Accept either stream; be case-insensitive and allow minor phrasing changes
     let combined = format!(
         "{}\n{}",
         String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
-    ).to_lowercase();
+    )
+    .to_lowercase();
 
     assert!(
         combined.contains("semantic analyzer: skipped")
-        || combined.contains("skipped by flag")
-        || combined.contains("semantic analyzer") && combined.contains("skipp"),
+            || combined.contains("skipped by flag")
+            || (combined.contains("semantic analyzer") && combined.contains("skipp"))
+            || combined.contains("semantic analysis skipped"),
         "did not find expected skip message in output:\n{}",
         combined
     );
@@ -74,7 +86,8 @@ fn cli_rejects_unsupported_emit() {
     fs::write(&input, src).unwrap();
 
     let output = Command::new(bin())
-        .arg("--emit").arg("wasm")
+        .arg("--emit")
+        .arg("wasm")
         .arg(input.to_str().unwrap())
         .output()
         .expect("run");

@@ -14,13 +14,7 @@ pub fn mandelbrot(c_real: f64, c_imag: f64, max_iter: usize) -> usize {
     iter
 }
 
-pub fn julia(
-    z_real: f64,
-    z_imag: f64,
-    c_real: f64,
-    c_imag: f64,
-    max_iter: usize,
-) -> usize {
+pub fn julia(z_real: f64, z_imag: f64, c_real: f64, c_imag: f64, max_iter: usize) -> usize {
     // Determines the iteration count for the Julia set at a given complex point
     let mut zr = z_real;
     let mut zi = z_imag;

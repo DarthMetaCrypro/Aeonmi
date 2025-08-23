@@ -1,0 +1,7 @@
+// aeonmi:1
+// hash:4829e5fcc888229f
+// tool:aeonmi unknown
+
+fn main() {
+  print("⧉ aeonmi: IR lowering stub — replace me");
+}

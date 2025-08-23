@@ -1,4 +1,4 @@
-use rand::distributions::{Uniform, Distribution};
+use rand::distributions::{Distribution, Uniform};
 use rand_distr::Normal;
 
 pub fn multivariate_gaussian(
@@ -9,7 +9,9 @@ pub fn multivariate_gaussian(
     // Generates samples from a multivariate Gaussian distribution
     let dim = mean.len();
     if covariance.len() != dim || covariance.iter().any(|row| row.len() != dim) {
-        return Err("Covariance matrix must be square and match the dimensionality of the mean vector.");
+        return Err(
+            "Covariance matrix must be square and match the dimensionality of the mean vector.",
+        );
     }
 
     // Decompose covariance matrix (placeholder for Cholesky decomposition)

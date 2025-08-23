@@ -50,7 +50,10 @@ pub fn bell_state() -> Vec<f64> {
     vec![sqrt_2_inv, 0.0, 0.0, sqrt_2_inv]
 }
 
-pub fn apply_quantum_operator(state: &[f64], operator: &[Vec<f64>]) -> Result<Vec<f64>, &'static str> {
+pub fn apply_quantum_operator(
+    state: &[f64],
+    operator: &[Vec<f64>],
+) -> Result<Vec<f64>, &'static str> {
     // Applies a quantum operator (matrix) to a quantum state (vector)
     if operator.len() != state.len() || operator[0].len() != state.len() {
         return Err("Operator dimensions must match the state vector length.");

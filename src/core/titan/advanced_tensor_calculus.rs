@@ -1,14 +1,22 @@
-pub fn tensor_decomposition_cp(_tensor: &[Vec<Vec<f64>>]) -> Result<(Vec<f64>, Vec<Vec<f64>>, Vec<Vec<f64>>), &'static str> {
+pub fn tensor_decomposition_cp(
+    _tensor: &[Vec<Vec<f64>>],
+) -> Result<(Vec<f64>, Vec<Vec<f64>>, Vec<Vec<f64>>), &'static str> {
     // Placeholder for CP decomposition (Canonical Polyadic Decomposition)
     Err("CP decomposition not yet implemented.")
 }
 
-pub fn tensor_decomposition_tucker(_tensor: &[Vec<Vec<f64>>]) -> Result<(Vec<Vec<Vec<f64>>>, Vec<Vec<f64>>, Vec<Vec<f64>>), &'static str> {
+pub fn tensor_decomposition_tucker(
+    _tensor: &[Vec<Vec<f64>>],
+) -> Result<(Vec<Vec<Vec<f64>>>, Vec<Vec<f64>>, Vec<Vec<f64>>), &'static str> {
     // Placeholder for Tucker decomposition
     Err("Tucker decomposition not yet implemented.")
 }
 
-pub fn tensor_contraction(tensor: &[Vec<Vec<f64>>], axis1: usize, axis2: usize) -> Result<Vec<Vec<f64>>, &'static str> {
+pub fn tensor_contraction(
+    tensor: &[Vec<Vec<f64>>],
+    axis1: usize,
+    axis2: usize,
+) -> Result<Vec<Vec<f64>>, &'static str> {
     // Contracts a tensor along two specified axes
     let depth = tensor.len();
     let rows = tensor[0].len();
