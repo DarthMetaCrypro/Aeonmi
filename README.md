@@ -31,6 +31,30 @@ This workspace builds two executables:
 
 > Tip: Use `cargo run` for the default target, or `cargo run --bin aeonmi_project` to run the legacy binary.
 
+### Windows Executable (Aeonmi.exe)
+
+To produce a standalone optimized Windows binary:
+
+```powershell
+git clone https://github.com/DarthMetaCrypro/Aeonmi.git
+cd Aeonmi
+powershell -ExecutionPolicy Bypass -File .\build_windows.ps1
+```
+
+Output will be at `target\release\Aeonmi.exe`.
+
+Include optional features (example: quantum):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\build_windows.ps1 -Features "quantum"
+```
+
+You can then copy `Aeonmi.exe` to a directory in your PATH. Run with:
+
+```powershell
+Aeonmi.exe --help
+```
+
 ## Install & Build
 
 ```bash
