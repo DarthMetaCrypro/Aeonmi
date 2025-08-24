@@ -198,6 +198,7 @@ impl CodeGenerator {
                 let mut s = String::new();
                 s.push_str(&format!("if ({}) ", self.emit_expr_js(condition)));
 <<<<<<< HEAD
+<<<<<<< HEAD
                 s.push_str(&self.wrap_stmt_js(then_branch)); // no trailing \n
                 if let Some(e) = else_branch {
                     s.push_str(" else ");
@@ -208,6 +209,12 @@ impl CodeGenerator {
                     s.push_str(" else ");
                     s.push_str(&self.wrap_stmt_js(e));
 >>>>>>> 42ca0eb (core: lexer/parser/token stabilized; tests passing; remove stray example)
+=======
+                s.push_str(&self.wrap_stmt_js(then_branch)); // no trailing \n
+                if let Some(e) = else_branch {
+                    s.push_str(" else ");
+                    s.push_str(&self.wrap_stmt_js(e)); // no trailing \n
+>>>>>>> 0503a82 (VM wired to Shard; canonical .ai emitter; CLI/test fixes)
                 }
                 s.push('\n');
                 s
@@ -216,10 +223,14 @@ impl CodeGenerator {
                 let mut s = String::new();
                 s.push_str(&format!("while ({}) ", self.emit_expr_js(condition)));
 <<<<<<< HEAD
+<<<<<<< HEAD
                 s.push_str(&self.wrap_stmt_js(body)); // no trailing \n
 =======
                 s.push_str(&self.wrap_stmt_js(body));
 >>>>>>> 42ca0eb (core: lexer/parser/token stabilized; tests passing; remove stray example)
+=======
+                s.push_str(&self.wrap_stmt_js(body)); // no trailing \n
+>>>>>>> 0503a82 (VM wired to Shard; canonical .ai emitter; CLI/test fixes)
                 s.push('\n');
                 s
             }
@@ -264,10 +275,14 @@ impl CodeGenerator {
                 let mut s = String::new();
                 s.push_str(&format!("for ({}; {}; {}) ", init_s, cond_s, inc_s));
 <<<<<<< HEAD
+<<<<<<< HEAD
                 s.push_str(&self.wrap_stmt_js(body)); // no trailing \n
 =======
                 s.push_str(&self.wrap_stmt_js(body));
 >>>>>>> 42ca0eb (core: lexer/parser/token stabilized; tests passing; remove stray example)
+=======
+                s.push_str(&self.wrap_stmt_js(body)); // no trailing \n
+>>>>>>> 0503a82 (VM wired to Shard; canonical .ai emitter; CLI/test fixes)
                 s.push('\n');
                 s
             }
@@ -405,6 +420,7 @@ impl CodeGenerator {
     }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     /// Returns a JS statement block string **without** a trailing newline.
     fn wrap_stmt_js(&mut self, n: &ASTNode) -> String {
         match n {
@@ -421,6 +437,19 @@ impl CodeGenerator {
         match n {
             ASTNode::Block(_) => self.emit_js(n),
 >>>>>>> 42ca0eb (core: lexer/parser/token stabilized; tests passing; remove stray example)
+=======
+    /// Returns a JS statement block string **without** a trailing newline.
+    fn wrap_stmt_js(&mut self, n: &ASTNode) -> String {
+        match n {
+            ASTNode::Block(_) => {
+                // Use existing block emission but drop the trailing newline.
+                let mut b = self.emit_js(n);
+                if b.ends_with('\n') {
+                    b.pop();
+                }
+                b
+            }
+>>>>>>> 0503a82 (VM wired to Shard; canonical .ai emitter; CLI/test fixes)
             _ => {
                 // Wrap a single statement in a block, no trailing newline.
                 let mut s = String::new();
@@ -428,10 +457,14 @@ impl CodeGenerator {
                 self.indent += 1;
                 s.push_str(&self.indent_str());
 <<<<<<< HEAD
+<<<<<<< HEAD
                 s.push_str(&self.emit_js(n)); // inner includes its own newline
 =======
                 s.push_str(&self.emit_js(n));
 >>>>>>> 42ca0eb (core: lexer/parser/token stabilized; tests passing; remove stray example)
+=======
+                s.push_str(&self.emit_js(n)); // inner includes its own newline
+>>>>>>> 0503a82 (VM wired to Shard; canonical .ai emitter; CLI/test fixes)
                 self.indent -= 1;
                 s.push('}');
                 s

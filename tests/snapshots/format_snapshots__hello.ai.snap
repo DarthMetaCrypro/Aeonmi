@@ -1,0 +1,7 @@
+---
+source: tests/format_snapshots.rs
+expression: "&out"
+---
+// hello.ai
+let x = 42;
+log(x);

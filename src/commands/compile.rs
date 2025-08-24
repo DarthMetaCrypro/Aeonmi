@@ -133,6 +133,7 @@ pub fn compile_pipeline(
     let output_string = match emit {
         EmitKind::Ai => {
 <<<<<<< HEAD
+<<<<<<< HEAD
             let mut gen = CodeGenerator::new_ai();
             match gen.generate(&ast) {
                 Ok(s) => s,
@@ -174,6 +175,11 @@ pub fn compile_pipeline(
                     Ok(())
                 }
 >>>>>>> 57cd645 (feat(cli): integrate new Aeonmi CLI + shard updates)
+=======
+            let mut gen = CodeGenerator::new_ai();
+            match gen.generate(&ast) {
+                Ok(s) => s,
+>>>>>>> 0503a82 (VM wired to Shard; canonical .ai emitter; CLI/test fixes)
                 Err(e) => {
                     eprintln!("{} AI emit failed: {}", "error:".bright_red().bold(), e);
                     exit(1);

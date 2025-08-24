@@ -170,10 +170,14 @@ impl Parser {
             Some(self.parse_statement()?)
         } else {
 <<<<<<< HEAD
+<<<<<<< HEAD
             self.advance(); // consume ';'
 =======
             self.advance();
 >>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
+=======
+            self.advance(); // consume ';'
+>>>>>>> 0503a82 (VM wired to Shard; canonical .ai emitter; CLI/test fixes)
             None
         };
 
@@ -358,6 +362,7 @@ impl Parser {
         self.previous()
     }
 <<<<<<< HEAD
+<<<<<<< HEAD
 
     fn previous(&self) -> &Token {
         if self.pos == 0 {
@@ -377,16 +382,30 @@ impl Parser {
     }
 
 =======
+=======
+
+>>>>>>> 0503a82 (VM wired to Shard; canonical .ai emitter; CLI/test fixes)
     fn previous(&self) -> &Token {
-        &self.tokens[self.pos - 1]
+        if self.pos == 0 {
+            &self.tokens[0]
+        } else {
+            &self.tokens[self.pos - 1]
+        }
     }
+
     fn peek(&self) -> &Token {
-        &self.tokens[self.pos]
+        // Safe: we ensure there's always an EOF at the end
+        &self.tokens[self.pos.min(self.tokens.len() - 1)]
     }
+
     fn check(&self, kind: &TokenKind) -> bool {
         !self.is_at_end() && &self.peek().kind == kind
     }
+<<<<<<< HEAD
 >>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
+=======
+
+>>>>>>> 0503a82 (VM wired to Shard; canonical .ai emitter; CLI/test fixes)
     fn match_token(&mut self, kinds: &[TokenKind]) -> bool {
         for kind in kinds {
             if self.check(kind) {
@@ -414,6 +433,7 @@ impl Parser {
         }
     }
 <<<<<<< HEAD
+<<<<<<< HEAD
 
     fn is_at_end(&self) -> bool {
         matches!(self.peek().kind, TokenKind::EOF)
@@ -421,6 +441,11 @@ impl Parser {
     fn is_at_end(&self) -> bool {
         self.peek().kind == TokenKind::EOF
 >>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
+=======
+
+    fn is_at_end(&self) -> bool {
+        matches!(self.peek().kind, TokenKind::EOF)
+>>>>>>> 0503a82 (VM wired to Shard; canonical .ai emitter; CLI/test fixes)
     }
 
     fn err_here(&self, msg: &str) -> ParserError {

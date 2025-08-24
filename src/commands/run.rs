@@ -18,6 +18,7 @@ pub fn main_with_opts(
         EmitKind::Js,
         out_path.clone(),
 <<<<<<< HEAD
+<<<<<<< HEAD
         /*print_tokens*/ false,
         /*print_ast*/ false,
         pretty,
@@ -30,6 +31,13 @@ pub fn main_with_opts(
         no_sema,
         false, // debug_titan (default off here)
 >>>>>>> 57cd645 (feat(cli): integrate new Aeonmi CLI + shard updates)
+=======
+        /*print_tokens*/ false,
+        /*print_ast*/ false,
+        pretty,
+        no_sema,
+        /*debug_titan*/ false,
+>>>>>>> 0503a82 (VM wired to Shard; canonical .ai emitter; CLI/test fixes)
     )?;
 
     match std::process::Command::new("node").arg(&out_path).status() {
