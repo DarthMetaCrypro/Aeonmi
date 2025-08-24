@@ -746,7 +746,7 @@ fn ui(f: &mut ratatui::Frame<'_>, app: &App) {
     f.render_widget(cheats, main_split[1]);
 
     // Input/status row
-    draw_input_and_status(f, rows[2], &app.input, &app.status, accent, yellow);
+    draw_input_and_status(f, rows[2], &app.input, &app.status, app.mode, accent, yellow);
 }
 
 fn draw_input_and_status(
@@ -754,6 +754,7 @@ fn draw_input_and_status(
     area: Rect,
     input: &str,
     status: &str,
+    mode: EditorMode,
     accent: Color,
     yellow: Color,
 ) {
@@ -762,7 +763,7 @@ fn draw_input_and_status(
         .constraints([Constraint::Length(1), Constraint::Length(2)].as_ref())
         .split(area);
 
-    let mode_label = match app.mode { EditorMode::Append => "APPEND", EditorMode::Insert => "INSERT" };
+    let mode_label = match mode { EditorMode::Append => "APPEND", EditorMode::Insert => "INSERT" };
     let status_line = Paragraph::new(Line::from(vec![
         Span::styled(
             " Aeonmi ",
