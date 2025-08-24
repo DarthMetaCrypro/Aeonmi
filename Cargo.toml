@@ -77,3 +77,6 @@ tempfile = "3.10"
 [dev-dependencies]
 tempfile = "3.10"
 insta = { version = "1.39", features = ["glob"] }
+
+[target.'cfg(windows)'.build-dependencies]
+winres = "0.1"

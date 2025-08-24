@@ -55,6 +55,17 @@ You can then copy `Aeonmi.exe` to a directory in your PATH. Run with:
 Aeonmi.exe --help
 ```
 
+#### Custom Icon / Logo
+
+The Windows build embeds `assets/icon.ico` via `build.rs` (uses the `winres` crate).
+
+Update the icon:
+1. Replace `assets/icon.ico` with a valid multi-resolution ICO (16,32,48,64,128,256 recommended).
+2. Rebuild: `powershell -ExecutionPolicy Bypass -File .\build_windows.ps1`
+3. If Explorer still shows the old icon, clear the Windows icon cache or rename the file once.
+
+Optional: set additional metadata (FileDescription, ProductName) by editing `build.rs`.
+
 ## Install & Build
 
 ```bash
