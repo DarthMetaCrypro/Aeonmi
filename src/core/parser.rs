@@ -7,14 +7,15 @@ use crate::core::token::{Token, TokenKind};
 pub struct ParserError {
     pub message: String,
     pub line: usize,
-    pub col: usize,
+    pub column: usize,
 }
 
 impl std::fmt::Display for ParserError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} at {}:{}", self.message, self.line, self.col)
+        write!(f, "{} at {}:{}", self.message, self.line, self.column)
     }
 }
+
 impl std::error::Error for ParserError {}
 
 pub struct Parser {
@@ -23,22 +24,19 @@ pub struct Parser {
 }
 
 impl Parser {
+    /// Create new parser instance; ensure trailing EOF token present
     pub fn new(mut tokens: Vec<Token>) -> Self {
-        // Ensure there is always a trailing EOF to keep peek()/advance() safe
         let needs_eof = match tokens.last() {
             Some(t) => !matches!(t.kind, TokenKind::EOF),
             None => true,
         };
         if needs_eof {
-            tokens.push(Token {
-                kind: TokenKind::EOF,
-                line: 0,
-                column: 0,
-            });
+            tokens.push(Token { kind: TokenKind::EOF, lexeme: String::new(), line: 0, column: 0 });
         }
         Parser { tokens, pos: 0 }
     }
 
+    /// Main parse entrypoint: parses all tokens into program AST
     pub fn parse(&mut self) -> Result<ASTNode, ParserError> {
         let mut nodes = Vec::new();
         while !self.is_at_end() {
@@ -47,30 +45,24 @@ impl Parser {
         Ok(ASTNode::Program(nodes))
     }
 
+    /// Parses a single statement based on current token peek
     fn parse_statement(&mut self) -> Result<ASTNode, ParserError> {
         match self.peek().kind.clone() {
-            // declarations / simple statements
             TokenKind::Let => self.parse_variable_decl(),
             TokenKind::Function => self.parse_function_decl(),
             TokenKind::Return => self.parse_return(),
             TokenKind::Log => self.parse_log(),
-
-            // control flow
             TokenKind::If => self.parse_if(),
             TokenKind::While => self.parse_while(),
             TokenKind::For => self.parse_for(),
             TokenKind::OpenBrace => Ok(self.parse_block()?),
-
-            // quantum & glyph
             TokenKind::Superpose | TokenKind::Entangle | TokenKind::Measure | TokenKind::Dod => {
                 self.parse_quantum_op()
             }
             TokenKind::HieroglyphicOp(_) => self.parse_hieroglyphic_op(),
-
             _ => {
                 let expr = self.parse_expression()?;
-                // optional semicolon
-                let _ = self.match_token(&[TokenKind::Semicolon]);
+                let _ = self.match_token(&[TokenKind::Semicolon]); // optional semicolon
                 Ok(expr)
             }
         }
@@ -165,36 +157,24 @@ impl Parser {
     fn parse_for(&mut self) -> Result<ASTNode, ParserError> {
         self.consume(TokenKind::For, "Expected 'for'")?;
         self.consume(TokenKind::OpenParen, "Expected '(' after for")?;
-
         let init = if !self.check(&TokenKind::Semicolon) {
             Some(self.parse_statement()?)
         } else {
-<<<<<<< HEAD
-<<<<<<< HEAD
             self.advance(); // consume ';'
-=======
-            self.advance();
->>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
-=======
-            self.advance(); // consume ';'
->>>>>>> 0503a82 (VM wired to Shard; canonical .ai emitter; CLI/test fixes)
             None
         };
-
         let condition = if !self.check(&TokenKind::Semicolon) {
             Some(self.parse_expression()?)
         } else {
             None
         };
         self.consume(TokenKind::Semicolon, "Expected ';' after loop condition")?;
-
         let increment = if !self.check(&TokenKind::CloseParen) {
             Some(self.parse_expression()?)
         } else {
             None
         };
         self.consume(TokenKind::CloseParen, "Expected ')' after for clauses")?;
-
         let body = self.parse_statement()?;
         Ok(ASTNode::new_for(init, condition, increment, body))
     }
@@ -235,7 +215,6 @@ impl Parser {
     }
 
     /* ── Precedence ───────────────────────────────────────── */
-
     pub fn parse_expression(&mut self) -> Result<ASTNode, ParserError> {
         self.parse_assignment()
     }
@@ -346,23 +325,20 @@ impl Parser {
                 Ok(expr)
             }
             _ => Err(ParserError {
-                message: format!("Unexpected token {}", tok.kind),
+                message: format!("Unexpected token {:?}", tok.kind),
                 line: tok.line,
-                col: tok.column,
+                column: tok.column,
             }),
         }
     }
 
     /* ── Token utils ─────────────────────────────────────── */
-
     fn advance(&mut self) -> &Token {
         if !self.is_at_end() {
             self.pos += 1;
         }
         self.previous()
     }
-<<<<<<< HEAD
-<<<<<<< HEAD
 
     fn previous(&self) -> &Token {
         if self.pos == 0 {
@@ -381,31 +357,6 @@ impl Parser {
         !self.is_at_end() && &self.peek().kind == kind
     }
 
-=======
-=======
-
->>>>>>> 0503a82 (VM wired to Shard; canonical .ai emitter; CLI/test fixes)
-    fn previous(&self) -> &Token {
-        if self.pos == 0 {
-            &self.tokens[0]
-        } else {
-            &self.tokens[self.pos - 1]
-        }
-    }
-
-    fn peek(&self) -> &Token {
-        // Safe: we ensure there's always an EOF at the end
-        &self.tokens[self.pos.min(self.tokens.len() - 1)]
-    }
-
-    fn check(&self, kind: &TokenKind) -> bool {
-        !self.is_at_end() && &self.peek().kind == kind
-    }
-<<<<<<< HEAD
->>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
-=======
-
->>>>>>> 0503a82 (VM wired to Shard; canonical .ai emitter; CLI/test fixes)
     fn match_token(&mut self, kinds: &[TokenKind]) -> bool {
         for kind in kinds {
             if self.check(kind) {
@@ -432,31 +383,20 @@ impl Parser {
             Err(self.err_at(msg, self.peek().line, self.peek().column))
         }
     }
-<<<<<<< HEAD
-<<<<<<< HEAD
 
     fn is_at_end(&self) -> bool {
         matches!(self.peek().kind, TokenKind::EOF)
-=======
-    fn is_at_end(&self) -> bool {
-        self.peek().kind == TokenKind::EOF
->>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
-=======
-
-    fn is_at_end(&self) -> bool {
-        matches!(self.peek().kind, TokenKind::EOF)
->>>>>>> 0503a82 (VM wired to Shard; canonical .ai emitter; CLI/test fixes)
     }
 
     fn err_here(&self, msg: &str) -> ParserError {
         self.err_at(msg, self.peek().line, self.peek().column)
     }
 
-    fn err_at(&self, msg: &str, line: usize, col: usize) -> ParserError {
+    fn err_at(&self, msg: &str, line: usize, column: usize) -> ParserError {
         ParserError {
             message: msg.into(),
             line,
-            col,
+            column,
         }
     }
 }

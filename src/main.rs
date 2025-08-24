@@ -158,9 +158,9 @@ fn main() -> anyhow::Result<()> {
         }
 
         Some(Command::Quantum {
-            backend,
-            file,
-            shots,
+            backend: backend @ _,
+            file: file @ _,
+            shots: shots @ _,
         }) => {
             #[cfg(feature = "quantum")]
             {
@@ -188,7 +188,7 @@ fn main() -> anyhow::Result<()> {
                     }
                     Ok(())
                 }
-                Err(e) => Err(e.into()),
+                Err(e) => Err(e),
             }
         }
 
