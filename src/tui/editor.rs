@@ -24,8 +24,8 @@ use ratatui::{
 };
 
 use crate::cli::EmitKind;
-use crate::core::qpoly::QPolyMap;
 use crate::commands::compile::compile_pipeline;
+use crate::core::qpoly::QPolyMap;
 
 /// Neon palette (magenta/purple + blinding yellow)
 fn neon() -> (Color, Color, Color, Color) {
@@ -60,6 +60,12 @@ impl EmitMode {
             EmitMode::Ai => EmitKind::Ai,
         }
     }
+
+    // May be unused in some frontends/tests; keep for API symmetry.
+    #[allow(dead_code)]
+    fn to_emit_kind_unused(self) -> EmitKind {
+        self.to_emit_kind()
+    }
 }
 
 struct App {
@@ -74,6 +80,7 @@ struct App {
     emit_mode: EmitMode,
     show_key_debug: bool,
     last_key_debug: String,
+    mouse_capture: bool,
 }
 
 impl App {
@@ -89,7 +96,7 @@ impl App {
             input: String::new(),
             dirty: false,
             status: String::from(
-                "⏎ append • Ctrl+S save • F4 emit=JS/AI • F5 compile • F6 run(JS) • Esc/Ctrl+Q quit • F1 key-debug",
+                "⏎ append • Ctrl+S save • F4 emit=JS/AI • F5 compile • F6 run(JS) • F9 toggle-mouse • Esc/Ctrl+Q quit • F1 key-debug",
             ),
             last_status_at: Instant::now(),
             diagnostics: vec![],
@@ -97,6 +104,7 @@ impl App {
             emit_mode: EmitMode::Js,
             show_key_debug: false,
             last_key_debug: String::new(),
+            mouse_capture: true,
         }
     }
 
@@ -317,6 +325,17 @@ fn run_app(
                             app.emit_mode = app.emit_mode.toggle();
                             app.set_status(format!("Emit → {}", app.emit_mode.label()));
                         }
+                        (KeyCode::F(9), _) => {
+                            // Toggle mouse capture on/off to allow normal terminal selection / free roam
+                            app.mouse_capture = !app.mouse_capture;
+                            if app.mouse_capture {
+                                let _ = execute!(std::io::stdout(), EnableMouseCapture);
+                                app.set_status("Mouse capture ON (F9 to release)");
+                            } else {
+                                let _ = execute!(std::io::stdout(), DisableMouseCapture);
+                                app.set_status("Mouse capture OFF (F9 to recapture)");
+                            }
+                        }
                         (KeyCode::F(5), _) => app.compile(pretty, skip_sema),
                         (KeyCode::F(6), _) => app.run(pretty, skip_sema),
 
@@ -361,6 +380,15 @@ fn run_app(
                     }
                 }
                 Event::Resize(_, _) => {}
+                Event::Mouse(me) => {
+                    // Basic mouse handling: if capture disabled, ignore.
+                    if app.mouse_capture {
+                        // For now just show coordinates in status when key debug on.
+                        if app.show_key_debug {
+                            app.set_status(format!("mouse: {:?}", me));
+                        }
+                    }
+                }
                 _ => {}
             }
         }
@@ -376,7 +404,12 @@ fn ui(f: &mut ratatui::Frame<'_>, app: &App) {
     let rows = Layout::default()
         .direction(Direction::Vertical)
         .constraints(
-            [Constraint::Length(3), Constraint::Min(3), Constraint::Length(3)].as_ref(),
+            [
+                Constraint::Length(3),
+                Constraint::Min(3),
+                Constraint::Length(3),
+            ]
+            .as_ref(),
         )
         .split(f.size());
 
@@ -416,20 +449,18 @@ fn ui(f: &mut ratatui::Frame<'_>, app: &App) {
             app.filepath.display(),
             if app.dirty { " *" } else { "" }
         ),
-        Style::default()
-            .fg(accent)
-            .add_modifier(Modifier::BOLD),
+        Style::default().fg(accent).add_modifier(Modifier::BOLD),
     ));
     let buf_text = Text::from(app.buffer.as_str());
-    let buf_par = Paragraph::new(buf_text).block(buf_block).wrap(Wrap { trim: false });
+    let buf_par = Paragraph::new(buf_text)
+        .block(buf_block)
+        .wrap(Wrap { trim: false });
     f.render_widget(buf_par, left_split[0]);
 
     // Diagnostics
     let diags_title = Span::styled(
         " Diagnostics ",
-        Style::default()
-            .fg(accent_alt)
-            .add_modifier(Modifier::BOLD),
+        Style::default().fg(accent_alt).add_modifier(Modifier::BOLD),
     );
     let diags_items: Vec<ListItem> = if app.diagnostics.is_empty() {
         vec![ListItem::new(Span::styled(
@@ -449,9 +480,7 @@ fn ui(f: &mut ratatui::Frame<'_>, app: &App) {
     // Cheatsheet
     let cheats_block = Block::default().borders(Borders::ALL).title(Span::styled(
         " QPoly Cheatsheet ",
-        Style::default()
-            .fg(yellow)
-            .add_modifier(Modifier::BOLD),
+        Style::default().fg(yellow).add_modifier(Modifier::BOLD),
     ));
     let cheat_pairs = cheatsheet_from_map(&app.qpoly);
     let mut lines: Vec<Line> = Vec::new();
@@ -459,9 +488,7 @@ fn ui(f: &mut ratatui::Frame<'_>, app: &App) {
         lines.push(Line::from(vec![
             Span::styled(
                 format!("{:<6}", chord),
-                Style::default()
-                    .fg(yellow)
-                    .add_modifier(Modifier::BOLD),
+                Style::default().fg(yellow).add_modifier(Modifier::BOLD),
             ),
             Span::raw(" → "),
             Span::styled(glyph, Style::default().fg(accent)),
