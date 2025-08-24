@@ -81,6 +81,24 @@ struct App {
     show_key_debug: bool,
     last_key_debug: String,
     mouse_capture: bool,
+    // Interactive editing state
+    cursor_row: usize,
+    cursor_col: usize,
+    scroll: usize,
+    mode: EditorMode,
+    // History (undo/redo)
+    history: Vec<String>,
+    history_index: usize,
+    // Search state
+    search_active: bool,
+    search_query: String,
+    last_match_row: Option<usize>,
+}
+
+#[derive(Copy, Clone, PartialEq, Eq)]
+enum EditorMode {
+    Append, // original line append model
+    Insert, // editing existing lines
 }
 
 impl App {
@@ -105,12 +123,70 @@ impl App {
             show_key_debug: false,
             last_key_debug: String::new(),
             mouse_capture: true,
+            cursor_row: 0,
+            cursor_col: 0,
+            scroll: 0,
+            mode: EditorMode::Append,
+            history: Vec::new(),
+            history_index: 0,
+            search_active: false,
+            search_query: String::new(),
+            last_match_row: None,
         }
     }
 
     fn set_status(&mut self, s: impl Into<String>) {
         self.status = s.into();
         self.last_status_at = Instant::now();
+    }
+
+    fn snapshot(&mut self) {
+        // Truncate redo tail if any and push current buffer
+        if self.history_index < self.history.len() {
+            self.history.truncate(self.history_index);
+        }
+        self.history.push(self.buffer.clone());
+        self.history_index = self.history.len();
+        // Limit history size
+        if self.history.len() > 200 {
+            let drop = self.history.len() - 200;
+            self.history.drain(0..drop);
+            self.history_index = self.history.len();
+        }
+    }
+
+    fn undo(&mut self) {
+        if self.history_index == 0 { return; }
+        self.history_index -= 1;
+        if let Some(state) = self.history.get(self.history_index) {
+            self.buffer = state.clone();
+            self.set_status("Undo");
+            self.dirty = true; // reflect possible divergence
+        }
+    }
+
+    fn redo(&mut self) {
+        if self.history_index >= self.history.len() { return; }
+        self.history_index += 1;
+        if self.history_index > 0 { if let Some(state) = self.history.get(self.history_index - 1) { self.buffer = state.clone(); self.set_status("Redo"); self.dirty = true; } }
+    }
+
+    fn find_next(&mut self) {
+        if self.search_query.is_empty() { return; }
+        let q = self.search_query.to_lowercase();
+        let start = self.last_match_row.map(|r| r + 1).unwrap_or(0);
+        let lines: Vec<&str> = self.buffer.lines().collect();
+        let mut found = None;
+        for (i, line) in lines.iter().enumerate().skip(start) {
+            if line.to_lowercase().contains(&q) { found = Some(i); break; }
+        }
+        if found.is_none() {
+            // wrap
+            for (i, line) in lines.iter().enumerate().take(start) {
+                if line.to_lowercase().contains(&q) { found = Some(i); break; }
+            }
+        }
+        if let Some(r) = found { self.last_match_row = Some(r); self.cursor_row = r; self.cursor_col = 0; self.set_status(format!("Found at line {}", r+1)); } else { self.set_status("No match"); }
     }
 
     fn add_line(&mut self) {
@@ -122,6 +198,10 @@ impl App {
         self.input.clear();
         self.dirty = true;
         self.set_status("Line added.");
+    // Move cursor to end
+    let line_count = self.buffer.lines().count();
+    if line_count > 0 { self.cursor_row = line_count - 1; }
+    self.cursor_col = self.buffer.lines().last().map(|l| l.len()).unwrap_or(0);
     }
 
     fn save(&mut self) -> Result<()> {
@@ -321,6 +401,10 @@ fn run_app(
                                 "Key debug OFF"
                             });
                         }
+                        (KeyCode::F(2), _) => {
+                            app.mode = match app.mode { EditorMode::Append => EditorMode::Insert, EditorMode::Insert => EditorMode::Append };
+                            app.set_status(match app.mode { EditorMode::Append => "Mode: Append (Enter appends line)", EditorMode::Insert => "Mode: Insert (editing buffer)" });
+                        }
                         (KeyCode::F(4), _) => {
                             app.emit_mode = app.emit_mode.toggle();
                             app.set_status(format!("Emit → {}", app.emit_mode.label()));
@@ -338,6 +422,7 @@ fn run_app(
                         }
                         (KeyCode::F(5), _) => app.compile(pretty, skip_sema),
                         (KeyCode::F(6), _) => app.run(pretty, skip_sema),
+                        (KeyCode::F(3), _) => { if app.search_active { app.find_next(); } },
 
                         (KeyCode::Esc, _)
                         | (KeyCode::Char('c'), KeyModifiers::CONTROL)
@@ -357,15 +442,81 @@ fn run_app(
                                 app.set_status(format!("Save failed: {e}"));
                             }
                         }
+                        (KeyCode::Char('f'), KeyModifiers::CONTROL) => {
+                            app.search_active = true;
+                            app.search_query.clear();
+                            app.set_status("Search: type query, Enter=next, Esc=cancel");
+                        }
+                        (KeyCode::Char('z'), KeyModifiers::CONTROL) => { app.undo(); }
+                        (KeyCode::Char('y'), KeyModifiers::CONTROL) => { app.redo(); }
 
                         (KeyCode::Backspace, _) => {
-                            app.input.pop();
+                            if app.search_active {
+                                app.search_query.pop();
+                                app.set_status(format!("Search: {}", app.search_query));
+                                continue;
+                            }
+                            match app.mode {
+                                EditorMode::Append => { app.input.pop(); }
+                                EditorMode::Insert => {
+                                    let mut lines: Vec<String> = app.buffer.lines().map(|s| s.to_string()).collect();
+                                    if app.cursor_row < lines.len() {
+                                        if app.cursor_col > 0 {
+                                            lines[app.cursor_row].remove(app.cursor_col - 1);
+                                            app.cursor_col -= 1;
+                                            app.dirty = true;
+                                        } else if app.cursor_row > 0 {
+                                            // merge with previous line
+                                            let prev_len = lines[app.cursor_row - 1].len();
+                                            let current = lines.remove(app.cursor_row);
+                                            lines[app.cursor_row - 1].push_str(&current);
+                                            app.cursor_row -= 1;
+                                            app.cursor_col = prev_len;
+                                            app.dirty = true;
+                                        }
+                                        app.buffer = lines.join("\n");
+                                    }
+                                }
+                            }
                         }
                         (KeyCode::Enter, _) => {
-                            app.add_line();
+                            if app.search_active {
+                                app.find_next();
+                                continue;
+                            }
+                            match app.mode {
+                                EditorMode::Append => app.add_line(),
+                                EditorMode::Insert => {
+                                    let mut lines: Vec<String> = app.buffer.lines().map(|s| s.to_string()).collect();
+                                    if lines.is_empty() { lines.push(String::new()); }
+                                    if app.cursor_row >= lines.len() { app.cursor_row = lines.len() - 1; }
+                                    let (left, right) = if app.cursor_row < lines.len() {
+                                        let line = &lines[app.cursor_row];
+                                        let (l, r) = line.split_at(app.cursor_col.min(line.len()));
+                                        (l.to_string(), r.to_string())
+                                    } else { (String::new(), String::new()) };
+                                    lines[app.cursor_row] = left;
+                                    lines.insert(app.cursor_row + 1, right);
+                                    app.cursor_row += 1;
+                                    app.cursor_col = 0;
+                                    app.buffer = lines.join("\n");
+                                    app.dirty = true;
+                                }
+                            }
                         }
                         (KeyCode::Tab, _) => {
-                            app.input.push_str("    ");
+                            match app.mode {
+                                EditorMode::Append => app.input.push_str("    "),
+                                EditorMode::Insert => {
+                                    let mut lines: Vec<String> = app.buffer.lines().map(|s| s.to_string()).collect();
+                                    if app.cursor_row < lines.len() {
+                                        lines[app.cursor_row].insert_str(app.cursor_col, "    ");
+                                        app.cursor_col += 4;
+                                        app.buffer = lines.join("\n");
+                                        app.dirty = true;
+                                    }
+                                }
+                            }
                         }
 
                         // Accept characters with NONE/SHIFT/ALT (Windows sometimes sets these)
@@ -374,7 +525,52 @@ fn run_app(
                                 || m.contains(KeyModifiers::SHIFT)
                                 || m.contains(KeyModifiers::ALT) =>
                         {
-                            app.input.push(ch);
+                            if app.search_active {
+                                app.search_query.push(ch);
+                                app.set_status(format!("Search: {}", app.search_query));
+                                continue;
+                            }
+                            app.snapshot();
+                            match app.mode {
+                                EditorMode::Append => app.input.push(ch),
+                                EditorMode::Insert => {
+                                    let mut lines: Vec<String> = app.buffer.lines().map(|s| s.to_string()).collect();
+                                    if lines.is_empty() { lines.push(String::new()); }
+                                    if app.cursor_row >= lines.len() { app.cursor_row = lines.len() - 1; }
+                                    if app.cursor_row < lines.len() {
+                                        lines[app.cursor_row].insert(app.cursor_col, ch);
+                                        app.cursor_col += 1;
+                                        app.buffer = lines.join("\n");
+                                        app.dirty = true;
+                                    }
+                                }
+                            }
+                        }
+                        // Navigation keys (Insert mode only for now)
+                        (KeyCode::Up, _) => {
+                            if app.cursor_row > 0 { app.cursor_row -= 1; }
+                            if app.cursor_row < app.scroll { app.scroll = app.cursor_row; }
+                            // clamp col
+                            let line_len = app.buffer.lines().nth(app.cursor_row).map(|l| l.len()).unwrap_or(0);
+                            if app.cursor_col > line_len { app.cursor_col = line_len; }
+                        }
+                        (KeyCode::Down, _) => {
+                            let line_count = app.buffer.lines().count();
+                            if app.cursor_row + 1 < line_count { app.cursor_row += 1; }
+                            let view_height =  (terminal.size()?.height as usize).saturating_sub(8); // rough header+footer
+                            if app.cursor_row >= app.scroll + view_height { app.scroll = app.cursor_row.saturating_sub(view_height).min(app.cursor_row); }
+                            let line_len = app.buffer.lines().nth(app.cursor_row).map(|l| l.len()).unwrap_or(0);
+                            if app.cursor_col > line_len { app.cursor_col = line_len; }
+                        }
+                        (KeyCode::Left, _) => {
+                            if app.cursor_col > 0 { app.cursor_col -= 1; } else if app.cursor_row > 0 { app.cursor_row -= 1; app.cursor_col = app.buffer.lines().nth(app.cursor_row).map(|l| l.len()).unwrap_or(0); }
+                        }
+                        (KeyCode::Right, _) => {
+                            let line_len = app.buffer.lines().nth(app.cursor_row).map(|l| l.len()).unwrap_or(0);
+                            if app.cursor_col < line_len { app.cursor_col += 1; } else {
+                                let line_count = app.buffer.lines().count();
+                                if app.cursor_row + 1 < line_count { app.cursor_row += 1; app.cursor_col = 0; }
+                            }
                         }
                         _ => {}
                     }
@@ -451,11 +647,63 @@ fn ui(f: &mut ratatui::Frame<'_>, app: &App) {
         ),
         Style::default().fg(accent).add_modifier(Modifier::BOLD),
     ));
-    let buf_text = Text::from(app.buffer.as_str());
-    let buf_par = Paragraph::new(buf_text)
-        .block(buf_block)
-        .wrap(Wrap { trim: false });
+    // Visible lines respecting scroll
+    let lines: Vec<&str> = app.buffer.lines().collect();
+    let height = left_split[0].height.saturating_sub(2) as usize; // minus borders
+    let start = app.scroll.min(lines.len());
+    let end = (start + height).min(lines.len());
+    let mut rendered = String::new();
+    for (idx, l) in lines[start..end].iter().enumerate() {
+        if idx > 0 { rendered.push('\n'); }
+        rendered.push_str(l);
+    }
+    let highlight = |line: &str, query: Option<&str>| -> Line {
+        use ratatui::text::Span;
+        let mut spans: Vec<Span> = Vec::new();
+        let mut i = 0;
+        let lower_q = query.map(|q| q.to_lowercase());
+        // Simple tokenization by whitespace
+        let keywords = ["function","let","if","else","while","for","return","log","superpose","entangle","measure","qubit"]; 
+        while i < line.len() {
+            let rest = &line[i..];
+            if rest.starts_with('"') { // string literal
+                if let Some(end) = rest[1..].find('"') { let token = &line[i..=i+end+1]; spans.push(Span::styled(token.to_string(), Style::default().fg(Color::Rgb(255,240,0)))); i += end+2; continue; } else { spans.push(Span::styled(rest.to_string(), Style::default().fg(Color::Rgb(255,240,0)))); break; }
+            }
+            if rest.chars().next().unwrap().is_whitespace() { spans.push(Span::raw(rest.chars().next().unwrap().to_string())); i += 1; continue; }
+            // token boundary
+            let mut end = i;
+            for (j,ch) in line[i..].char_indices() { if ch.is_whitespace() { break; } end = i + j; }
+            let mut token = &line[i..=end];
+            // adjust end (loop sets end to last non-space char). If space follows, fine.
+            if token.ends_with(char::is_whitespace) { token = token.trim_end(); }
+            let lower = token.to_lowercase();
+            if keywords.contains(&lower.as_str()) { spans.push(Span::styled(token.to_string(), Style::default().fg(Color::Rgb(130,0,200)).add_modifier(Modifier::BOLD))); }
+            else if token.chars().all(|c| c.is_ascii_digit() || c=='.') && token.chars().any(|c| c.is_ascii_digit()) { spans.push(Span::styled(token.to_string(), Style::default().fg(Color::Rgb(0,255,180)))); }
+            else {
+                // search highlight
+                if let Some(q) = &lower_q { if !q.is_empty() && lower.contains(q) { spans.push(Span::styled(token.to_string(), Style::default().bg(Color::Rgb(255,240,0)).fg(Color::Black))); } else { spans.push(Span::raw(token.to_string())); } }
+                else { spans.push(Span::raw(token.to_string())); }
+            }
+            i = end + 1;
+        }
+        Line::from(spans)
+    };
+    let mut lines_styled: Vec<Line> = Vec::new();
+    for l in rendered.lines() { lines_styled.push(highlight(l, if app.search_active && !app.search_query.is_empty() { Some(app.search_query.as_str()) } else { None })); }
+    let buf_par = Paragraph::new(Text::from(lines_styled)).block(buf_block).wrap(Wrap { trim: false });
     f.render_widget(buf_par, left_split[0]);
+
+    // Cursor (only in Insert mode)
+    if matches!(app.mode, EditorMode::Insert) {
+        let cursor_screen_row = app.cursor_row.saturating_sub(start);
+        if cursor_screen_row < height {
+            let cursor_x = (app.cursor_col.min(
+                lines.get(app.cursor_row).map(|l| l.len()).unwrap_or(0)
+            ) + 1) as u16; // +1 for left border
+            let cursor_y = (left_split[0].y + 1 + cursor_screen_row as u16) as u16; // +1 for top border
+            f.set_cursor(left_split[0].x + cursor_x, cursor_y);
+        }
+    }
 
     // Diagnostics
     let diags_title = Span::styled(
@@ -514,6 +762,7 @@ fn draw_input_and_status(
         .constraints([Constraint::Length(1), Constraint::Length(2)].as_ref())
         .split(area);
 
+    let mode_label = match app.mode { EditorMode::Append => "APPEND", EditorMode::Insert => "INSERT" };
     let status_line = Paragraph::new(Line::from(vec![
         Span::styled(
             " Aeonmi ",
@@ -523,7 +772,7 @@ fn draw_input_and_status(
                 .add_modifier(Modifier::BOLD),
         ),
         Span::raw(" "),
-        Span::styled(status, Style::default().fg(yellow)),
+        Span::styled(format!("{} | {}", mode_label, status), Style::default().fg(yellow)),
     ]));
     f.render_widget(status_line, rows[0]);
 
