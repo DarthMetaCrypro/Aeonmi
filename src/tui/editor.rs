@@ -512,6 +512,7 @@ fn run_app(
                                 app.search_active = false;
                                 app.search_matches.clear();
                                 app.set_status("Search canceled");
+                                let _ = fs::write(".aeonmi_last_search", &app.search_query);
                                 continue;
                             }
                             if app.dirty {
@@ -528,6 +529,7 @@ fn run_app(
                             if app.search_active {
                                 app.search_active = false;
                                 app.set_status("Search canceled");
+                                let _ = fs::write(".aeonmi_last_search", &app.search_query);
                                 continue;
                             }
                             break;
@@ -542,6 +544,7 @@ fn run_app(
                             app.search_query.clear();
                             app.search_matches.clear();
                             app.set_status("Search: (type) Enter/ n next, Shift+N prev, Esc cancel");
+                            let _ = fs::write(".aeonmi_last_search", "");
                         }
                         (KeyCode::Char('z'), KeyModifiers::CONTROL) => app.undo(),
                         (KeyCode::Char('y'), KeyModifiers::CONTROL) => app.redo(),
@@ -550,6 +553,7 @@ fn run_app(
                                 app.search_query.pop();
                                 app.search_matches.clear();
                                 if app.search_query.is_empty() { app.set_status("Search: (empty)"); } else { app.set_status(format!("Search: {}", app.search_query)); }
+                                let _ = fs::write(".aeonmi_last_search", &app.search_query);
                                 continue;
                             }
                             match app.mode {
@@ -632,6 +636,7 @@ fn run_app(
                                 app.search_query.push(ch);
                                 app.search_matches.clear();
                                 app.set_status(format!("Search: {}", app.search_query));
+                                let _ = fs::write(".aeonmi_last_search", &app.search_query);
                                 continue;
                             }
                             let now = Instant::now();
