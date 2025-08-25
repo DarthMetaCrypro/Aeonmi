@@ -1,0 +1,43 @@
+#!/usr/bin/env pwsh
+<#!
+Pre-commit hygiene hook:
+ 1. Block committed build artifacts (target/, node_modules/, __exec_tmp*)
+ 2. Warn / block large files (>1MB)
+ Customize threshold via GIT_PRECOMMIT_MAX_MB env var.
+ Run in PowerShell (pwsh) context.
+!#>
+
+$ErrorActionPreference = 'Stop'
+$thresholdMB = [int]([Environment]::GetEnvironmentVariable('GIT_PRECOMMIT_MAX_MB') ?? '1')
+$thresholdBytes = $thresholdMB * 1MB
+
+function Fail($msg) { Write-Host "[pre-commit] $msg" -ForegroundColor Red; exit 1 }
+
+# Gather staged files (added/modified/copied)
+$staged = git diff --cached --name-only --diff-filter=ACM
+if (-not $staged) { exit 0 }
+
+$badPatterns = @(
+    '^target/'
+    '^gui/tauri_bridge/target/'
+    '^node_modules/'
+    '__exec_tmp'
+    '\\.pdb$'
+    '\\.dll$'
+    '\\.exe$'
+)
+
+foreach ($f in $staged) {
+    foreach ($pat in $badPatterns) {
+        if ($f -match $pat) { Fail "Blocked build/binary artifact: $f" }
+    }
+    if (Test-Path $f) {
+        $len = (Get-Item $f).Length
+        if ($len -gt $thresholdBytes) {
+            Fail "File $f exceeds ${thresholdMB}MB (size: $([math]::Round($len/1MB,2)) MB)"
+        }
+    }
+}
+
+Write-Host "[pre-commit] OK" -ForegroundColor Green
+exit 0

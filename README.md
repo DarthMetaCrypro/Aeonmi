@@ -332,6 +332,25 @@ Artifacts cleanup: By default temporary files are deleted after successful execu
 * Enhanced diagnostics & AI-assisted refactors
 * Plugin architecture for custom tokens and transformations
 
+### Repository Hygiene & Large File Policy
+
+To keep the repository lean:
+
+* Build outputs (`target/`, `node_modules/`, temporary exec artifacts `__exec_tmp*`) are ignored and must not be committed.
+* A helper script `scripts/scan_large_files.ps1` scans tracked files over a size threshold (default 1MB). Exit code 1 signals findings.
+* Optional pre-commit hook (PowerShell): copy `scripts/git-hooks/pre-commit` into `.git/hooks/` to block large or disallowed files.
+* Use Git LFS only after maintainer approval; otherwise remove accidental large commits and coordinate for a history purge if needed.
+* The TUI search persistence file `.aeonmi_last_search` remains local only (ignored).
+
+Quick usage:
+
+```powershell
+pwsh -NoProfile -File scripts\scan_large_files.ps1
+copy scripts\git-hooks\pre-commit .git\hooks\pre-commit  # install hook
+```
+
+If the hook blocks a file you believe is necessary, open a maintainer issue referencing the context.
+
 ## Directory Structure
 
 ```text
