@@ -14,6 +14,15 @@
 
 Aeonmi is an advanced programming language and compiler framework designed for AI‑native, secure, and multi‑dimensional computing. It introduces **QUBE**, a symbolic/hieroglyphic inner‑core language aimed at adaptive, self‑modifying operations with quantum‑resistant security and deep AI integration.
 
+## Branch Status
+
+| Role | Branch | Description | Guidance |
+|------|--------|-------------|----------|
+| Stable / Recommended | `main` | Most recent validated release-quality code; CI green; safe for downstream usage. | Default clone target. File issues against this unless they concern in‑flight features. |
+| Active Development | `ci/tauri-bridge-matrix-cache` | Ongoing integration work (CI matrix, repo hygiene, LFS enablement, editor/search & exec enhancements) prior to merge. May rebased / force-pushed. | Pin only for testing new features; expect occasional instability. |
+
+Pull requests should generally target `main` unless explicitly coordinating work slated for the active development branch. After merge of the development branch, this table will be updated or reduced back to a single stable line.
+
 ## What’s in v0.2.0
 
 * **Core compiler pipeline**: lexer → parser → semantic analyzer → code generator.
