@@ -337,9 +337,12 @@ Artifacts cleanup: By default temporary files are deleted after successful execu
 To keep the repository lean:
 
 * Build outputs (`target/`, `node_modules/`, temporary exec artifacts `__exec_tmp*`) are ignored and must not be committed.
-* A helper script `scripts/scan_large_files.ps1` scans tracked files over a size threshold (default 1MB). Exit code 1 signals findings.
+* Helper scripts:
+  * `scripts/scan_large_files.ps1` — scan current tracked files over a size threshold (default 1MB). Exit code 1 signals findings.
+  * `scripts/scan_history_large_files.ps1` — scan full Git history for large blobs (default >1MB) for potential purge/LFS migration.
 * Optional pre-commit hook (PowerShell): copy `scripts/git-hooks/pre-commit` into `.git/hooks/` to block large or disallowed files.
-* Use Git LFS only after maintainer approval; otherwise remove accidental large commits and coordinate for a history purge if needed.
+* Git LFS is enabled for `.pdb` and `.rmeta` artifacts (see `.gitattributes`). Collaborators must run `git lfs install` after pulling.
+* For existing clones without LFS configured, run the migration snippet below to re-fetch LFS objects.
 * The TUI search persistence file `.aeonmi_last_search` remains local only (ignored).
 
 Quick usage:
@@ -348,6 +351,40 @@ Quick usage:
 pwsh -NoProfile -File scripts\scan_large_files.ps1
 copy scripts\git-hooks\pre-commit .git\hooks\pre-commit  # install hook
 ```
+
+#### Git LFS Activation
+
+We track debug symbol / metadata files via LFS:
+
+```text
+*.pdb filter=lfs diff=lfs merge=lfs -text
+*.rmeta filter=lfs diff=lfs merge=lfs -text
+```
+
+First-time setup (per developer):
+
+```powershell
+git lfs install
+git pull --force   # ensure LFS pointers materialize
+```
+
+If you previously pulled before LFS activation and have large blobs in normal history you may reclone for a clean state or run:
+
+```powershell
+git lfs fetch --all
+git lfs checkout
+```
+
+#### Large Blob Remediation (Maintainers)
+
+1. Identify historical large blobs:
+  ```powershell
+  pwsh -NoProfile -File scripts\scan_history_large_files.ps1 -ThresholdMB 2
+  ```
+2. If unintended, create a branch & use `git filter-repo` (after full backup) to remove them.
+3. Force-push sanitized history and instruct collaborators to reclone.
+
+Never rewrite history on `main` without explicit coordination.
 
 If the hook blocks a file you believe is necessary, open a maintainer issue referencing the context.
 
