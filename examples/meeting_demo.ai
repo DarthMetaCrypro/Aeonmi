@@ -1,0 +1,26 @@
+// Aeonmi Meeting Demo
+// Fast tour: variables, function, loop, quantum glyph, output
+
+let message = "Hello Y-Coordinator";
+let n = 6;
+
+function fact(k) {
+    if k <= 1 { return 1; } else { return k * fact(k - 1); }
+}
+
+let total = 0;
+for let i = 0; i < n; i = i + 1 {
+    total = total + i;
+}
+
+// Quantum (will no-op without full backend semantics yet)
+qubit q;
+superpose(q);
+let m = measure(q);
+
+log("Message:", message);
+log("n:", n);
+log("sum[0..n):", total);
+log("fact(n):", fact(n));
+log("quantum m:", m);
+log("Status: Aeonmi operational ✅");

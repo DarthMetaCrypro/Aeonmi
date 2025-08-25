@@ -1,0 +1,37 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Aeonmi GUI Prototype</title>
+  <style>
+    body { margin: 0; display: flex; height: 100vh; }
+    #editor { width: 40%; border-right: 1px solid #ddd; height: 100%; }
+    #terminal { flex: 1; height: 100%; }
+    textarea { width: 100%; height: 100%; box-sizing: border-box; font-family: monospace; }
+    .toolbar { padding: 6px; background: #f5f5f5; border-bottom: 1px solid #ddd; }
+  </style>
+</head>
+<body>
+  <div id="editor">
+    <div class="toolbar">
+      <button id="openBtn">Open</button>
+      <button id="saveBtn">Save</button>
+      <input id="filePath" placeholder="path/to/file.ai" style="width:60%" />
+    </div>
+    <div id="editorMonaco" style="width:100%; height:calc(100% - 40px);"></div>
+  </div>
+  <div id="terminal">
+    <div class="toolbar">
+  <button id="startTui">Start TUI</button>
+  <button id="openNative">Open in native terminal</button>
+    </div>
+    <div id="xterm" style="width:100%; height:calc(100% - 32px);" tabindex="0"></div>
+  </div>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm/css/xterm.css" />
+  <script src="https://cdn.jsdelivr.net/npm/xterm/lib/xterm.js"></script>
+  <!-- Monaco editor loader -->
+  <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.38.0/min/vs/loader.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>

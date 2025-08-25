@@ -1,0 +1,64 @@
+// QUBE Hieroglyphic Quantum Programming Example
+// Demonstrates the full power of Aeonmi's symbolic quantum language
+
+// ═══ Quantum State Initialization ═══
+qubit ψ₁;  // Primary quantum state
+qubit ψ₂;  // Entangled partner
+qubit ψ₃;  // Auxiliary qubit
+
+// ═══ Hieroglyphic Gate Applications ═══
+𓀀(ψ₁, 42);           // Custom parametric gate with value 42
+𓀁(ψ₁);               // Pauli-X (NOT gate)
+𓀂(ψ₂);               // Pauli-Y gate  
+𓀃(ψ₃);               // Pauli-Z (phase flip)
+𓀄(ψ₁);               // Hadamard (superposition)
+𓀅(ψ₂);               // S gate (π/2 phase)
+𓀆(ψ₃);               // T gate (π/4 phase)
+
+// ═══ Multi-Qubit Hieroglyphic Operations ═══
+𓀇(ψ₁, ψ₂);          // Controlled-Z gate
+𓀈(ψ₂, ψ₃);          // Controlled-Y gate
+𓀉(ψ₁, ψ₃);          // Controlled-X (CNOT) gate
+
+// ═══ Advanced Symbolic Transformations ═══
+𓁀(ψ₁, ψ₂, ψ₃);      // 3-qubit Toffoli gate
+𓁁(ψ₁, ψ₂);          // Quantum Fourier Transform component
+𓁂(ψ₁, ψ₂, 0.785);   // Parametric rotation with π/4
+
+// ═══ Measurement in Hieroglyphic Style ═══
+let 𓁃₁ = 𓁄(ψ₁);     // Symbolic measurement operator
+let 𓁃₂ = 𓁄(ψ₂);     // Measure second qubit
+let 𓁃₃ = 𓁄(ψ₃);     // Measure third qubit
+
+// ═══ Quantum State Analysis ═══ 
+function 𓁅(state_vector) {
+    // Hieroglyphic function for state fidelity
+    let fidelity = calculate_fidelity(state_vector);
+    return fidelity;
+}
+
+function 𓁆(states) {
+    // Quantum entanglement measure
+    for state in states {
+        let entropy = von_neumann_entropy(state);
+        log("Entanglement entropy:", entropy);
+    }
+}
+
+// ═══ Symbolic Quantum Error Correction ═══
+𓁇(ψ₁, ψ₂, ψ₃);      // 3-qubit error correction syndrome
+if 𓁈() {             // Error detection predicate
+    𓁉(ψ₁);           // Apply error correction
+    log("𓁊 Quantum error corrected");
+}
+
+// ═══ Advanced Quantum Algorithms ═══
+𓁋(ψ₁, ψ₂, [1,0,1,1]); // Quantum database search with oracle
+𓁌(ψ₁, ψ₂, ψ₃, 8);    // 8-iteration amplitude amplification
+
+// ═══ Final State Logging ═══
+log("QUBE Hieroglyphic Quantum State:");
+log("ψ₁ measurement:", 𓁃₁);
+log("ψ₂ measurement:", 𓁃₂); 
+log("ψ₃ measurement:", 𓁃₃);
+log("𓁍 Quantum computation complete 𓁍");

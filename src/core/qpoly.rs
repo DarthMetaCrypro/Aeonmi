@@ -1,16 +1,15 @@
 #![cfg_attr(test, allow(dead_code, unused_variables))]
 //! QPolygraphic keymap: built-in defaults + optional TOML config.
 //!
-//! - `QPolyMap::default()` → small built-in chords
+//! - `QPolyMap::builtin()` → small built-in chords
 //! - `QPolyMap::from_toml_file(path)` → load user chords
 //! - `QPolyMap::from_user_default_or_builtin()` → ~/.aeonmi/qpoly.toml if present
 //! - `apply_line(&self, s)` → replace chords with glyphs (longest-first)
 
-use std::fs;
-use std::path::{Path, PathBuf};
-
 use anyhow::{Context, Result};
 use serde::Deserialize;
+use std::fs;
+use std::path::{Path, PathBuf};
 
 #[derive(Clone, Debug)]
 pub struct QPolyMap {
@@ -33,8 +32,9 @@ struct QPolyRule {
 }
 
 impl QPolyMap {
-    pub fn default() -> Self {
-        // Keep it tiny; expand later. Longest first matters when chords overlap.
+    /// Built-in small map. Longest-first matters when chords overlap.
+    pub fn builtin() -> Self {
+        // Keep it tiny; expand later.
         let mut rules = vec![
             // long first
             ("<<<".to_string(), "⟪".to_string()),
@@ -54,15 +54,15 @@ impl QPolyMap {
             ("|0>".to_string(), "∣0⟩".to_string()),
             ("|1>".to_string(), "∣1⟩".to_string()),
         ];
-        // Sort longest-first (no type inference headaches)
+        // Sort longest-first
         rules.sort_by(|a, b| b.0.len().cmp(&a.0.len()));
         Self { rules }
     }
 
     /// Load from TOML file.
     pub fn from_toml_file(path: &Path) -> Result<Self> {
-        let txt =
-            fs::read_to_string(path).with_context(|| format!("reading {}", path.display()))?;
+        let txt = fs::read_to_string(path)
+            .with_context(|| format!("reading {}", path.display()))?;
         let cfg: QPolyConfig =
             toml::from_str(&txt).with_context(|| format!("parsing {}", path.display()))?;
 
@@ -71,7 +71,7 @@ impl QPolyMap {
 
         // If user file is empty, fall back to builtin so the editor still works.
         if rules.is_empty() {
-            return Ok(Self::default());
+            return Ok(Self::builtin());
         }
 
         rules.sort_by(|a, b| b.0.len().cmp(&a.0.len()));
@@ -91,7 +91,7 @@ impl QPolyMap {
         Self::default()
     }
 
-    /// Apply simple chord replacements to one line.
+    /// Apply simple chord replacements to one line (longest-first).
     pub fn apply_line(&self, s: &str) -> String {
         let mut out = s.to_owned();
         for (k, v) in &self.rules {
@@ -100,6 +100,13 @@ impl QPolyMap {
             }
         }
         out
+    }
+}
+
+/// Implement the standard constructor so `QPolyMap::default()` works
+impl Default for QPolyMap {
+    fn default() -> Self {
+        QPolyMap::builtin()
     }
 }
 

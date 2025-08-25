@@ -1,3 +1,4 @@
+#![allow(clippy::needless_range_loop)]
 pub fn dot_product(v1: &[f64], v2: &[f64]) -> Result<f64, &'static str> {
     // Computes the dot product of two vectors
     if v1.len() != v2.len() {

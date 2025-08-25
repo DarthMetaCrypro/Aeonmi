@@ -1,4 +1,4 @@
-use aeonmi_project::core::{ ir::*, ai_emitter::emit_ai, vm::Interpreter };
+use aeonmi_project::core::{ai_emitter::emit_ai, ir::*, vm::Interpreter};
 
 #[test]
 fn ai_emitter_golden_minimal() {
@@ -6,13 +6,19 @@ fn ai_emitter_golden_minimal() {
         name: "golden".into(),
         imports: vec![],
         decls: vec![
-            Decl::Const(ConstDecl { name: "PI".into(), value: Expr::Lit(Lit::Number(3.0)) }),
+            Decl::Const(ConstDecl {
+                name: "PI".into(),
+                value: Expr::Lit(Lit::Number(3.0)),
+            }),
             Decl::Fn(FnDecl {
                 name: "main".into(),
                 params: vec![],
                 body: Block {
                     stmts: vec![
-                        Stmt::Let { name: "x".into(), value: Some(Expr::Lit(Lit::Number(2.0))) },
+                        Stmt::Let {
+                            name: "x".into(),
+                            value: Some(Expr::Lit(Lit::Number(2.0))),
+                        },
                         Stmt::Expr(Expr::Call {
                             callee: Box::new(Expr::Ident("print".into())),
                             args: vec![Expr::Binary {

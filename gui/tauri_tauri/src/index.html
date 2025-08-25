@@ -1,0 +1,61 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Aeonmi Tauri Prototype (xterm)</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.4.0/css/xterm.css" />
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 12px; }
+      #controls { margin-bottom: 8px; }
+      #terminal { width: 100%; height: 70vh; border: 1px solid #ccc; }
+      #status { margin-left: 8px; color: #666; }
+    </style>
+  </head>
+  <body>
+    <h3>Aeonmi Tauri Prototype</h3>
+    <div id="controls">
+      <button id="start">Start TUI</button>
+      <button id="detach">Detach (native)</button>
+      <input id="filepath" placeholder="examples/hello.ai" style="width:220px" />
+      <button id="load">Load</button>
+      <button id="save">Save</button>
+      <button id="compile_ai">Compile AI</button>
+  <button id="compile_js">Compile JS</button>
+  <button id="run_js">Run</button>
+      <span id="status">idle</span>
+    </div>
+    <div id="code_wrapper" style="border:1px solid #ccc;height:40vh;position:relative;">
+      <div id="code_editor" style="width:100%;height:100%;"></div>
+      <noscript><textarea id="editor_fallback" style="width:100%;height:100%;"></textarea></noscript>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <div style="flex:2;">
+        <div id="terminal"></div>
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:6px;max-height:40vh;">
+        <div style="flex:1;overflow:auto;border:1px solid #ccc;padding:4px;" id="diagnostics"><b>Diagnostics</b><br/></div>
+        <div style="flex:1;display:flex;flex-direction:column;border:1px solid #ccc;padding:4px;">
+          <b>AI Chat</b>
+          <div style="display:flex;gap:4px;align-items:center;margin-bottom:4px;flex-wrap:wrap;">
+            <select id="ai_provider" style="min-width:120px;"></select>
+            <button id="ai_list">List</button>
+            <button id="ai_stream">Stream</button>
+          </div>
+          <textarea id="ai_prompt" style="flex:1;width:100%;resize:none;min-height:60px;" placeholder="Enter prompt..."></textarea>
+          <button id="ai_send" style="margin-top:4px;align-self:flex-end;">Send</button>
+          <div id="ai_output" style="margin-top:4px;overflow:auto;font-family:monospace;font-size:12px;white-space:pre-wrap;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Monaco loader (CDN). For offline packaging, vendor these assets locally later. -->
+    <script>
+      window.require = { paths: { 'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' } };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/xterm@5.4.0/lib/xterm.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.7.0/lib/xterm-addon-fit.js"></script>
+    <script src="main.js"></script>
+  </body>
+</html>

@@ -1,0 +1,797 @@
+       Fresh cfg-if v1.0.1
+       Fresh unicode-ident v1.0.18
+       Fresh autocfg v1.5.0
+       Fresh foldhash v0.1.5
+       Fresh equivalent v1.0.2
+       Fresh allocator-api2 v0.2.21
+       Fresh heck v0.5.0
+       Fresh anstyle v1.0.11
+       Fresh either v1.15.0
+       Fresh smallvec v1.15.1
+       Fresh utf8parse v0.2.2
+       Fresh proc-macro2 v1.0.97
+       Fresh hashbrown v0.15.5
+       Fresh getrandom v0.2.16
+       Fresh scopeguard v1.2.0
+       Fresh once_cell_polyfill v1.70.1
+       Fresh anstyle-parse v0.2.7
+       Fresh colorchoice v1.0.4
+       Fresh is_terminal_polyfill v1.70.1
+       Fresh quote v1.0.40
+       Fresh windows_x86_64_msvc v0.53.0
+       Fresh windows_x86_64_msvc v0.52.6
+       Fresh winapi v0.3.9
+       Fresh rustversion v1.0.22
+       Fresh zerocopy v0.8.26
+       Fresh rand_core v0.6.4
+       Fresh windows_x86_64_msvc v0.48.5
+       Fresh libm v0.2.15
+       Fresh crossbeam-utils v0.8.21
+       Fresh indexmap v2.10.0
+       Fresh itertools v0.13.0
+       Fresh static_assertions v1.1.0
+       Fresh bitflags v2.9.1
+       Fresh unicode-width v0.1.14
+       Fresh ryu v1.0.20
+       Fresh itoa v1.0.15
+       Fresh syn v2.0.104
+       Fresh windows-targets v0.53.3
+       Fresh windows-targets v0.52.6
+       Fresh ppv-lite86 v0.2.21
+       Fresh lock_api v0.4.13
+       Fresh crossterm_winapi v0.9.1
+       Fresh castaway v0.2.4
+       Fresh windows-targets v0.48.5
+       Fresh unicode-segmentation v1.12.0
+       Fresh tinyvec_macros v0.1.1
+       Fresh toml_write v0.1.2
+       Fresh clap_lex v0.7.5
+       Fresh winnow v0.7.12
+       Fresh strsim v0.11.1
+       Fresh crossbeam-channel v0.5.15
+       Fresh getrandom v0.3.3
+       Fresh dirs-sys-next v0.1.2
+       Fresh num-traits v0.2.19
+       Fresh paste v1.0.15
+       Fresh lru v0.12.5
+       Fresh windows-sys v0.60.2
+       Fresh serde_derive v1.0.219
+       Fresh windows-sys v0.59.0
+       Fresh parking_lot_core v0.9.11
+       Fresh rand_chacha v0.3.1
+       Fresh strum_macros v0.26.4
+       Fresh stability v0.2.1
+       Fresh compact_str v0.7.1
+       Fresh libc v0.2.175
+       Fresh unicode-truncate v1.1.0
+       Fresh tinyvec v1.10.0
+       Fresh clap_derive v4.5.41
+       Fresh windows-sys v0.48.0
+       Fresh itertools v0.12.1
+       Fresh log v0.4.27
+       Fresh once_cell v1.21.3
+       Fresh cassowary v0.3.0
+       Fresh lazy_static v1.5.0
+       Fresh fastrand v2.3.0
+       Fresh dirs-next v2.0.0
+       Fresh zeroize v1.8.1
+       Fresh serde v1.0.219
+       Fresh anstyle-wincon v3.0.10
+       Fresh anstyle-query v1.1.4
+       Fresh winapi-util v0.1.10
+       Fresh parking_lot v0.12.4
+       Fresh rand v0.8.5
+       Fresh filetime v0.2.26
+       Fresh strum v0.26.3
+       Fresh ctrlc v3.4.7
+       Fresh colored v2.2.0
+       Fresh unicode-normalization v0.1.24
+       Fresh tempfile v3.20.0
+       Fresh anyhow v1.0.99
+       Fresh fs_extra v1.3.0
+       Fresh anstream v0.6.20
+       Fresh same-file v1.0.6
+       Fresh serde_spanned v0.6.9
+       Fresh toml_datetime v0.6.11
+       Fresh crossterm v0.27.0
+       Fresh rand_distr v0.4.3
+       Fresh toml_edit v0.22.27
+       Fresh walkdir v2.5.0
+       Fresh clap_builder v4.5.44
+       Fresh ratatui v0.26.3
+       Fresh notify v6.1.1
+       Fresh toml v0.8.23
+       Fresh clap v4.5.44
+warning: variable does not need to be mutable
+   --> src\core\lexer.rs:348:25
+    |
+348 |                 Ok(Some(mut token)) => {
+    |                         ----^^^^^
+    |                         |
+    |                         help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` on by default
+
+warning: fields `normalized` and `src` are never read
+   --> src\core\lexer.rs:160:5
+    |
+159 | pub struct Lexer {
+    |            ----- fields in this struct
+160 |     normalized: String,
+    |     ^^^^^^^^^^
+161 |     src: *const str, // Only used for lifetime pinning
+    |     ^^^
+    |
+    = note: `#[warn(dead_code)]` on by default
+
+warning: function `map_binop` is never used
+   --> src\core\lowering.rs:279:4
+    |
+279 | fn map_binop(op: &str) -> BinOp {
+    |    ^^^^^^^^^
+
+warning: function `map_unop` is never used
+   --> src\core\lowering.rs:303:4
+    |
+303 | fn map_unop(op: &str) -> UnOp {
+    |    ^^^^^^^^
+
+warning: method `to_emit_kind` is never used
+  --> src\tui\editor.rs:57:8
+   |
+44 | impl EmitMode {
+   | ------------- method in this implementation
+...
+57 |     fn to_emit_kind(self) -> EmitKind {
+   |        ^^^^^^^^^^^^
+
+warning: `aeonmi_project` (lib) generated 5 warnings (run `cargo fix --lib -p aeonmi_project` to apply 1 suggestion)
+warning: unused variable: `backend`
+   --> src\main.rs:161:13
+    |
+161 |             backend,
+    |             ^^^^^^^ help: try ignoring the field: `backend: _`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `file`
+   --> src\main.rs:162:13
+    |
+162 |             file,
+    |             ^^^^ help: try ignoring the field: `file: _`
+
+warning: unused variable: `shots`
+   --> src\main.rs:163:13
+    |
+163 |             shots,
+    |             ^^^^^ help: try ignoring the field: `shots: _`
+
+warning: associated function `new` is never used
+  --> src\core\compiler.rs:28:12
+   |
+27 | impl Compiler {
+   | ------------- associated function in this implementation
+28 |     pub fn new() -> Self {
+   |            ^^^
+   |
+   = note: `#[warn(dead_code)]` on by default
+
+warning: function `compile_file_to_ir` is never used
+   --> src\core\compiler.rs:146:8
+    |
+146 | pub fn compile_file_to_ir(path: &Path) -> Result<Module, String> {
+    |        ^^^^^^^^^^^^^^^^^^
+
+warning: function `module_name_from_path` is never used
+   --> src\core\compiler.rs:174:4
+    |
+174 | fn module_name_from_path(path: &Path) -> String {
+    |    ^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `compile_and_run_js` is never used
+   --> src\core\compiler.rs:185:8
+    |
+185 | pub fn compile_and_run_js(input: &PathBuf) -> Result<(), String> {
+    |        ^^^^^^^^^^^^^^^^^^
+
+warning: function `compile_and_write_js` is never used
+   --> src\core\compiler.rs:213:8
+    |
+213 | pub fn compile_and_write_js(input: &PathBuf, out: Option<&PathBuf>) -> Result<(), String> {
+    |        ^^^^^^^^^^^^^^^^^^^^
+
+warning: fields `language_mode` and `dynamic_config` are never read
+  --> src\core\lexer.rs:38:9
+   |
+33 | pub struct LexerOptions {
+   |            ------------ fields in this struct
+...
+38 |     pub language_mode: Option<String>,
+   |         ^^^^^^^^^^^^^
+39 |     pub dynamic_config: Option<Arc<Mutex<LexerDynamicConfig>>>,
+   |         ^^^^^^^^^^^^^^
+   |
+   = note: `LexerOptions` has a derived impl for the trait `Clone`, but this is intentionally ignored during dead code analysis
+
+warning: field `enabled_plugins` is never read
+  --> src\core\lexer.rs:61:9
+   |
+60 | pub struct LexerDynamicConfig {
+   |            ------------------ field in this struct
+61 |     pub enabled_plugins: Vec<String>,
+   |         ^^^^^^^^^^^^^^^
+   |
+   = note: `LexerDynamicConfig` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: fields `line`, `col`, and `in_ai_block` are never read
+  --> src\core\lexer.rs:69:9
+   |
+68 | pub struct LexerView {
+   |            --------- fields in this struct
+69 |     pub line: usize,
+   |         ^^^^
+70 |     pub col: usize,
+   |         ^^^
+71 |     pub in_ai_block: bool,
+   |         ^^^^^^^^^^^
+   |
+   = note: `LexerView` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: variants `PluginError` and `Diagnostic` are never constructed
+  --> src\core\lexer.rs:84:5
+   |
+76 | pub enum LexerError {
+   |          ---------- variants in this enum
+...
+84 |     PluginError(String, usize, usize),
+   |     ^^^^^^^^^^^
+85 |     Diagnostic(String, usize, usize, Option<String>),
+   |     ^^^^^^^^^^
+   |
+   = note: `LexerError` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+
+warning: method `name` is never used
+   --> src\core\lexer.rs:142:8
+    |
+140 | pub trait CustomTokenKind: Send + Sync {
+    |           --------------- method in this trait
+141 |     fn try_match(&self, lexer: &Lexer) -> Option<TokenKind>;
+142 |     fn name(&self) -> &str;
+    |        ^^^^
+
+warning: method `on_security_event` is never used
+   --> src\core\lexer.rs:155:8
+    |
+152 | pub trait DlpPlugin: Send + Sync {
+    |           --------- method in this trait
+...
+155 |     fn on_security_event(&self, event: &str, token: Option<&Token>);
+    |        ^^^^^^^^^^^^^^^^^
+
+warning: fields `normalized`, `src`, and `token_cache` are never read
+   --> src\core\lexer.rs:160:5
+    |
+159 | pub struct Lexer {
+    |            ----- fields in this struct
+160 |     normalized: String,
+    |     ^^^^^^^^^^
+161 |     src: *const str, // Only used for lifetime pinning
+    |     ^^^
+...
+170 |     pub token_cache: Vec<Token>,
+    |         ^^^^^^^^^^^
+
+warning: methods `add_plugin`, `register_custom_token_kind`, and `set_event_bus` are never used
+   --> src\core\lexer.rs:208:12
+    |
+174 | impl Lexer {
+    | ---------- methods in this implementation
+...
+208 |     pub fn add_plugin<P: LexerPlugin + 'static>(&mut self, plugin: P) {
+    |            ^^^^^^^^^^
+...
+211 |     pub fn register_custom_token_kind(&mut self, kind: Arc<dyn CustomTokenKind>) {
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+214 |     pub fn set_event_bus(&mut self, bus: Arc<Mutex<Vec<String>>>) {
+    |            ^^^^^^^^^^^^^
+
+warning: function `ensure_parent_dir` is never used
+   --> src\core\qpoly.rs:113:8
+    |
+113 | pub fn ensure_parent_dir(path: &Path) -> Result<()> {
+    |        ^^^^^^^^^^^^^^^^^
+
+warning: enum `Value` is never used
+  --> src\core\vm.rs:11:10
+   |
+11 | pub enum Value {
+   |          ^^^^^
+
+warning: struct `Function` is never constructed
+  --> src\core\vm.rs:23:12
+   |
+23 | pub struct Function {
+   |            ^^^^^^^^
+
+warning: struct `Builtin` is never constructed
+  --> src\core\vm.rs:39:12
+   |
+39 | pub struct Builtin {
+   |            ^^^^^^^
+
+warning: struct `Env` is never constructed
+  --> src\core\vm.rs:52:12
+   |
+52 | pub struct Env {
+   |            ^^^
+
+warning: associated items `new`, `push`, `pop`, `define`, `assign`, and `get` are never used
+  --> src\core\vm.rs:57:12
+   |
+56 | impl Env {
+   | -------- associated items in this implementation
+57 |     pub fn new() -> Self {
+   |            ^^^
+...
+62 |     pub fn push(&mut self) {
+   |            ^^^^
+...
+65 |     pub fn pop(&mut self) {
+   |            ^^^
+...
+68 |     pub fn define(&mut self, k: String, v: Value) {
+   |            ^^^^^^
+...
+72 |     pub fn assign(&mut self, k: &str, v: Value) -> bool {
+   |            ^^^^^^
+...
+82 |     pub fn get(&self, k: &str) -> Option<Value> {
+   |            ^^^
+
+warning: struct `Interpreter` is never constructed
+  --> src\core\vm.rs:93:12
+   |
+93 | pub struct Interpreter {
+   |            ^^^^^^^^^^^
+
+warning: struct `RuntimeError` is never constructed
+  --> src\core\vm.rs:98:12
+   |
+98 | pub struct RuntimeError {
+   |            ^^^^^^^^^^^^
+
+warning: multiple associated items are never used
+   --> src\core\vm.rs:103:12
+    |
+102 | impl Interpreter {
+    | ---------------- associated items in this implementation
+103 |     pub fn new() -> Self {
+    |            ^^^
+...
+141 |     pub fn run_module(&mut self, m: &Module) -> Result<(), RuntimeError> {
+    |            ^^^^^^^^^^
+...
+174 |     fn call_ident(&mut self, name: &str, args: Vec<Value>) -> Result<Value, RuntimeError> {
+    |        ^^^^^^^^^^
+...
+182 |     fn call_value(&mut self, callee: Value, args: Vec<Value>) -> Result<Value, RuntimeError> {
+    |        ^^^^^^^^^^
+...
+225 |     fn exec_block(&mut self, b: &Block) -> ControlFlow {
+    |        ^^^^^^^^^^
+...
+240 |     fn exec_stmt(&mut self, s: &Stmt) -> ControlFlow {
+    |        ^^^^^^^^^
+...
+355 |     fn eval_expr(&mut self, e: &Expr) -> Result<Value, RuntimeError> {
+    |        ^^^^^^^^^
+...
+411 |     fn eval_binop(&self, op: &BinOp, l: Value, r: Value) -> Result<Value, RuntimeError> {
+    |        ^^^^^^^^^^
+...
+436 |     fn truthy(&self, v: &Value) -> bool {
+    |        ^^^^^^
+
+warning: enum `ControlFlow` is never used
+   --> src\core\vm.rs:449:6
+    |
+449 | enum ControlFlow {
+    |      ^^^^^^^^^^^
+
+warning: function `err` is never used
+   --> src\core\vm.rs:461:4
+    |
+461 | fn err(msg: String) -> RuntimeError {
+    |    ^^^
+
+warning: function `collect_vals` is never used
+   --> src\core\vm.rs:465:4
+    |
+465 | fn collect_vals(i: &mut Interpreter, es: &[Expr]) -> Result<Vec<Value>, RuntimeError> {
+    |    ^^^^^^^^^^^^
+
+warning: function `num2` is never used
+   --> src\core\vm.rs:473:4
+    |
+473 | fn num2(l: Value, r: Value, f: fn(f64, f64) -> f64) -> Result<Value, RuntimeError> {
+    |    ^^^^
+
+warning: function `cmp2` is never used
+   --> src\core\vm.rs:480:4
+    |
+480 | fn cmp2(l: Value, r: Value, f: fn(f64, f64) -> bool) -> Result<Value, RuntimeError> {
+    |    ^^^^
+
+warning: function `eq_val` is never used
+   --> src\core\vm.rs:487:4
+    |
+487 | fn eq_val(a: &Value, b: &Value) -> bool {
+    |    ^^^^^^
+
+warning: function `builtin_print` is never used
+   --> src\core\vm.rs:530:4
+    |
+530 | fn builtin_print(_i: &mut Interpreter, args: Vec<Value>) -> Result<Value, RuntimeError> {
+    |    ^^^^^^^^^^^^^
+
+warning: function `builtin_time_ms` is never used
+   --> src\core\vm.rs:536:4
+    |
+536 | fn builtin_time_ms(_i: &mut Interpreter, _args: Vec<Value>) -> Result<Value, RuntimeError> {
+    |    ^^^^^^^^^^^^^^^
+
+warning: function `builtin_rand` is never used
+   --> src\core\vm.rs:541:4
+    |
+541 | fn builtin_rand(_i: &mut Interpreter, _args: Vec<Value>) -> Result<Value, RuntimeError> {
+    |    ^^^^^^^^^^^^
+
+warning: function `display` is never used
+   --> src\core\vm.rs:553:4
+    |
+553 | fn display(v: &Value) -> String {
+    |    ^^^^^^^
+
+       Fresh aeonmi_project v0.2.0 (C:\Users\wlwil\Project\aeonmi_project)
+warning: variable does not need to be mutable
+   --> src\bin\..\core\lexer.rs:348:25
+    |
+348 |                 Ok(Some(mut token)) => {
+    |                         ----^^^^^
+    |                         |
+    |                         help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` on by default
+
+warning: unused variable: `backend`
+   --> src\bin\../main.rs:161:13
+    |
+161 |             backend,
+    |             ^^^^^^^ help: try ignoring the field: `backend: _`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `file`
+   --> src\bin\../main.rs:162:13
+    |
+162 |             file,
+    |             ^^^^ help: try ignoring the field: `file: _`
+
+warning: unused variable: `shots`
+   --> src\bin\../main.rs:163:13
+    |
+163 |             shots,
+    |             ^^^^^ help: try ignoring the field: `shots: _`
+
+warning: associated function `new` is never used
+  --> src\bin\..\core\compiler.rs:28:12
+   |
+27 | impl Compiler {
+   | ------------- associated function in this implementation
+28 |     pub fn new() -> Self {
+   |            ^^^
+   |
+   = note: `#[warn(dead_code)]` on by default
+
+warning: function `compile_file_to_ir` is never used
+   --> src\bin\..\core\compiler.rs:146:8
+    |
+146 | pub fn compile_file_to_ir(path: &Path) -> Result<Module, String> {
+    |        ^^^^^^^^^^^^^^^^^^
+
+warning: function `module_name_from_path` is never used
+   --> src\bin\..\core\compiler.rs:174:4
+    |
+174 | fn module_name_from_path(path: &Path) -> String {
+    |    ^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `compile_and_run_js` is never used
+   --> src\bin\..\core\compiler.rs:185:8
+    |
+185 | pub fn compile_and_run_js(input: &PathBuf) -> Result<(), String> {
+    |        ^^^^^^^^^^^^^^^^^^
+
+warning: function `compile_and_write_js` is never used
+   --> src\bin\..\core\compiler.rs:213:8
+    |
+213 | pub fn compile_and_write_js(input: &PathBuf, out: Option<&PathBuf>) -> Result<(), String> {
+    |        ^^^^^^^^^^^^^^^^^^^^
+
+warning: fields `language_mode` and `dynamic_config` are never read
+  --> src\bin\..\core\lexer.rs:38:9
+   |
+33 | pub struct LexerOptions {
+   |            ------------ fields in this struct
+...
+38 |     pub language_mode: Option<String>,
+   |         ^^^^^^^^^^^^^
+39 |     pub dynamic_config: Option<Arc<Mutex<LexerDynamicConfig>>>,
+   |         ^^^^^^^^^^^^^^
+   |
+   = note: `LexerOptions` has a derived impl for the trait `Clone`, but this is intentionally ignored during dead code analysis
+
+warning: field `enabled_plugins` is never read
+  --> src\bin\..\core\lexer.rs:61:9
+   |
+60 | pub struct LexerDynamicConfig {
+   |            ------------------ field in this struct
+61 |     pub enabled_plugins: Vec<String>,
+   |         ^^^^^^^^^^^^^^^
+   |
+   = note: `LexerDynamicConfig` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: fields `line`, `col`, and `in_ai_block` are never read
+  --> src\bin\..\core\lexer.rs:69:9
+   |
+68 | pub struct LexerView {
+   |            --------- fields in this struct
+69 |     pub line: usize,
+   |         ^^^^
+70 |     pub col: usize,
+   |         ^^^
+71 |     pub in_ai_block: bool,
+   |         ^^^^^^^^^^^
+   |
+   = note: `LexerView` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: variants `PluginError` and `Diagnostic` are never constructed
+  --> src\bin\..\core\lexer.rs:84:5
+   |
+76 | pub enum LexerError {
+   |          ---------- variants in this enum
+...
+84 |     PluginError(String, usize, usize),
+   |     ^^^^^^^^^^^
+85 |     Diagnostic(String, usize, usize, Option<String>),
+   |     ^^^^^^^^^^
+   |
+   = note: `LexerError` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+
+warning: method `name` is never used
+   --> src\bin\..\core\lexer.rs:142:8
+    |
+140 | pub trait CustomTokenKind: Send + Sync {
+    |           --------------- method in this trait
+141 |     fn try_match(&self, lexer: &Lexer) -> Option<TokenKind>;
+142 |     fn name(&self) -> &str;
+    |        ^^^^
+
+warning: method `on_security_event` is never used
+   --> src\bin\..\core\lexer.rs:155:8
+    |
+152 | pub trait DlpPlugin: Send + Sync {
+    |           --------- method in this trait
+...
+155 |     fn on_security_event(&self, event: &str, token: Option<&Token>);
+    |        ^^^^^^^^^^^^^^^^^
+
+warning: fields `normalized`, `src`, and `token_cache` are never read
+   --> src\bin\..\core\lexer.rs:160:5
+    |
+159 | pub struct Lexer {
+    |            ----- fields in this struct
+160 |     normalized: String,
+    |     ^^^^^^^^^^
+161 |     src: *const str, // Only used for lifetime pinning
+    |     ^^^
+...
+170 |     pub token_cache: Vec<Token>,
+    |         ^^^^^^^^^^^
+
+warning: methods `add_plugin`, `register_custom_token_kind`, and `set_event_bus` are never used
+   --> src\bin\..\core\lexer.rs:208:12
+    |
+174 | impl Lexer {
+    | ---------- methods in this implementation
+...
+208 |     pub fn add_plugin<P: LexerPlugin + 'static>(&mut self, plugin: P) {
+    |            ^^^^^^^^^^
+...
+211 |     pub fn register_custom_token_kind(&mut self, kind: Arc<dyn CustomTokenKind>) {
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+214 |     pub fn set_event_bus(&mut self, bus: Arc<Mutex<Vec<String>>>) {
+    |            ^^^^^^^^^^^^^
+
+warning: function `map_binop` is never used
+   --> src\bin\..\core\lowering.rs:279:4
+    |
+279 | fn map_binop(op: &str) -> BinOp {
+    |    ^^^^^^^^^
+
+warning: function `map_unop` is never used
+   --> src\bin\..\core\lowering.rs:303:4
+    |
+303 | fn map_unop(op: &str) -> UnOp {
+    |    ^^^^^^^^
+
+warning: function `ensure_parent_dir` is never used
+   --> src\bin\..\core\qpoly.rs:113:8
+    |
+113 | pub fn ensure_parent_dir(path: &Path) -> Result<()> {
+    |        ^^^^^^^^^^^^^^^^^
+
+warning: enum `Value` is never used
+  --> src\bin\..\core\vm.rs:11:10
+   |
+11 | pub enum Value {
+   |          ^^^^^
+
+warning: struct `Function` is never constructed
+  --> src\bin\..\core\vm.rs:23:12
+   |
+23 | pub struct Function {
+   |            ^^^^^^^^
+
+warning: struct `Builtin` is never constructed
+  --> src\bin\..\core\vm.rs:39:12
+   |
+39 | pub struct Builtin {
+   |            ^^^^^^^
+
+warning: struct `Env` is never constructed
+  --> src\bin\..\core\vm.rs:52:12
+   |
+52 | pub struct Env {
+   |            ^^^
+
+warning: associated items `new`, `push`, `pop`, `define`, `assign`, and `get` are never used
+  --> src\bin\..\core\vm.rs:57:12
+   |
+56 | impl Env {
+   | -------- associated items in this implementation
+57 |     pub fn new() -> Self {
+   |            ^^^
+...
+62 |     pub fn push(&mut self) {
+   |            ^^^^
+...
+65 |     pub fn pop(&mut self) {
+   |            ^^^
+...
+68 |     pub fn define(&mut self, k: String, v: Value) {
+   |            ^^^^^^
+...
+72 |     pub fn assign(&mut self, k: &str, v: Value) -> bool {
+   |            ^^^^^^
+...
+82 |     pub fn get(&self, k: &str) -> Option<Value> {
+   |            ^^^
+
+warning: struct `Interpreter` is never constructed
+  --> src\bin\..\core\vm.rs:93:12
+   |
+93 | pub struct Interpreter {
+   |            ^^^^^^^^^^^
+
+warning: struct `RuntimeError` is never constructed
+  --> src\bin\..\core\vm.rs:98:12
+   |
+98 | pub struct RuntimeError {
+   |            ^^^^^^^^^^^^
+
+warning: multiple associated items are never used
+   --> src\bin\..\core\vm.rs:103:12
+    |
+102 | impl Interpreter {
+    | ---------------- associated items in this implementation
+103 |     pub fn new() -> Self {
+    |            ^^^
+...
+141 |     pub fn run_module(&mut self, m: &Module) -> Result<(), RuntimeError> {
+    |            ^^^^^^^^^^
+...
+174 |     fn call_ident(&mut self, name: &str, args: Vec<Value>) -> Result<Value, RuntimeError> {
+    |        ^^^^^^^^^^
+...
+182 |     fn call_value(&mut self, callee: Value, args: Vec<Value>) -> Result<Value, RuntimeError> {
+    |        ^^^^^^^^^^
+...
+225 |     fn exec_block(&mut self, b: &Block) -> ControlFlow {
+    |        ^^^^^^^^^^
+...
+240 |     fn exec_stmt(&mut self, s: &Stmt) -> ControlFlow {
+    |        ^^^^^^^^^
+...
+355 |     fn eval_expr(&mut self, e: &Expr) -> Result<Value, RuntimeError> {
+    |        ^^^^^^^^^
+...
+411 |     fn eval_binop(&self, op: &BinOp, l: Value, r: Value) -> Result<Value, RuntimeError> {
+    |        ^^^^^^^^^^
+...
+436 |     fn truthy(&self, v: &Value) -> bool {
+    |        ^^^^^^
+
+warning: enum `ControlFlow` is never used
+   --> src\bin\..\core\vm.rs:449:6
+    |
+449 | enum ControlFlow {
+    |      ^^^^^^^^^^^
+
+warning: function `err` is never used
+   --> src\bin\..\core\vm.rs:461:4
+    |
+461 | fn err(msg: String) -> RuntimeError {
+    |    ^^^
+
+warning: function `collect_vals` is never used
+   --> src\bin\..\core\vm.rs:465:4
+    |
+465 | fn collect_vals(i: &mut Interpreter, es: &[Expr]) -> Result<Vec<Value>, RuntimeError> {
+    |    ^^^^^^^^^^^^
+
+warning: function `num2` is never used
+   --> src\bin\..\core\vm.rs:473:4
+    |
+473 | fn num2(l: Value, r: Value, f: fn(f64, f64) -> f64) -> Result<Value, RuntimeError> {
+    |    ^^^^
+
+warning: function `cmp2` is never used
+   --> src\bin\..\core\vm.rs:480:4
+    |
+480 | fn cmp2(l: Value, r: Value, f: fn(f64, f64) -> bool) -> Result<Value, RuntimeError> {
+    |    ^^^^
+
+warning: function `eq_val` is never used
+   --> src\bin\..\core\vm.rs:487:4
+    |
+487 | fn eq_val(a: &Value, b: &Value) -> bool {
+    |    ^^^^^^
+
+warning: function `builtin_print` is never used
+   --> src\bin\..\core\vm.rs:530:4
+    |
+530 | fn builtin_print(_i: &mut Interpreter, args: Vec<Value>) -> Result<Value, RuntimeError> {
+    |    ^^^^^^^^^^^^^
+
+warning: function `builtin_time_ms` is never used
+   --> src\bin\..\core\vm.rs:536:4
+    |
+536 | fn builtin_time_ms(_i: &mut Interpreter, _args: Vec<Value>) -> Result<Value, RuntimeError> {
+    |    ^^^^^^^^^^^^^^^
+
+warning: function `builtin_rand` is never used
+   --> src\bin\..\core\vm.rs:541:4
+    |
+541 | fn builtin_rand(_i: &mut Interpreter, _args: Vec<Value>) -> Result<Value, RuntimeError> {
+    |    ^^^^^^^^^^^^
+
+warning: function `display` is never used
+   --> src\bin\..\core\vm.rs:553:4
+    |
+553 | fn display(v: &Value) -> String {
+    |    ^^^^^^^
+
+warning: method `to_emit_kind` is never used
+  --> src\bin\..\tui\editor.rs:57:8
+   |
+44 | impl EmitMode {
+   | ------------- method in this implementation
+...
+57 |     fn to_emit_kind(self) -> EmitKind {
+   |        ^^^^^^^^^^^^
+
+warning: `aeonmi_project` (bin "Aeonmi") generated 39 warnings (4 duplicates)
+warning: `aeonmi_project` (bin "aeonmi_project") generated 39 warnings (run `cargo fix --bin "aeonmi_project"` to apply 1 suggestion)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.20s

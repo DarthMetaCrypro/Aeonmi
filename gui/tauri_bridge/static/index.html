@@ -1,0 +1,47 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Aeonmi Tauri Bridge - Demo</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm/css/xterm.css" />
+  <style>
+    body { margin: 0; font-family: sans-serif; height: 100vh; display: flex; }
+    #editor { width: 50%; height: 100vh; }
+    #terminal { width: 50%; height: 100vh; }
+    #toolbar { position: fixed; top: 8px; left: 8px; z-index: 10; }
+  </style>
+</head>
+<body>
+  <div id="toolbar">
+    <button id="start">Start TUI</button>
+    <button id="detach">Open Native Terminal</button>
+  </div>
+  <div id="editor"></div>
+  <div id="terminal"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/xterm/lib/xterm.js"></script>
+  <script>
+    const term = new Terminal();
+    term.open(document.getElementById('terminal'));
+
+    let ws;
+    document.getElementById('start').addEventListener('click', () => {
+      if (ws) ws.close();
+      ws = new WebSocket('ws://127.0.0.1:9001/pty');
+      ws.binaryType = 'arraybuffer';
+      ws.onopen = () => console.log('ws open');
+      ws.onmessage = (ev) => {
+        const data = ev.data instanceof ArrayBuffer ? new TextDecoder().decode(ev.data) : ev.data;
+        term.write(data);
+      };
+      term.onData(d => ws.send(d));
+    });
+
+    document.getElementById('detach').addEventListener('click', async () => {
+      await fetch('/detach', { method: 'POST' });
+      alert('Requested native terminal open (server will spawn Aeonmi Shard)');
+    });
+  </script>
+</body>
+</html>

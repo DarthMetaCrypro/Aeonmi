@@ -6,6 +6,7 @@ mod core;
 mod io;
 mod shell;
 mod tui; // tui::editor // neon Shard shell
+mod ai; // AI provider registry & implementations
 
 use clap::Parser; // trait import enables AeonmiCli::parse()
 use std::path::PathBuf;
@@ -203,7 +204,46 @@ fn main() -> anyhow::Result<()> {
 
         Some(Command::Edit { file, tui }) => commands::edit::main(file, cfg_path, tui),
 
-    Some(Command::New { file }) => commands::fs::new_file(file),
+    Some(Command::New { file, open, tui, compile, run }) => {
+        let created_path = file.clone();
+        let res = commands::fs::new_file(file);
+        if res.is_err() { return res; }
+        if open {
+            let _ = commands::edit::main(created_path.clone(), cfg_path.clone(), tui);
+        }
+        if compile || run {
+            if let Some(p) = created_path.clone() {
+                // Default to AI emit now (user request)
+                let out_ai = PathBuf::from("output.ai");
+                let _ = commands::compile::compile_pipeline(
+                    Some(p.clone()),
+                    EmitKind::Ai,
+                    out_ai.clone(),
+                    false,
+                    false,
+                    args.pretty_errors,
+                    args.no_sema,
+                    args.debug_titan,
+                );
+                if run {
+                    // For run we still need JS path: compile JS then execute
+                    let out_js = PathBuf::from("output.js");
+                    let _ = commands::compile::compile_pipeline(
+                        Some(p.clone()),
+                        EmitKind::Js,
+                        out_js.clone(),
+                        false,
+                        false,
+                        args.pretty_errors,
+                        args.no_sema,
+                        args.debug_titan,
+                    );
+                    let _ = commands::run::main_with_opts(p, Some(out_js), args.pretty_errors, args.no_sema);
+                }
+            }
+        }
+        Ok(())
+    },
     Some(Command::Open { file }) => commands::fs::open(file),
     Some(Command::Save { file }) => commands::fs::save(file),
     Some(Command::SaveAs { file }) => commands::fs::save_as(file),
@@ -251,7 +291,208 @@ fn main() -> anyhow::Result<()> {
             crate::cli::AiAction::Optimize => { println!("ai: optimize (placeholder)"); Ok(()) }
             crate::cli::AiAction::Explain { section } => { println!("ai: explain {:?}", section); Ok(()) }
             crate::cli::AiAction::Refactor { rule } => { println!("ai: refactor {:?}", rule); Ok(()) }
+            crate::cli::AiAction::Chat { provider, prompt, list, stream } => {
+                use crate::ai::AiRegistry;
+                let reg = AiRegistry::new();
+                if list {
+                    let names = reg.list();
+                    if names.is_empty() { println!("(no providers enabled) build with --features ai-openai,ai-copilot,..."); } else { for n in names { println!("{n}"); } }
+                    return Ok(());
+                }
+                let prov_name = provider.or_else(|| reg.list().first().map(|s| s.to_string()));
+                if prov_name.is_none() { println!("No AI providers enabled. Build with feature flags (e.g. --features ai-openai)"); return Ok(()); }
+                let chosen = prov_name.unwrap();
+                let prov = match reg.get(&chosen) { Some(p) => p, None => { println!("Provider '{}' not found in enabled set: {:?}", chosen, reg.list()); return Ok(()); } };
+                let prompt_text = match prompt { Some(t) => t, None => {
+                    use std::io::{self, Read}; let mut buf = String::new(); io::stdin().read_to_string(&mut buf).ok(); buf
+                }};
+                if stream {
+                    let mut out = String::new();
+                    let mut cb = |chunk: &str| { print!("{}", chunk); out.push_str(chunk); std::io::Write::flush(&mut std::io::stdout()).ok(); };
+                    if let Err(e) = prov.chat_stream(&prompt_text, &mut cb) { eprintln!("chat error: {e}"); }
+                    println!();
+                } else {
+                    match prov.chat(&prompt_text) { Ok(resp) => { println!("{}", resp); }, Err(e) => eprintln!("chat error: {e}"), }
+                }
+                Ok(())
+            }
         },
+
+        Some(Command::Cargo { args }) => {
+            // Pass through to system cargo
+            let status = std::process::Command::new("cargo").args(&args).status();
+            match status {
+                Ok(s) if s.success() => Ok(()),
+                Ok(s) => {
+                    anyhow::bail!("cargo exited with status {}", s);
+                }
+                Err(e) => anyhow::bail!("failed to execute cargo: {e}"),
+            }
+        }
+
+        Some(Command::Python { args }) => {
+            let exe = if cfg!(windows) { "python" } else { "python3" };
+            let status = std::process::Command::new(exe).args(&args).status();
+            match status {
+                Ok(s) if s.success() => Ok(()),
+                Ok(s) => anyhow::bail!("python exited with status {}", s),
+                Err(e) => anyhow::bail!("failed to execute python: {e}"),
+            }
+        }
+
+        Some(Command::Node { args }) => {
+            let status = std::process::Command::new("node").args(&args).status();
+            match status {
+                Ok(s) if s.success() => Ok(()),
+                Ok(s) => anyhow::bail!("node exited with status {}", s),
+                Err(e) => anyhow::bail!("failed to execute node: {e}"),
+            }
+        }
+
+    Some(Command::Exec { file, args: passthrough, watch, keep_temp, no_run }) => {
+            use std::time::{Duration, SystemTime};
+            use std::thread::sleep;
+            fn run_once(
+                file: &PathBuf,
+                passthrough: &[String],
+                pretty: bool,
+                skip_sema: bool,
+                debug_titan: bool,
+                keep_temp: bool,
+                no_run: bool,
+            ) -> anyhow::Result<()> {
+                let ext = file
+                    .extension()
+                    .and_then(|e| e.to_str())
+                    .unwrap_or("")
+                    .to_lowercase();
+                match ext.as_str() {
+                    "ai" => {
+                        let out_js = PathBuf::from("__exec_tmp.js");
+                        commands::compile::compile_pipeline(
+                            Some(file.clone()),
+                            EmitKind::Js,
+                            out_js.clone(),
+                            false,
+                            false,
+                            pretty,
+                            skip_sema,
+                            debug_titan,
+                        )?;
+                        if !no_run {
+                            let status = std::process::Command::new("node")
+                                .arg(&out_js)
+                                .args(passthrough)
+                                .status();
+                            match status {
+                                Ok(s) if s.success() => {}
+                                Ok(s) => anyhow::bail!("node exited with status {}", s),
+                                Err(e) => anyhow::bail!("failed to execute node: {e}"),
+                            }
+                        }
+                        if !keep_temp {
+                            let _ = std::fs::remove_file(&out_js);
+                        }
+                        Ok(())
+                    }
+                    "js" => {
+                        if no_run {
+                            return Ok(());
+                        }
+                        let status = std::process::Command::new("node")
+                            .arg(&file)
+                            .args(passthrough)
+                            .status();
+                        match status {
+                            Ok(s) if s.success() => Ok(()),
+                            Ok(s) => anyhow::bail!("node exited with status {}", s),
+                            Err(e) => anyhow::bail!("failed to execute node: {e}"),
+                        }
+                    }
+                    "py" => {
+                        let exe = if cfg!(windows) { "python" } else { "python3" };
+                        if no_run {
+                            return Ok(());
+                        }
+                        let status = std::process::Command::new(exe)
+                            .arg(&file)
+                            .args(passthrough)
+                            .status();
+                        match status {
+                            Ok(s) if s.success() => Ok(()),
+                            Ok(s) => anyhow::bail!("python exited with status {}", s),
+                            Err(e) => anyhow::bail!("failed to execute python: {e}"),
+                        }
+                    }
+                    "rs" => {
+                        let out_exe = if cfg!(windows) {
+                            "__exec_tmp_rs.exe"
+                        } else {
+                            "__exec_tmp_rs"
+                        };
+                        let status_compile = std::process::Command::new("rustc")
+                            .arg(&file)
+                            .arg("-O")
+                            .arg("-o")
+                            .arg(out_exe)
+                            .status();
+                        match status_compile {
+                            Ok(s) if s.success() => {
+                                if !no_run {
+                                    let status_run = std::process::Command::new(out_exe)
+                                        .args(passthrough)
+                                        .status();
+                                    match status_run {
+                                        Ok(s) if s.success() => {}
+                                        Ok(s) =>
+                                            anyhow::bail!("rust exec exited with status {}", s),
+                                        Err(e) =>
+                                            anyhow::bail!("failed to run rust exe: {e}"),
+                                    }
+                                }
+                                if !keep_temp {
+                                    let _ = std::fs::remove_file(if cfg!(windows) {
+                                        "__exec_tmp_rs.exe"
+                                    } else {
+                                        "__exec_tmp_rs"
+                                    });
+                                }
+                                Ok(())
+                            }
+                            Ok(s) => anyhow::bail!("rustc exited with status {}", s),
+                            Err(e) => anyhow::bail!("failed to execute rustc: {e}"),
+                        }
+                    }
+                    other => {
+                        anyhow::bail!(
+                            "Unsupported extension '{other}'. Supported: .ai .js .py .rs"
+                        );
+                    }
+                }
+            }
+            if watch {
+                let mut last_mtime = std::fs::metadata(&file)
+                    .and_then(|m| m.modified())
+                    .unwrap_or(SystemTime::UNIX_EPOCH);
+                loop {
+                    let _ = run_once(&file, &passthrough, args.pretty_errors, args.no_sema, args.debug_titan, keep_temp, no_run);
+                    if std::env::var("AEONMI_WATCH_ONCE").ok().as_deref() == Some("1") { break; }
+                    sleep(Duration::from_millis(500));
+                    if let Ok(meta) = std::fs::metadata(&file) {
+                        if let Ok(m) = meta.modified() {
+                            if m > last_mtime {
+                                last_mtime = m;
+                                println!("[watch] change detected, re-running...");
+                                continue;
+                            }
+                        }
+                    }
+                }
+                Ok(())
+            } else {
+                run_once(&file, &passthrough, args.pretty_errors, args.no_sema, args.debug_titan, keep_temp, no_run)
+            }
+        }
 
         None => {
             use clap::CommandFactory;

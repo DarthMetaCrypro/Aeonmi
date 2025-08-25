@@ -1,0 +1,1111 @@
+       Fresh cfg-if v1.0.1
+       Fresh unicode-ident v1.0.18
+       Fresh autocfg v1.5.0
+       Fresh equivalent v1.0.2
+       Fresh allocator-api2 v0.2.21
+       Fresh foldhash v0.1.5
+       Fresh heck v0.5.0
+       Fresh utf8parse v0.2.2
+       Fresh once_cell_polyfill v1.70.1
+       Fresh either v1.15.0
+       Fresh smallvec v1.15.1
+       Fresh proc-macro2 v1.0.97
+       Fresh hashbrown v0.15.5
+       Fresh getrandom v0.2.16
+       Fresh scopeguard v1.2.0
+       Fresh anstyle v1.0.11
+       Fresh anstyle-parse v0.2.7
+       Fresh is_terminal_polyfill v1.70.1
+       Fresh log v0.4.27
+       Fresh windows_x86_64_msvc v0.53.0
+       Fresh quote v1.0.40
+       Fresh windows_x86_64_msvc v0.52.6
+       Fresh rustversion v1.0.22
+       Fresh winapi v0.3.9
+       Fresh zerocopy v0.8.26
+       Fresh windows_x86_64_msvc v0.48.5
+       Fresh rand_core v0.6.4
+       Fresh libc v0.2.175
+       Fresh colorchoice v1.0.4
+       Fresh once_cell v1.21.3
+       Fresh indexmap v2.10.0
+       Fresh crossbeam-utils v0.8.21
+       Fresh itertools v0.13.0
+       Fresh toml_write v0.1.2
+       Fresh memchr v2.7.5
+       Fresh unicode-width v0.1.14
+       Fresh syn v2.0.104
+       Fresh windows-targets v0.53.3
+       Fresh windows-targets v0.52.6
+       Fresh ppv-lite86 v0.2.21
+       Fresh lock_api v0.4.13
+       Fresh libm v0.2.15
+       Fresh windows-targets v0.48.5
+       Fresh crossterm_winapi v0.9.1
+       Fresh castaway v0.2.4
+       Fresh strsim v0.11.1
+       Fresh bitflags v2.9.1
+       Fresh ryu v1.0.20
+       Fresh static_assertions v1.1.0
+       Fresh tinyvec_macros v0.1.1
+       Fresh clap_lex v0.7.5
+       Fresh unicode-segmentation v1.12.0
+       Fresh itoa v1.0.15
+       Fresh winnow v0.7.12
+       Fresh dirs-sys-next v0.1.2
+       Fresh crossbeam-channel v0.5.15
+       Fresh windows-sys v0.60.2
+       Fresh windows-sys v0.59.0
+       Fresh serde_derive v1.0.219
+       Fresh parking_lot_core v0.9.11
+       Fresh rand_chacha v0.3.1
+       Fresh strum_macros v0.26.4
+       Fresh tinyvec v1.10.0
+       Fresh unicode-truncate v1.1.0
+       Fresh num-traits v0.2.19
+       Fresh clap_derive v4.5.41
+       Fresh stability v0.2.1
+       Fresh compact_str v0.7.1
+       Fresh windows-sys v0.48.0
+       Fresh getrandom v0.3.3
+       Fresh paste v1.0.15
+       Fresh lru v0.12.5
+       Fresh itertools v0.12.1
+       Fresh cassowary v0.3.0
+       Fresh lazy_static v1.5.0
+       Fresh fastrand v2.3.0
+       Fresh dirs-next v2.0.0
+       Fresh serde v1.0.219
+       Fresh winapi-util v0.1.10
+       Fresh anstyle-query v1.1.4
+       Fresh anstyle-wincon v3.0.10
+       Fresh parking_lot v0.12.4
+       Fresh rand v0.8.5
+       Fresh strum v0.26.3
+       Fresh filetime v0.2.26
+       Fresh anyhow v1.0.99
+       Fresh tempfile v3.20.0
+       Fresh colored v2.2.0
+       Fresh ctrlc v3.4.7
+       Fresh unicode-normalization v0.1.24
+       Fresh aho-corasick v1.1.3
+       Fresh zeroize v1.8.1
+       Fresh regex-syntax v0.8.5
+       Fresh fs_extra v1.3.0
+       Fresh bstr v1.12.0
+       Fresh encode_unicode v1.0.0
+       Fresh similar v2.7.0
+       Fresh same-file v1.0.6
+       Fresh anstream v0.6.20
+       Fresh toml_datetime v0.6.11
+       Fresh serde_spanned v0.6.9
+       Fresh crossterm v0.27.0
+       Fresh rand_distr v0.4.3
+       Fresh regex-automata v0.4.9
+       Fresh console v0.15.11
+       Fresh walkdir v2.5.0
+       Fresh clap_builder v4.5.44
+       Fresh toml_edit v0.22.27
+       Fresh ratatui v0.26.3
+       Fresh globset v0.4.16
+       Fresh notify v6.1.1
+       Fresh clap v4.5.44
+       Fresh toml v0.8.23
+       Fresh insta v1.43.1
+warning: variable does not need to be mutable
+   --> src\core\lexer.rs:348:25
+    |
+348 |                 Ok(Some(mut token)) => {
+    |                         ----^^^^^
+    |                         |
+    |                         help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` on by default
+
+warning: fields `normalized` and `src` are never read
+   --> src\core\lexer.rs:160:5
+    |
+159 | pub struct Lexer {
+    |            ----- fields in this struct
+160 |     normalized: String,
+    |     ^^^^^^^^^^
+161 |     src: *const str, // Only used for lifetime pinning
+    |     ^^^
+    |
+    = note: `#[warn(dead_code)]` on by default
+
+warning: function `map_binop` is never used
+   --> src\core\lowering.rs:279:4
+    |
+279 | fn map_binop(op: &str) -> BinOp {
+    |    ^^^^^^^^^
+
+warning: function `map_unop` is never used
+   --> src\core\lowering.rs:303:4
+    |
+303 | fn map_unop(op: &str) -> UnOp {
+    |    ^^^^^^^^
+
+warning: method `to_emit_kind` is never used
+  --> src\tui\editor.rs:57:8
+   |
+44 | impl EmitMode {
+   | ------------- method in this implementation
+...
+57 |     fn to_emit_kind(self) -> EmitKind {
+   |        ^^^^^^^^^^^^
+
+warning: unused import: `super::*`
+   --> src\core\lexer.rs:753:9
+    |
+753 |     use super::*;
+    |         ^^^^^^^^
+    |
+    = note: `#[warn(unused_imports)]` on by default
+
+warning: `aeonmi_project` (lib) generated 5 warnings (run `cargo fix --lib -p aeonmi_project` to apply 1 suggestion)
+warning: `aeonmi_project` (lib test) generated 3 warnings (2 duplicates) (run `cargo fix --lib -p aeonmi_project --tests` to apply 1 suggestion)
+warning: unused variable: `backend`
+   --> src\main.rs:161:13
+    |
+161 |             backend,
+    |             ^^^^^^^ help: try ignoring the field: `backend: _`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `file`
+   --> src\main.rs:162:13
+    |
+162 |             file,
+    |             ^^^^ help: try ignoring the field: `file: _`
+
+warning: unused variable: `shots`
+   --> src\main.rs:163:13
+    |
+163 |             shots,
+    |             ^^^^^ help: try ignoring the field: `shots: _`
+
+warning: function `compile_file_to_ir` is never used
+   --> src\core\compiler.rs:146:8
+    |
+146 | pub fn compile_file_to_ir(path: &Path) -> Result<Module, String> {
+    |        ^^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` on by default
+
+warning: function `module_name_from_path` is never used
+   --> src\core\compiler.rs:174:4
+    |
+174 | fn module_name_from_path(path: &Path) -> String {
+    |    ^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `compile_and_run_js` is never used
+   --> src\core\compiler.rs:185:8
+    |
+185 | pub fn compile_and_run_js(input: &PathBuf) -> Result<(), String> {
+    |        ^^^^^^^^^^^^^^^^^^
+
+warning: function `compile_and_write_js` is never used
+   --> src\core\compiler.rs:213:8
+    |
+213 | pub fn compile_and_write_js(input: &PathBuf, out: Option<&PathBuf>) -> Result<(), String> {
+    |        ^^^^^^^^^^^^^^^^^^^^
+
+warning: fields `language_mode` and `dynamic_config` are never read
+  --> src\core\lexer.rs:38:9
+   |
+33 | pub struct LexerOptions {
+   |            ------------ fields in this struct
+...
+38 |     pub language_mode: Option<String>,
+   |         ^^^^^^^^^^^^^
+39 |     pub dynamic_config: Option<Arc<Mutex<LexerDynamicConfig>>>,
+   |         ^^^^^^^^^^^^^^
+   |
+   = note: `LexerOptions` has a derived impl for the trait `Clone`, but this is intentionally ignored during dead code analysis
+
+warning: field `enabled_plugins` is never read
+  --> src\core\lexer.rs:61:9
+   |
+60 | pub struct LexerDynamicConfig {
+   |            ------------------ field in this struct
+61 |     pub enabled_plugins: Vec<String>,
+   |         ^^^^^^^^^^^^^^^
+   |
+   = note: `LexerDynamicConfig` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: fields `line`, `col`, and `in_ai_block` are never read
+  --> src\core\lexer.rs:69:9
+   |
+68 | pub struct LexerView {
+   |            --------- fields in this struct
+69 |     pub line: usize,
+   |         ^^^^
+70 |     pub col: usize,
+   |         ^^^
+71 |     pub in_ai_block: bool,
+   |         ^^^^^^^^^^^
+   |
+   = note: `LexerView` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: variants `PluginError` and `Diagnostic` are never constructed
+  --> src\core\lexer.rs:84:5
+   |
+76 | pub enum LexerError {
+   |          ---------- variants in this enum
+...
+84 |     PluginError(String, usize, usize),
+   |     ^^^^^^^^^^^
+85 |     Diagnostic(String, usize, usize, Option<String>),
+   |     ^^^^^^^^^^
+   |
+   = note: `LexerError` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+
+warning: method `name` is never used
+   --> src\core\lexer.rs:142:8
+    |
+140 | pub trait CustomTokenKind: Send + Sync {
+    |           --------------- method in this trait
+141 |     fn try_match(&self, lexer: &Lexer) -> Option<TokenKind>;
+142 |     fn name(&self) -> &str;
+    |        ^^^^
+
+warning: method `on_security_event` is never used
+   --> src\core\lexer.rs:155:8
+    |
+152 | pub trait DlpPlugin: Send + Sync {
+    |           --------- method in this trait
+...
+155 |     fn on_security_event(&self, event: &str, token: Option<&Token>);
+    |        ^^^^^^^^^^^^^^^^^
+
+warning: fields `normalized`, `src`, and `token_cache` are never read
+   --> src\core\lexer.rs:160:5
+    |
+159 | pub struct Lexer {
+    |            ----- fields in this struct
+160 |     normalized: String,
+    |     ^^^^^^^^^^
+161 |     src: *const str, // Only used for lifetime pinning
+    |     ^^^
+...
+170 |     pub token_cache: Vec<Token>,
+    |         ^^^^^^^^^^^
+
+warning: methods `add_plugin`, `register_custom_token_kind`, and `set_event_bus` are never used
+   --> src\core\lexer.rs:208:12
+    |
+174 | impl Lexer {
+    | ---------- methods in this implementation
+...
+208 |     pub fn add_plugin<P: LexerPlugin + 'static>(&mut self, plugin: P) {
+    |            ^^^^^^^^^^
+...
+211 |     pub fn register_custom_token_kind(&mut self, kind: Arc<dyn CustomTokenKind>) {
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+214 |     pub fn set_event_bus(&mut self, bus: Arc<Mutex<Vec<String>>>) {
+    |            ^^^^^^^^^^^^^
+
+warning: unused import: `super::*`
+   --> src\bin\..\core\lexer.rs:753:9
+    |
+753 |     use super::*;
+    |         ^^^^^^^^
+    |
+    = note: `#[warn(unused_imports)]` on by default
+
+warning: variable does not need to be mutable
+   --> src\bin\..\core\lexer.rs:348:25
+    |
+348 |                 Ok(Some(mut token)) => {
+    |                         ----^^^^^
+    |                         |
+    |                         help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` on by default
+
+warning: unused variable: `backend`
+   --> src\bin\../main.rs:161:13
+    |
+161 |             backend,
+    |             ^^^^^^^ help: try ignoring the field: `backend: _`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `file`
+   --> src\bin\../main.rs:162:13
+    |
+162 |             file,
+    |             ^^^^ help: try ignoring the field: `file: _`
+
+warning: unused variable: `shots`
+   --> src\bin\../main.rs:163:13
+    |
+163 |             shots,
+    |             ^^^^^ help: try ignoring the field: `shots: _`
+
+warning: function `compile_file_to_ir` is never used
+   --> src\bin\..\core\compiler.rs:146:8
+    |
+146 | pub fn compile_file_to_ir(path: &Path) -> Result<Module, String> {
+    |        ^^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` on by default
+
+warning: function `module_name_from_path` is never used
+   --> src\bin\..\core\compiler.rs:174:4
+    |
+174 | fn module_name_from_path(path: &Path) -> String {
+    |    ^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `compile_and_run_js` is never used
+   --> src\bin\..\core\compiler.rs:185:8
+    |
+185 | pub fn compile_and_run_js(input: &PathBuf) -> Result<(), String> {
+    |        ^^^^^^^^^^^^^^^^^^
+
+warning: function `compile_and_write_js` is never used
+   --> src\bin\..\core\compiler.rs:213:8
+    |
+213 | pub fn compile_and_write_js(input: &PathBuf, out: Option<&PathBuf>) -> Result<(), String> {
+    |        ^^^^^^^^^^^^^^^^^^^^
+
+warning: fields `language_mode` and `dynamic_config` are never read
+  --> src\bin\..\core\lexer.rs:38:9
+   |
+33 | pub struct LexerOptions {
+   |            ------------ fields in this struct
+...
+38 |     pub language_mode: Option<String>,
+   |         ^^^^^^^^^^^^^
+39 |     pub dynamic_config: Option<Arc<Mutex<LexerDynamicConfig>>>,
+   |         ^^^^^^^^^^^^^^
+   |
+   = note: `LexerOptions` has a derived impl for the trait `Clone`, but this is intentionally ignored during dead code analysis
+
+warning: field `enabled_plugins` is never read
+  --> src\bin\..\core\lexer.rs:61:9
+   |
+60 | pub struct LexerDynamicConfig {
+   |            ------------------ field in this struct
+61 |     pub enabled_plugins: Vec<String>,
+   |         ^^^^^^^^^^^^^^^
+   |
+   = note: `LexerDynamicConfig` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: fields `line`, `col`, and `in_ai_block` are never read
+  --> src\bin\..\core\lexer.rs:69:9
+   |
+68 | pub struct LexerView {
+   |            --------- fields in this struct
+69 |     pub line: usize,
+   |         ^^^^
+70 |     pub col: usize,
+   |         ^^^
+71 |     pub in_ai_block: bool,
+   |         ^^^^^^^^^^^
+   |
+   = note: `LexerView` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: variants `PluginError` and `Diagnostic` are never constructed
+  --> src\bin\..\core\lexer.rs:84:5
+   |
+76 | pub enum LexerError {
+   |          ---------- variants in this enum
+...
+84 |     PluginError(String, usize, usize),
+   |     ^^^^^^^^^^^
+85 |     Diagnostic(String, usize, usize, Option<String>),
+   |     ^^^^^^^^^^
+   |
+   = note: `LexerError` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+
+warning: method `name` is never used
+   --> src\bin\..\core\lexer.rs:142:8
+    |
+140 | pub trait CustomTokenKind: Send + Sync {
+    |           --------------- method in this trait
+141 |     fn try_match(&self, lexer: &Lexer) -> Option<TokenKind>;
+142 |     fn name(&self) -> &str;
+    |        ^^^^
+
+warning: method `on_security_event` is never used
+   --> src\bin\..\core\lexer.rs:155:8
+    |
+152 | pub trait DlpPlugin: Send + Sync {
+    |           --------- method in this trait
+...
+155 |     fn on_security_event(&self, event: &str, token: Option<&Token>);
+    |        ^^^^^^^^^^^^^^^^^
+
+warning: fields `normalized`, `src`, and `token_cache` are never read
+   --> src\bin\..\core\lexer.rs:160:5
+    |
+159 | pub struct Lexer {
+    |            ----- fields in this struct
+160 |     normalized: String,
+    |     ^^^^^^^^^^
+161 |     src: *const str, // Only used for lifetime pinning
+    |     ^^^
+...
+170 |     pub token_cache: Vec<Token>,
+    |         ^^^^^^^^^^^
+
+warning: methods `add_plugin`, `register_custom_token_kind`, and `set_event_bus` are never used
+   --> src\bin\..\core\lexer.rs:208:12
+    |
+174 | impl Lexer {
+    | ---------- methods in this implementation
+...
+208 |     pub fn add_plugin<P: LexerPlugin + 'static>(&mut self, plugin: P) {
+    |            ^^^^^^^^^^
+...
+211 |     pub fn register_custom_token_kind(&mut self, kind: Arc<dyn CustomTokenKind>) {
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+214 |     pub fn set_event_bus(&mut self, bus: Arc<Mutex<Vec<String>>>) {
+    |            ^^^^^^^^^^^^^
+
+warning: associated function `new` is never used
+  --> src\core\compiler.rs:28:12
+   |
+27 | impl Compiler {
+   | ------------- associated function in this implementation
+28 |     pub fn new() -> Self {
+   |            ^^^
+   |
+   = note: `#[warn(dead_code)]` on by default
+
+warning: function `compile_file_to_ir` is never used
+   --> src\core\compiler.rs:146:8
+    |
+146 | pub fn compile_file_to_ir(path: &Path) -> Result<Module, String> {
+    |        ^^^^^^^^^^^^^^^^^^
+
+warning: function `ensure_parent_dir` is never used
+   --> src\core\qpoly.rs:113:8
+    |
+113 | pub fn ensure_parent_dir(path: &Path) -> Result<()> {
+    |        ^^^^^^^^^^^^^^^^^
+
+warning: enum `Value` is never used
+  --> src\core\vm.rs:11:10
+   |
+11 | pub enum Value {
+   |          ^^^^^
+
+warning: struct `Function` is never constructed
+  --> src\core\vm.rs:23:12
+   |
+23 | pub struct Function {
+   |            ^^^^^^^^
+
+warning: struct `Builtin` is never constructed
+  --> src\core\vm.rs:39:12
+   |
+39 | pub struct Builtin {
+   |            ^^^^^^^
+
+warning: struct `Env` is never constructed
+  --> src\core\vm.rs:52:12
+   |
+52 | pub struct Env {
+   |            ^^^
+
+warning: associated items `new`, `push`, `pop`, `define`, `assign`, and `get` are never used
+  --> src\core\vm.rs:57:12
+   |
+56 | impl Env {
+   | -------- associated items in this implementation
+57 |     pub fn new() -> Self {
+   |            ^^^
+...
+62 |     pub fn push(&mut self) {
+   |            ^^^^
+...
+65 |     pub fn pop(&mut self) {
+   |            ^^^
+...
+68 |     pub fn define(&mut self, k: String, v: Value) {
+   |            ^^^^^^
+...
+72 |     pub fn assign(&mut self, k: &str, v: Value) -> bool {
+   |            ^^^^^^
+...
+82 |     pub fn get(&self, k: &str) -> Option<Value> {
+   |            ^^^
+
+warning: struct `Interpreter` is never constructed
+  --> src\core\vm.rs:93:12
+   |
+93 | pub struct Interpreter {
+   |            ^^^^^^^^^^^
+
+warning: struct `RuntimeError` is never constructed
+  --> src\core\vm.rs:98:12
+   |
+98 | pub struct RuntimeError {
+   |            ^^^^^^^^^^^^
+
+warning: multiple associated items are never used
+   --> src\core\vm.rs:103:12
+    |
+102 | impl Interpreter {
+    | ---------------- associated items in this implementation
+103 |     pub fn new() -> Self {
+    |            ^^^
+...
+141 |     pub fn run_module(&mut self, m: &Module) -> Result<(), RuntimeError> {
+    |            ^^^^^^^^^^
+...
+174 |     fn call_ident(&mut self, name: &str, args: Vec<Value>) -> Result<Value, RuntimeError> {
+    |        ^^^^^^^^^^
+...
+182 |     fn call_value(&mut self, callee: Value, args: Vec<Value>) -> Result<Value, RuntimeError> {
+    |        ^^^^^^^^^^
+...
+225 |     fn exec_block(&mut self, b: &Block) -> ControlFlow {
+    |        ^^^^^^^^^^
+...
+240 |     fn exec_stmt(&mut self, s: &Stmt) -> ControlFlow {
+    |        ^^^^^^^^^
+...
+355 |     fn eval_expr(&mut self, e: &Expr) -> Result<Value, RuntimeError> {
+    |        ^^^^^^^^^
+...
+411 |     fn eval_binop(&self, op: &BinOp, l: Value, r: Value) -> Result<Value, RuntimeError> {
+    |        ^^^^^^^^^^
+...
+436 |     fn truthy(&self, v: &Value) -> bool {
+    |        ^^^^^^
+
+warning: enum `ControlFlow` is never used
+   --> src\core\vm.rs:449:6
+    |
+449 | enum ControlFlow {
+    |      ^^^^^^^^^^^
+
+warning: function `err` is never used
+   --> src\core\vm.rs:461:4
+    |
+461 | fn err(msg: String) -> RuntimeError {
+    |    ^^^
+
+warning: function `collect_vals` is never used
+   --> src\core\vm.rs:465:4
+    |
+465 | fn collect_vals(i: &mut Interpreter, es: &[Expr]) -> Result<Vec<Value>, RuntimeError> {
+    |    ^^^^^^^^^^^^
+
+warning: function `num2` is never used
+   --> src\core\vm.rs:473:4
+    |
+473 | fn num2(l: Value, r: Value, f: fn(f64, f64) -> f64) -> Result<Value, RuntimeError> {
+    |    ^^^^
+
+warning: function `cmp2` is never used
+   --> src\core\vm.rs:480:4
+    |
+480 | fn cmp2(l: Value, r: Value, f: fn(f64, f64) -> bool) -> Result<Value, RuntimeError> {
+    |    ^^^^
+
+warning: function `eq_val` is never used
+   --> src\core\vm.rs:487:4
+    |
+487 | fn eq_val(a: &Value, b: &Value) -> bool {
+    |    ^^^^^^
+
+warning: function `builtin_print` is never used
+   --> src\core\vm.rs:530:4
+    |
+530 | fn builtin_print(_i: &mut Interpreter, args: Vec<Value>) -> Result<Value, RuntimeError> {
+    |    ^^^^^^^^^^^^^
+
+warning: function `builtin_time_ms` is never used
+   --> src\core\vm.rs:536:4
+    |
+536 | fn builtin_time_ms(_i: &mut Interpreter, _args: Vec<Value>) -> Result<Value, RuntimeError> {
+    |    ^^^^^^^^^^^^^^^
+
+warning: function `builtin_rand` is never used
+   --> src\core\vm.rs:541:4
+    |
+541 | fn builtin_rand(_i: &mut Interpreter, _args: Vec<Value>) -> Result<Value, RuntimeError> {
+    |    ^^^^^^^^^^^^
+
+warning: function `display` is never used
+   --> src\core\vm.rs:553:4
+    |
+553 | fn display(v: &Value) -> String {
+    |    ^^^^^^^
+
+warning: `aeonmi_project` (bin "Aeonmi" test) generated 17 warnings (2 duplicates)
+warning: `aeonmi_project` (bin "aeonmi_project" test) generated 17 warnings (run `cargo fix --bin "aeonmi_project" --tests` to apply 2 suggestions)
+warning: `aeonmi_project` (bin "Aeonmi") generated 39 warnings (18 duplicates)
+warning: associated function `new` is never used
+  --> src\bin\..\core\compiler.rs:28:12
+   |
+27 | impl Compiler {
+   | ------------- associated function in this implementation
+28 |     pub fn new() -> Self {
+   |            ^^^
+   |
+   = note: `#[warn(dead_code)]` on by default
+
+warning: function `compile_file_to_ir` is never used
+   --> src\bin\..\core\compiler.rs:146:8
+    |
+146 | pub fn compile_file_to_ir(path: &Path) -> Result<Module, String> {
+    |        ^^^^^^^^^^^^^^^^^^
+
+warning: function `map_binop` is never used
+   --> src\bin\..\core\lowering.rs:279:4
+    |
+279 | fn map_binop(op: &str) -> BinOp {
+    |    ^^^^^^^^^
+
+warning: function `map_unop` is never used
+   --> src\bin\..\core\lowering.rs:303:4
+    |
+303 | fn map_unop(op: &str) -> UnOp {
+    |    ^^^^^^^^
+
+warning: function `ensure_parent_dir` is never used
+   --> src\bin\..\core\qpoly.rs:113:8
+    |
+113 | pub fn ensure_parent_dir(path: &Path) -> Result<()> {
+    |        ^^^^^^^^^^^^^^^^^
+
+warning: enum `Value` is never used
+  --> src\bin\..\core\vm.rs:11:10
+   |
+11 | pub enum Value {
+   |          ^^^^^
+
+warning: struct `Function` is never constructed
+  --> src\bin\..\core\vm.rs:23:12
+   |
+23 | pub struct Function {
+   |            ^^^^^^^^
+
+warning: struct `Builtin` is never constructed
+  --> src\bin\..\core\vm.rs:39:12
+   |
+39 | pub struct Builtin {
+   |            ^^^^^^^
+
+warning: struct `Env` is never constructed
+  --> src\bin\..\core\vm.rs:52:12
+   |
+52 | pub struct Env {
+   |            ^^^
+
+warning: associated items `new`, `push`, `pop`, `define`, `assign`, and `get` are never used
+  --> src\bin\..\core\vm.rs:57:12
+   |
+56 | impl Env {
+   | -------- associated items in this implementation
+57 |     pub fn new() -> Self {
+   |            ^^^
+...
+62 |     pub fn push(&mut self) {
+   |            ^^^^
+...
+65 |     pub fn pop(&mut self) {
+   |            ^^^
+...
+68 |     pub fn define(&mut self, k: String, v: Value) {
+   |            ^^^^^^
+...
+72 |     pub fn assign(&mut self, k: &str, v: Value) -> bool {
+   |            ^^^^^^
+...
+82 |     pub fn get(&self, k: &str) -> Option<Value> {
+   |            ^^^
+
+warning: struct `Interpreter` is never constructed
+  --> src\bin\..\core\vm.rs:93:12
+   |
+93 | pub struct Interpreter {
+   |            ^^^^^^^^^^^
+
+warning: struct `RuntimeError` is never constructed
+  --> src\bin\..\core\vm.rs:98:12
+   |
+98 | pub struct RuntimeError {
+   |            ^^^^^^^^^^^^
+
+warning: multiple associated items are never used
+   --> src\bin\..\core\vm.rs:103:12
+    |
+102 | impl Interpreter {
+    | ---------------- associated items in this implementation
+103 |     pub fn new() -> Self {
+    |            ^^^
+...
+141 |     pub fn run_module(&mut self, m: &Module) -> Result<(), RuntimeError> {
+    |            ^^^^^^^^^^
+...
+174 |     fn call_ident(&mut self, name: &str, args: Vec<Value>) -> Result<Value, RuntimeError> {
+    |        ^^^^^^^^^^
+...
+182 |     fn call_value(&mut self, callee: Value, args: Vec<Value>) -> Result<Value, RuntimeError> {
+    |        ^^^^^^^^^^
+...
+225 |     fn exec_block(&mut self, b: &Block) -> ControlFlow {
+    |        ^^^^^^^^^^
+...
+240 |     fn exec_stmt(&mut self, s: &Stmt) -> ControlFlow {
+    |        ^^^^^^^^^
+...
+355 |     fn eval_expr(&mut self, e: &Expr) -> Result<Value, RuntimeError> {
+    |        ^^^^^^^^^
+...
+411 |     fn eval_binop(&self, op: &BinOp, l: Value, r: Value) -> Result<Value, RuntimeError> {
+    |        ^^^^^^^^^^
+...
+436 |     fn truthy(&self, v: &Value) -> bool {
+    |        ^^^^^^
+
+warning: enum `ControlFlow` is never used
+   --> src\bin\..\core\vm.rs:449:6
+    |
+449 | enum ControlFlow {
+    |      ^^^^^^^^^^^
+
+warning: function `err` is never used
+   --> src\bin\..\core\vm.rs:461:4
+    |
+461 | fn err(msg: String) -> RuntimeError {
+    |    ^^^
+
+warning: function `collect_vals` is never used
+   --> src\bin\..\core\vm.rs:465:4
+    |
+465 | fn collect_vals(i: &mut Interpreter, es: &[Expr]) -> Result<Vec<Value>, RuntimeError> {
+    |    ^^^^^^^^^^^^
+
+warning: function `num2` is never used
+   --> src\bin\..\core\vm.rs:473:4
+    |
+473 | fn num2(l: Value, r: Value, f: fn(f64, f64) -> f64) -> Result<Value, RuntimeError> {
+    |    ^^^^
+
+warning: function `cmp2` is never used
+   --> src\bin\..\core\vm.rs:480:4
+    |
+480 | fn cmp2(l: Value, r: Value, f: fn(f64, f64) -> bool) -> Result<Value, RuntimeError> {
+    |    ^^^^
+
+warning: function `eq_val` is never used
+   --> src\bin\..\core\vm.rs:487:4
+    |
+487 | fn eq_val(a: &Value, b: &Value) -> bool {
+    |    ^^^^^^
+
+warning: function `builtin_print` is never used
+   --> src\bin\..\core\vm.rs:530:4
+    |
+530 | fn builtin_print(_i: &mut Interpreter, args: Vec<Value>) -> Result<Value, RuntimeError> {
+    |    ^^^^^^^^^^^^^
+
+warning: function `builtin_time_ms` is never used
+   --> src\bin\..\core\vm.rs:536:4
+    |
+536 | fn builtin_time_ms(_i: &mut Interpreter, _args: Vec<Value>) -> Result<Value, RuntimeError> {
+    |    ^^^^^^^^^^^^^^^
+
+warning: function `builtin_rand` is never used
+   --> src\bin\..\core\vm.rs:541:4
+    |
+541 | fn builtin_rand(_i: &mut Interpreter, _args: Vec<Value>) -> Result<Value, RuntimeError> {
+    |    ^^^^^^^^^^^^
+
+warning: function `display` is never used
+   --> src\bin\..\core\vm.rs:553:4
+    |
+553 | fn display(v: &Value) -> String {
+    |    ^^^^^^^
+
+warning: method `to_emit_kind` is never used
+  --> src\bin\..\tui\editor.rs:57:8
+   |
+44 | impl EmitMode {
+   | ------------- method in this implementation
+...
+57 |     fn to_emit_kind(self) -> EmitKind {
+   |        ^^^^^^^^^^^^
+
+       Fresh aeonmi_project v0.2.0 (C:\Users\wlwil\Project\aeonmi_project)
+warning: `aeonmi_project` (bin "aeonmi_project") generated 39 warnings (15 duplicates)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.19s
+     Running `C:\Users\wlwil\Project\aeonmi_project\target\debug\deps\aeonmi_project-11f65b3b8977beae.exe`
+
+running 29 tests
+test core::ast::tests::test_assignment_and_call_nodes ... ok
+test core::ast::tests::test_if_else_node ... ok
+test core::ast::tests::test_quantum_op_node ... ok
+test core::code_generator::tests::gen_let_and_log_js ... ok
+test core::code_generator::tests::gen_assignment_and_call_js ... ok
+test core::code_generator::tests::gen_minimal_ai_backend ... ok
+test core::compiler::tests::test_empty_code_fails ... ok
+test core::titan::statistics::tests::test_standard_deviation ... ok
+test core::error::tests::test_general_error ... ok
+test core::error::tests::test_interpretation_error ... ok
+test core::error::tests::test_invalid_operation_error ... ok
+test core::error::tests::test_io_error ... ok
+test core::semantic_analyzer::tests::assignment_to_declared_ok ... ok
+test core::semantic_analyzer::tests::assignment_to_undeclared_fails ... ok
+test core::semantic_analyzer::tests::redeclare_fails ... ok
+test core::titan::optimization::tests::test_golden_section_search ... ok
+test core::titan::optimization::tests::test_gradient_descent ... ok
+test core::compiler::tests::test_full_pipeline_runs ... ok
+test core::titan::statistics::tests::test_mean ... ok
+test core::titan::statistics::tests::test_mode ... ok
+test core::titan::statistics::tests::test_percentile ... ok
+test core::titan::statistics::tests::test_variance ... ok
+test core::token::tests::comparison_ops_are_operators ... ok
+test core::titan::statistics::tests::test_median ... ok
+test core::token::tests::hieroglyphic_test ... ok
+test core::compiler::tests::test_validation_passes ... ok
+test core::token::tests::keyword_test ... ok
+test core::token::tests::literal_test ... ok
+test core::token::tests::qubit_test ... ok
+
+test result: ok. 29 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running `C:\Users\wlwil\Project\aeonmi_project\target\debug\deps\Aeonmi-434a3a585ee70a8a.exe`
+
+running 29 tests
+test core::ast::tests::test_if_else_node ... ok
+test core::ast::tests::test_assignment_and_call_nodes ... ok
+test core::ast::tests::test_quantum_op_node ... ok
+test core::error::tests::test_io_error ... ok
+test core::compiler::tests::test_empty_code_fails ... ok
+test core::code_generator::tests::gen_minimal_ai_backend ... ok
+test core::titan::statistics::tests::test_percentile ... ok
+test core::error::tests::test_general_error ... ok
+test core::error::tests::test_interpretation_error ... ok
+test core::error::tests::test_invalid_operation_error ... ok
+test core::code_generator::tests::gen_assignment_and_call_js ... ok
+test core::semantic_analyzer::tests::assignment_to_declared_ok ... ok
+test core::semantic_analyzer::tests::assignment_to_undeclared_fails ... ok
+test core::semantic_analyzer::tests::redeclare_fails ... ok
+test core::titan::optimization::tests::test_golden_section_search ... ok
+test core::titan::optimization::tests::test_gradient_descent ... ok
+test core::titan::statistics::tests::test_mean ... ok
+test core::titan::statistics::tests::test_median ... ok
+test core::titan::statistics::tests::test_mode ... ok
+test core::compiler::tests::test_validation_passes ... ok
+test core::token::tests::comparison_ops_are_operators ... ok
+test core::titan::statistics::tests::test_variance ... ok
+test core::code_generator::tests::gen_let_and_log_js ... ok
+test core::titan::statistics::tests::test_standard_deviation ... ok
+test core::token::tests::hieroglyphic_test ... ok
+test core::token::tests::keyword_test ... ok
+test core::compiler::tests::test_full_pipeline_runs ... ok
+test core::token::tests::literal_test ... ok
+test core::token::tests::qubit_test ... ok
+
+test result: ok. 29 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running `C:\Users\wlwil\Project\aeonmi_project\target\debug\deps\aeonmi_project-462223e894e77ec4.exe`
+
+running 29 tests
+test core::ast::tests::test_assignment_and_call_nodes ... ok
+test core::ast::tests::test_quantum_op_node ... ok
+test core::ast::tests::test_if_else_node ... ok
+test core::code_generator::tests::gen_minimal_ai_backend ... ok
+test core::titan::statistics::tests::test_mean ... ok
+test core::compiler::tests::test_validation_passes ... ok
+test core::error::tests::test_interpretation_error ... ok
+test core::semantic_analyzer::tests::redeclare_fails ... ok
+test core::error::tests::test_invalid_operation_error ... ok
+test core::error::tests::test_io_error ... ok
+test core::semantic_analyzer::tests::assignment_to_undeclared_fails ... ok
+test core::error::tests::test_general_error ... ok
+test core::titan::statistics::tests::test_variance ... ok
+test core::code_generator::tests::gen_let_and_log_js ... ok
+test core::titan::optimization::tests::test_gradient_descent ... ok
+test core::compiler::tests::test_empty_code_fails ... ok
+test core::titan::statistics::tests::test_mode ... ok
+test core::titan::statistics::tests::test_percentile ... ok
+test core::compiler::tests::test_full_pipeline_runs ... ok
+test core::titan::statistics::tests::test_standard_deviation ... ok
+test core::token::tests::hieroglyphic_test ... ok
+test core::semantic_analyzer::tests::assignment_to_declared_ok ... ok
+test core::titan::optimization::tests::test_golden_section_search ... ok
+test core::titan::statistics::tests::test_median ... ok
+test core::token::tests::comparison_ops_are_operators ... ok
+test core::code_generator::tests::gen_assignment_and_call_js ... ok
+test core::token::tests::keyword_test ... ok
+test core::token::tests::qubit_test ... ok
+test core::token::tests::literal_test ... ok
+
+test result: ok. 29 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running `C:\Users\wlwil\Project\aeonmi_project\target\debug\deps\ai_emitter_golden-81f2cca138bf007d.exe`
+
+running 1 test
+test ai_emitter_golden_minimal ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running `C:\Users\wlwil\Project\aeonmi_project\target\debug\deps\assign_and_calls-08fce07aca284a3b.exe`
+
+running 1 test
+test assignment_and_function_call_pipeline ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running `C:\Users\wlwil\Project\aeonmi_project\target\debug\deps\cli_smoke-0aa92a6930ebbaca.exe`
+
+running 3 tests
+test cli_rejects_unsupported_emit ... ok
+test cli_compiles_basic_file ... ok
+test cli_skips_semantic_when_flagged ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running `C:\Users\wlwil\Project\aeonmi_project\target\debug\deps\comparisons-f4eac9c397ec3314.exe`
+
+running 1 test
+test equality_and_comparison_in_if_and_while ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running `C:\Users\wlwil\Project\aeonmi_project\target\debug\deps\compiler_pipeline-3230ec29a3780b29.exe`
+
+running 2 tests
+test pipeline_end_to_end_basic ... ok
+test pipeline_quantum_and_glyph_ops ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running `C:\Users\wlwil\Project\aeonmi_project\target\debug\deps\control_flow-ca39d42a631e191a.exe`
+
+running 1 test
+test control_flow_if_while_for ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running `C:\Users\wlwil\Project\aeonmi_project\target\debug\deps\diagnostics-f90593a82bd7d165.exe`
+
+running 2 tests
+test pretty_parser_error_shows_span ... ok
+test pretty_lexer_error_shows_span ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running `C:\Users\wlwil\Project\aeonmi_project\target\debug\deps\errors_extra-2cc173f3e28bc002.exe`
+
+running 2 tests
+test unterminated_string_reports ... ok
+test bad_qubit_literal_reports ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running `C:\Users\wlwil\Project\aeonmi_project\target\debug\deps\format_snapshots-cd66c90f7eeeb88c.exe`
+
+running 1 test
+test examples_are_stably_formatted ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running `C:\Users\wlwil\Project\aeonmi_project\target\debug\deps\functions-831f7f376dc08c09.exe`
+
+running 1 test
+test function_decl_and_body ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running `C:\Users\wlwil\Project\aeonmi_project\target\debug\deps\legacy_flags-fe0bf04dcf8ef72f.exe`
+
+running 1 test
+test legacy_top_level_flags_still_work ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running `C:\Users\wlwil\Project\aeonmi_project\target\debug\deps\precedence-c0f26bed9459ca5c.exe`
+
+running 2 tests
+test unary_then_binary ... ok
+test arithmetic_and_comparisons_precedence ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running `C:\Users\wlwil\Project\aeonmi_project\target\debug\deps\qiskit_bridge-b776cc66422c4168.exe`
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running `C:\Users\wlwil\Project\aeonmi_project\target\debug\deps\qpoly-4cb339456ce1bc5d.exe`
+
+running 2 tests
+test qpoly_basic_replacements ... ok
+test qpoly_longest_match_wins ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running `C:\Users\wlwil\Project\aeonmi_project\target\debug\deps\quantum_core-58288a3229b4eb84.exe`
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running `C:\Users\wlwil\Project\aeonmi_project\target\debug\deps\quantum_glyph-327b47b63382fc7c.exe`
+
+running 1 test
+test quantum_and_hieroglyphic_ops ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running `C:\Users\wlwil\Project\aeonmi_project\target\debug\deps\run_smoke-9738367184ef22b7.exe`
+
+running 1 test
+]0;Aeonmi Shardok: wrote js to 'aeonmi.run.js'.
+42
+test run_subcommand_compiles_even_without_node ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
+
+     Running `C:\Users\wlwil\Project\aeonmi_project\target\debug\deps\titan_linear_algebra-77d4d7e6cad6b343.exe`
+
+running 3 tests
+test determinant_2x2 ... ok
+test transpose_2x3 ... ok
+test matmul_2x2 ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running `C:\Users\wlwil\Project\aeonmi_project\target\debug\deps\titan_quantum_math-0b82563f6e3fbc20.exe`
+
+running 1 test
+test normalize_and_inner_product ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running `C:\Users\wlwil\Project\aeonmi_project\target\debug\deps\titan_stats-a0f239920f2fe620.exe`
+
+running 2 tests
+test uniform_len_and_range ... ok
+test normal_len_and_moments ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running `C:\Users\wlwil\Project\aeonmi_project\target\debug\deps\vm_smoke-6b3b48aa16801f37.exe`
+
+running 1 test
+test smoke_emits_and_runs ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests aeonmi_project
+     Running `C:\Users\wlwil\.rustup\toolchains\stable-x86_64-pc-windows-msvc\bin\rustdoc.exe --edition=2021 --crate-type lib --color auto --crate-name aeonmi_project --test src\lib.rs --test-run-directory C:\Users\wlwil\Project\aeonmi_project -L dependency=C:\Users\wlwil\Project\aeonmi_project\target\debug\deps -L dependency=C:\Users\wlwil\Project\aeonmi_project\target\debug\deps -L native=C:\Users\wlwil\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\windows_x86_64_msvc-0.48.5\lib -L native=C:\Users\wlwil\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\windows_x86_64_msvc-0.52.6\lib -L native=C:\Users\wlwil\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\windows_x86_64_msvc-0.53.0\lib --extern aeonmi_project=C:\Users\wlwil\Project\aeonmi_project\target\debug\deps\libaeonmi_project-de370a418ecd8a3e.rlib --extern anyhow=C:\Users\wlwil\Project\aeonmi_project\target\debug\deps\libanyhow-7768eebda98c244c.rlib --extern clap=C:\Users\wlwil\Project\aeonmi_project\target\debug\deps\libclap-4c06fcb284596cac.rlib --extern colored=C:\Users\wlwil\Project\aeonmi_project\target\debug\deps\libcolored-5e72aeb0a2337632.rlib --extern crossterm=C:\Users\wlwil\Project\aeonmi_project\target\debug\deps\libcrossterm-ed9b6a53d0c581d0.rlib --extern ctrlc=C:\Users\wlwil\Project\aeonmi_project\target\debug\deps\libctrlc-ae718f34c1c9d35a.rlib --extern dirs_next=C:\Users\wlwil\Project\aeonmi_project\target\debug\deps\libdirs_next-1ba40c8f29a5426a.rlib --extern fs_extra=C:\Users\wlwil\Project\aeonmi_project\target\debug\deps\libfs_extra-9da9e8cac3856fa5.rlib --extern insta=C:\Users\wlwil\Project\aeonmi_project\target\debug\deps\libinsta-70ac1713ecda24c7.rlib --extern notify=C:\Users\wlwil\Project\aeonmi_project\target\debug\deps\libnotify-e9c11d132dc980f0.rlib --extern rand=C:\Users\wlwil\Project\aeonmi_project\target\debug\deps\librand-b9e2a83d1f1d93c1.rlib --extern rand_distr=C:\Users\wlwil\Project\aeonmi_project\target\debug\deps\librand_distr-b7dcaea7726be557.rlib --extern ratatui=C:\Users\wlwil\Project\aeonmi_project\target\debug\deps\libratatui-7f358423290de8d1.rlib --extern serde=C:\Users\wlwil\Project\aeonmi_project\target\debug\deps\libserde-9444a951f8136fc9.rlib --extern tempfile=C:\Users\wlwil\Project\aeonmi_project\target\debug\deps\libtempfile-c3d695c11b3376bb.rlib --extern toml=C:\Users\wlwil\Project\aeonmi_project\target\debug\deps\libtoml-26ff3fdde3324869.rlib --extern unicode_ident=C:\Users\wlwil\Project\aeonmi_project\target\debug\deps\libunicode_ident-eda73e4e1b0bc17f.rlib --extern unicode_normalization=C:\Users\wlwil\Project\aeonmi_project\target\debug\deps\libunicode_normalization-22818a0b4dce78fc.rlib --extern zeroize=C:\Users\wlwil\Project\aeonmi_project\target\debug\deps\libzeroize-f7ef1d0ee916ff3b.rlib -C embed-bitcode=no --cfg "feature=\"default\"" --check-cfg cfg(docsrs,test) --check-cfg "cfg(feature, values(\"default\", \"nalgebra\", \"num-complex\", \"numpy\", \"pyo3\", \"qiskit\", \"quantum\"))" --error-format human`
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

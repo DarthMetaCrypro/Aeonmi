@@ -1,3 +1,4 @@
+#![allow(clippy::type_complexity, clippy::needless_range_loop)]
 pub fn eigenvalues(_matrix: &[Vec<f64>]) -> Result<Vec<f64>, &'static str> {
     // Placeholder for eigenvalue computation
     // Requires advanced numerical techniques like QR decomposition (to be implemented)

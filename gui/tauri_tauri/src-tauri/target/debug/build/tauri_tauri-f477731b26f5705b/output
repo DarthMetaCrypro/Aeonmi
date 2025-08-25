@@ -1,0 +1,1 @@
+cargo:rerun-if-changed=C:\Users\wlwil\Project\aeonmi_project\gui\tauri_tauri\src-tauri\tauri.conf.json

@@ -53,22 +53,43 @@ pub struct Env {
     frames: Vec<HashMap<String, Value>>,
 }
 
+impl Default for Env {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Env {
-    pub fn new() -> Self { Self { frames: vec![HashMap::new()] } }
-    pub fn push(&mut self) { self.frames.push(HashMap::new()); }
-    pub fn pop(&mut self) { self.frames.pop(); }
-    pub fn define(&mut self, k: String, v: Value) { self.frames.last_mut().unwrap().insert(k, v); }
+    pub fn new() -> Self {
+        Self {
+            frames: vec![HashMap::new()],
+        }
+    }
+    pub fn push(&mut self) {
+        self.frames.push(HashMap::new());
+    }
+    pub fn pop(&mut self) {
+        self.frames.pop();
+    }
+    pub fn define(&mut self, k: String, v: Value) {
+        self.frames.last_mut().unwrap().insert(k, v);
+    }
 
     pub fn assign(&mut self, k: &str, v: Value) -> bool {
         for frame in self.frames.iter_mut().rev() {
-            if frame.contains_key(k) { frame.insert(k.to_string(), v); return true; }
+            if frame.contains_key(k) {
+                frame.insert(k.to_string(), v);
+                return true;
+            }
         }
         false
     }
 
     pub fn get(&self, k: &str) -> Option<Value> {
         for frame in self.frames.iter().rev() {
-            if let Some(v) = frame.get(k) { return Some(v.clone()); }
+            if let Some(v) = frame.get(k) {
+                return Some(v.clone());
+            }
         }
         None
     }
@@ -84,14 +105,48 @@ pub struct RuntimeError {
     pub message: String,
 }
 
+impl Default for Interpreter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Interpreter {
     pub fn new() -> Self {
         let mut env = Env::new();
         // Builtins
-        env.define("print".into(), Value::Builtin(Builtin { name: "print", arity: usize::MAX, f: builtin_print }));
-        env.define("log".into(), Value::Builtin(Builtin { name: "log", arity: usize::MAX, f: builtin_print }));
-        env.define("time_ms".into(), Value::Builtin(Builtin { name: "time_ms", arity: 0, f: builtin_time_ms }));
-        env.define("rand".into(), Value::Builtin(Builtin { name: "rand", arity: 0, f: builtin_rand }));
+        env.define(
+            "print".into(),
+            Value::Builtin(Builtin {
+                name: "print",
+                arity: usize::MAX,
+                f: builtin_print,
+            }),
+        );
+        env.define(
+            "log".into(),
+            Value::Builtin(Builtin {
+                name: "log",
+                arity: usize::MAX,
+                f: builtin_print,
+            }),
+        );
+        env.define(
+            "time_ms".into(),
+            Value::Builtin(Builtin {
+                name: "time_ms",
+                arity: 0,
+                f: builtin_time_ms,
+            }),
+        );
+        env.define(
+            "rand".into(),
+            Value::Builtin(Builtin {
+                name: "rand",
+                arity: 0,
+                f: builtin_rand,
+            }),
+        );
         Self { env }
     }
 
@@ -104,7 +159,11 @@ impl Interpreter {
                     self.env.define(c.name.clone(), v);
                 }
                 Decl::Let(l) => {
-                    let v = if let Some(e) = &l.value { self.eval_expr(e)? } else { Value::Null };
+                    let v = if let Some(e) = &l.value {
+                        self.eval_expr(e)?
+                    } else {
+                        Value::Null
+                    };
                     self.env.define(l.name.clone(), v);
                 }
                 Decl::Fn(f) => {
@@ -125,7 +184,10 @@ impl Interpreter {
     }
 
     fn call_ident(&mut self, name: &str, args: Vec<Value>) -> Result<Value, RuntimeError> {
-        let callee = self.env.get(name).ok_or_else(|| err(format!("Undefined function `{}`", name)))?;
+        let callee = self
+            .env
+            .get(name)
+            .ok_or_else(|| err(format!("Undefined function `{}`", name)))?;
         self.call_value(callee, args)
     }
 
@@ -133,13 +195,22 @@ impl Interpreter {
         match callee {
             Value::Builtin(b) => {
                 if b.arity != usize::MAX && b.arity != args.len() {
-                    return Err(err(format!("builtin `{}` expected {} args, got {}", b.name, b.arity, args.len())));
+                    return Err(err(format!(
+                        "builtin `{}` expected {} args, got {}",
+                        b.name,
+                        b.arity,
+                        args.len()
+                    )));
                 }
                 (b.f)(self, args)
             }
             Value::Function(fun) => {
                 if fun.params.len() != args.len() {
-                    return Err(err(format!("function expected {} args, got {}", fun.params.len(), args.len())));
+                    return Err(err(format!(
+                        "function expected {} args, got {}",
+                        fun.params.len(),
+                        args.len()
+                    )));
                 }
                 // New scope with closure base
                 let saved = self.env.clone();
@@ -182,7 +253,9 @@ impl Interpreter {
         use Stmt::*;
         match s {
             Expr(e) => {
-                if let Err(e) = self.eval_expr(e) { return ControlFlow::Err(e); }
+                if let Err(e) = self.eval_expr(e) {
+                    return ControlFlow::Err(e);
+                }
                 ControlFlow::Ok
             }
             Return(None) => ControlFlow::Return(None),
@@ -193,7 +266,11 @@ impl Interpreter {
                 };
                 ControlFlow::Return(Some(v))
             }
-            If { cond, then_block, else_block } => {
+            If {
+                cond,
+                then_block,
+                else_block,
+            } => {
                 let c = match self.eval_expr(cond) {
                     Ok(v) => self.truthy(&v),
                     Err(e) => return ControlFlow::Err(e),
@@ -212,7 +289,9 @@ impl Interpreter {
                         Ok(v) => self.truthy(&v),
                         Err(e) => return ControlFlow::Err(e),
                     };
-                    if !c { break; }
+                    if !c {
+                        break;
+                    }
                     match self.exec_block(body) {
                         ControlFlow::Ok => {}
                         other => return other,
@@ -220,9 +299,16 @@ impl Interpreter {
                 }
                 ControlFlow::Ok
             }
-            For { init, cond, step, body } => {
+            For {
+                init,
+                cond,
+                step,
+                body,
+            } => {
                 if let Some(i) = init {
-                    if let ControlFlow::Err(e) = self.exec_stmt(i) { return ControlFlow::Err(e); }
+                    if let ControlFlow::Err(e) = self.exec_stmt(i) {
+                        return ControlFlow::Err(e);
+                    }
                 }
                 loop {
                     if let Some(c) = cond {
@@ -230,14 +316,18 @@ impl Interpreter {
                             Ok(v) => self.truthy(&v),
                             Err(e) => return ControlFlow::Err(e),
                         };
-                        if !ok { break; }
+                        if !ok {
+                            break;
+                        }
                     }
                     match self.exec_block(body) {
                         ControlFlow::Ok => {}
                         other => return other,
                     }
                     if let Some(st) = step {
-                        if let Err(e) = self.eval_expr(st) { return ControlFlow::Err(e); }
+                        if let Err(e) = self.eval_expr(st) {
+                            return ControlFlow::Err(e);
+                        }
                     }
                 }
                 ControlFlow::Ok
@@ -248,7 +338,9 @@ impl Interpreter {
                         Ok(v) => v,
                         Err(e) => return ControlFlow::Err(e),
                     }
-                } else { Value::Null };
+                } else {
+                    Value::Null
+                };
                 self.env.define(name.clone(), v);
                 ControlFlow::Ok
             }
@@ -264,7 +356,9 @@ impl Interpreter {
                     }
                     ControlFlow::Ok
                 } else {
-                    ControlFlow::Err(err("Only simple identifier assignment supported in v0".into()))
+                    ControlFlow::Err(err(
+                        "Only simple identifier assignment supported in v0".into()
+                    ))
                 }
             }
         }
@@ -274,12 +368,14 @@ impl Interpreter {
         use Expr::*;
         Ok(match e {
             Lit(l) => match l {
-                crate::core::ir::Lit::Null   => Value::Null,
-                crate::core::ir::Lit::Bool(b)   => Value::Bool(*b),
+                crate::core::ir::Lit::Null => Value::Null,
+                crate::core::ir::Lit::Bool(b) => Value::Bool(*b),
                 crate::core::ir::Lit::Number(n) => Value::Number(*n),
                 crate::core::ir::Lit::String(s) => Value::String(s.clone()),
             },
-            Ident(s) => self.env.get(s)
+            Ident(s) => self
+                .env
+                .get(s)
                 .ok_or_else(|| err(format!("Undefined identifier `{}`", s)))?,
             Call { callee, args } => {
                 // Fast path: direct ident call (avoids allocating callee Value if builtin/func)
@@ -298,7 +394,7 @@ impl Interpreter {
                     UnOp::Neg => match v {
                         Value::Number(n) => Value::Number(-n),
                         other => return Err(err(format!("Unary `-` on non-number: {:?}", other))),
-                    }
+                    },
                     UnOp::Not => Value::Bool(!self.truthy(&v)),
                 }
             }
@@ -309,12 +405,16 @@ impl Interpreter {
             }
             Array(items) => {
                 let mut out = Vec::with_capacity(items.len());
-                for it in items { out.push(self.eval_expr(it)?); }
+                for it in items {
+                    out.push(self.eval_expr(it)?);
+                }
                 Value::Array(out)
             }
             Object(kvs) => {
                 let mut map = HashMap::with_capacity(kvs.len());
-                for (k, v) in kvs { map.insert(k.clone(), self.eval_expr(v)?); }
+                for (k, v) in kvs {
+                    map.insert(k.clone(), self.eval_expr(v)?);
+                }
                 Value::Object(map)
             }
         })
@@ -329,19 +429,19 @@ impl Interpreter {
                 (Value::String(a), b) => Ok(Value::String(format!("{}{}", a, display(&b)))),
                 (a, Value::String(b)) => Ok(Value::String(format!("{}{}", display(&a), b))),
                 (a, b) => Err(err(format!("`+` on incompatible types: {:?}, {:?}", a, b))),
-            }
-            Sub => num2(l, r, |a,b| a-b),
-            Mul => num2(l, r, |a,b| a*b),
-            Div => num2(l, r, |a,b| a/b),
-            Mod => num2(l, r, |a,b| a%b),
-            Eq  => Ok(Value::Bool(eq_val(&l, &r))),
-            Ne  => Ok(Value::Bool(!eq_val(&l, &r))),
-            Lt  => cmp2(l, r, |a,b| a<b),
-            Le  => cmp2(l, r, |a,b| a<=b),
-            Gt  => cmp2(l, r, |a,b| a>b),
-            Ge  => cmp2(l, r, |a,b| a>=b),
+            },
+            Sub => num2(l, r, |a, b| a - b),
+            Mul => num2(l, r, |a, b| a * b),
+            Div => num2(l, r, |a, b| a / b),
+            Mod => num2(l, r, |a, b| a % b),
+            Eq => Ok(Value::Bool(eq_val(&l, &r))),
+            Ne => Ok(Value::Bool(!eq_val(&l, &r))),
+            Lt => cmp2(l, r, |a, b| a < b),
+            Le => cmp2(l, r, |a, b| a <= b),
+            Gt => cmp2(l, r, |a, b| a > b),
+            Ge => cmp2(l, r, |a, b| a >= b),
             And => Ok(Value::Bool(self.truthy(&l) && self.truthy(&r))),
-            Or  => Ok(Value::Bool(self.truthy(&l) || self.truthy(&r))),
+            Or => Ok(Value::Bool(self.truthy(&l) || self.truthy(&r))),
         }
     }
 
@@ -365,27 +465,33 @@ enum ControlFlow {
 }
 
 impl From<RuntimeError> for ControlFlow {
-    fn from(e: RuntimeError) -> Self { ControlFlow::Err(e) }
+    fn from(e: RuntimeError) -> Self {
+        ControlFlow::Err(e)
+    }
 }
 
-fn err(msg: String) -> RuntimeError { RuntimeError { message: msg } }
+fn err(msg: String) -> RuntimeError {
+    RuntimeError { message: msg }
+}
 
 fn collect_vals(i: &mut Interpreter, es: &[Expr]) -> Result<Vec<Value>, RuntimeError> {
     let mut out = Vec::with_capacity(es.len());
-    for e in es { out.push(i.eval_expr(e)?); }
+    for e in es {
+        out.push(i.eval_expr(e)?);
+    }
     Ok(out)
 }
 
 fn num2(l: Value, r: Value, f: fn(f64, f64) -> f64) -> Result<Value, RuntimeError> {
     match (l, r) {
-        (Value::Number(a), Value::Number(b)) => Ok(Value::Number(f(a,b))),
+        (Value::Number(a), Value::Number(b)) => Ok(Value::Number(f(a, b))),
         (a, b) => Err(err(format!("numeric op on non-numbers: {:?}, {:?}", a, b))),
     }
 }
 
 fn cmp2(l: Value, r: Value, f: fn(f64, f64) -> bool) -> Result<Value, RuntimeError> {
     match (l, r) {
-        (Value::Number(a), Value::Number(b)) => Ok(Value::Bool(f(a,b))),
+        (Value::Number(a), Value::Number(b)) => Ok(Value::Bool(f(a, b))),
         (a, b) => Err(err(format!("comparison on non-numbers: {:?}, {:?}", a, b))),
     }
 }
@@ -399,15 +505,21 @@ fn eq_val(a: &Value, b: &Value) -> bool {
         (String(x), String(y)) => x == y,
 
         (Array(x), Array(y)) => {
-            if x.len() != y.len() { return false; }
+            if x.len() != y.len() {
+                return false;
+            }
             for (lx, ry) in x.iter().zip(y.iter()) {
-                if !eq_val(lx, ry) { return false; }
+                if !eq_val(lx, ry) {
+                    return false;
+                }
             }
             true
         }
 
         (Object(x), Object(y)) => {
-            if x.len() != y.len() { return false; }
+            if x.len() != y.len() {
+                return false;
+            }
             for (k, vx) in x.iter() {
                 match y.get(k) {
                     Some(vy) if eq_val(vx, vy) => {}
@@ -441,7 +553,10 @@ fn builtin_time_ms(_i: &mut Interpreter, _args: Vec<Value>) -> Result<Value, Run
 fn builtin_rand(_i: &mut Interpreter, _args: Vec<Value>) -> Result<Value, RuntimeError> {
     // Simple LCG for determinism across runs (not crypto).
     // seed = time-based mod; in a real impl, keep a per-VM seed.
-    let nanos = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos() as u128;
+    let nanos = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_nanos();
     let mut x = (nanos & 0xFFFF_FFFF) as u64;
     x = x.wrapping_mul(1664525).wrapping_add(1013904223);
     Ok(Value::Number(((x >> 8) as f64) / (u32::MAX as f64)))
@@ -452,7 +567,11 @@ fn display(v: &Value) -> String {
         Value::Null => "null".into(),
         Value::Bool(b) => b.to_string(),
         Value::Number(n) => {
-            if n.fract() == 0.0 { format!("{}", *n as i64) } else { n.to_string() }
+            if n.fract() == 0.0 {
+                format!("{}", *n as i64)
+            } else {
+                n.to_string()
+            }
         }
         Value::String(s) => s.clone(),
         Value::Array(a) => {
@@ -460,9 +579,14 @@ fn display(v: &Value) -> String {
             format!("[{}]", parts.join(", "))
         }
         Value::Object(o) => {
-            let mut parts: Vec<(String, String)> = o.iter().map(|(k,v)|(k.clone(), display(v))).collect();
-            parts.sort_by(|a,b| a.0.cmp(&b.0));
-            let s = parts.into_iter().map(|(k,v)| format!("{}: {}", k, v)).collect::<Vec<_>>().join(", ");
+            let mut parts: Vec<(String, String)> =
+                o.iter().map(|(k, v)| (k.clone(), display(v))).collect();
+            parts.sort_by(|a, b| a.0.cmp(&b.0));
+            let s = parts
+                .into_iter()
+                .map(|(k, v)| format!("{}: {}", k, v))
+                .collect::<Vec<_>>()
+                .join(", ");
             format!("{{{}}}", s)
         }
         Value::Function(_) => "<fn>".into(),

@@ -1,0 +1,10 @@
+C:\Users\wlwil\Project\aeonmi_project\gui\tauri_tauri\src-tauri\target\debug\deps\wry-772ba013a7968b6b.d: C:\Users\wlwil\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\wry-0.24.11\src\lib.rs C:\Users\wlwil\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\wry-0.24.11\src\application.rs C:\Users\wlwil\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\wry-0.24.11\src\webview\mod.rs C:\Users\wlwil\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\wry-0.24.11\src\webview\web_context.rs C:\Users\wlwil\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\wry-0.24.11\src\webview\webview2\mod.rs C:\Users\wlwil\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\wry-0.24.11\src\webview\webview2\file_drop.rs
+
+C:\Users\wlwil\Project\aeonmi_project\gui\tauri_tauri\src-tauri\target\debug\deps\libwry-772ba013a7968b6b.rmeta: C:\Users\wlwil\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\wry-0.24.11\src\lib.rs C:\Users\wlwil\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\wry-0.24.11\src\application.rs C:\Users\wlwil\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\wry-0.24.11\src\webview\mod.rs C:\Users\wlwil\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\wry-0.24.11\src\webview\web_context.rs C:\Users\wlwil\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\wry-0.24.11\src\webview\webview2\mod.rs C:\Users\wlwil\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\wry-0.24.11\src\webview\webview2\file_drop.rs
+
+C:\Users\wlwil\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\wry-0.24.11\src\lib.rs:
+C:\Users\wlwil\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\wry-0.24.11\src\application.rs:
+C:\Users\wlwil\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\wry-0.24.11\src\webview\mod.rs:
+C:\Users\wlwil\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\wry-0.24.11\src\webview\web_context.rs:
+C:\Users\wlwil\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\wry-0.24.11\src\webview\webview2\mod.rs:
+C:\Users\wlwil\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\wry-0.24.11\src\webview\webview2\file_drop.rs:

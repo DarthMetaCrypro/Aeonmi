@@ -2,16 +2,13 @@ use clap::{ArgAction, Parser, Subcommand, ValueEnum};
 use std::path::PathBuf;
 
 #[derive(Copy, Clone, Debug, ValueEnum)]
+#[derive(Default)]
 pub enum EmitKind {
     #[clap(alias = "js")]
+    #[default]
     Js,
     #[clap(alias = "ai")]
     Ai,
-}
-impl Default for EmitKind {
-    fn default() -> Self {
-        EmitKind::Js
-    }
 }
 
 #[derive(Copy, Clone, Debug, ValueEnum)]
@@ -163,6 +160,18 @@ pub enum Command {
     New {
         #[arg(value_name = "FILE")]
         file: Option<PathBuf>,
+        /// Open editor after creating (line mode unless --tui)
+        #[arg(long = "open", action = ArgAction::SetTrue)]
+        open: bool,
+        /// Open TUI editor after creating
+        #[arg(long = "tui", action = ArgAction::SetTrue)]
+        tui: bool,
+        /// Compile immediately after creating (saves to output.js or output.ai depending on --emit js default)
+        #[arg(long = "compile", action = ArgAction::SetTrue)]
+        compile: bool,
+        /// Run (implies JS target) after creation (compiles then runs with node)
+        #[arg(long = "run", action = ArgAction::SetTrue)]
+        run: bool,
     },
     Open {
         #[arg(value_name = "FILE")]
@@ -219,6 +228,49 @@ pub enum Command {
         #[command(subcommand)]
         action: AiAction,
     },
+
+    /// Run a Cargo command (passthrough to system `cargo`). Example: aeonmi cargo build --release
+    Cargo {
+        #[arg(value_name = "ARGS", trailing_var_arg = true)]
+        args: Vec<String>,
+    },
+
+    /// Run a Python command / script (passthrough to `python`). Example: aeonmi python script.py
+    Python {
+        #[arg(value_name = "ARGS", trailing_var_arg = true)]
+        args: Vec<String>,
+    },
+
+    /// Run a Node.js command / script (passthrough to `node`). Example: aeonmi node file.js
+    Node {
+        #[arg(value_name = "ARGS", trailing_var_arg = true)]
+        args: Vec<String>,
+    },
+
+    /// Auto-detect and run a file by extension (.ai, .js, .py, .rs)
+    ///
+    /// Examples:
+    ///   aeonmi exec script.py arg1 arg2
+    ///   aeonmi exec tool.js --flag
+    ///   aeonmi exec module.rs            (temporary rustc build & run)
+    ///   aeonmi exec program.ai           (compile to JS then node)
+    Exec {
+        /// File to execute (.ai | .js | .py | .rs)
+        #[arg(value_name = "FILE")]
+        file: PathBuf,
+        /// Additional arguments passed to the underlying runtime
+        #[arg(value_name = "ARGS", trailing_var_arg = true)]
+        args: Vec<String>,
+    /// Watch the file and re-run on change
+    #[arg(long = "watch", action = ArgAction::SetTrue)]
+    watch: bool,
+    /// Keep temporary compiled artifacts (e.g., __exec_tmp.js)
+    #[arg(long = "keep-temp", action = ArgAction::SetTrue)]
+    keep_temp: bool,
+    /// (AI/JS only) Compile but skip executing node (useful for tests without node installed)
+    #[arg(long = "no-run", action = ArgAction::SetTrue, hide = true)]
+    no_run: bool,
+    },
 }
 
 #[derive(Debug, Subcommand)]
@@ -239,4 +291,18 @@ pub enum AiAction {
     Optimize,
     Explain { #[arg(value_name = "SECTION")] section: Option<String> },
     Refactor { #[arg(value_name = "RULE")] rule: Option<String> },
+    Chat {
+        /// Provider name (openai, copilot, perplexity, deepseek)
+        #[arg(long = "provider", value_name = "NAME")]
+        provider: Option<String>,
+        /// Prompt text (if omitted will read from stdin)
+        #[arg(value_name = "PROMPT")] 
+        prompt: Option<String>,
+    /// List enabled providers instead of sending a prompt
+    #[arg(long = "list", default_value_t = false)]
+    list: bool,
+    /// Stream tokens (currently OpenAI only)
+    #[arg(long = "stream", default_value_t = false)]
+    stream: bool,
+    },
 }

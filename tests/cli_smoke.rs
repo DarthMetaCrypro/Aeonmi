@@ -2,7 +2,7 @@ use std::fs;
 use std::process::Command;
 
 fn bin() -> String {
-    // Cargo sets this for bin targets in integration tests
+    // Cargo sets this environment variable for binary targets in integration tests
     env!("CARGO_BIN_EXE_aeonmi_project").to_string()
 }
 
@@ -24,7 +24,7 @@ fn cli_compiles_basic_file() {
         .arg(out.to_str().unwrap())
         .arg(input.to_str().unwrap())
         .output()
-        .expect("run");
+        .expect("failed to run aeonmi_project");
 
     assert!(
         output.status.success(),
@@ -33,9 +33,15 @@ fn cli_compiles_basic_file() {
         String::from_utf8_lossy(&output.stderr)
     );
 
-    let js = fs::read_to_string(&out).expect("out.js exists");
-    assert!(js.contains("let x = (2 + 3);") || js.contains("let x = 2 + 3;"));
-    assert!(js.contains("console.log(x);"));
+    let js = fs::read_to_string(&out).expect("output file should exist");
+    assert!(
+        js.contains("let x = (2 + 3);") || js.contains("let x = 2 + 3;"),
+        "output JS missing expected code"
+    );
+    assert!(
+        js.contains("console.log(x);"),
+        "output JS missing expected console.log call"
+    );
 }
 
 #[test]
@@ -52,7 +58,7 @@ fn cli_skips_semantic_when_flagged() {
         .arg(out.to_str().unwrap())
         .arg(input.to_str().unwrap())
         .output()
-        .expect("run");
+        .expect("failed to run aeonmi_project");
 
     assert!(
         output.status.success(),
@@ -60,7 +66,7 @@ fn cli_skips_semantic_when_flagged() {
         String::from_utf8_lossy(&output.stderr)
     );
 
-    // Accept either stream; be case-insensitive and allow minor phrasing changes
+    // Accept either stream; case-insensitive and allow minor phrasing differences
     let combined = format!(
         "{}\n{}",
         String::from_utf8_lossy(&output.stdout),
@@ -71,17 +77,8 @@ fn cli_skips_semantic_when_flagged() {
     assert!(
         combined.contains("semantic analyzer: skipped")
             || combined.contains("skipped by flag")
-<<<<<<< HEAD
-<<<<<<< HEAD
             || (combined.contains("semantic analyzer") && combined.contains("skipp"))
             || combined.contains("semantic analysis skipped"),
-=======
-            || combined.contains("semantic analyzer") && combined.contains("skipp"),
->>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
-=======
-            || (combined.contains("semantic analyzer") && combined.contains("skipp"))
-            || combined.contains("semantic analysis skipped"),
->>>>>>> 0503a82 (VM wired to Shard; canonical .ai emitter; CLI/test fixes)
         "did not find expected skip message in output:\n{}",
         combined
     );
@@ -99,9 +96,16 @@ fn cli_rejects_unsupported_emit() {
         .arg("wasm")
         .arg(input.to_str().unwrap())
         .output()
-        .expect("run");
+        .expect("failed to run aeonmi_project");
 
-    assert!(!output.status.success(), "unexpected success");
+    assert!(
+        !output.status.success(),
+        "unexpected success running with unsupported emit kind"
+    );
+
     let stderr = String::from_utf8_lossy(&output.stderr);
-    assert!(stderr.contains("Unsupported --emit kind"));
+    assert!(
+        stderr.contains("Unsupported --emit kind"),
+        "stderr did not contain expected error message"
+    );
 }

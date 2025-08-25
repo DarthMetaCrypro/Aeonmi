@@ -1,0 +1,50 @@
+// Grover's Quantum Search Algorithm - Aeonmi Implementation
+// Searches for a marked item in an unsorted database
+
+// Initialize qubits for 4-item search space (2 qubits)
+qubit q0;
+qubit q1;
+qubit oracle_qubit;
+
+// Step 1: Initialize superposition state
+superpose(q0);
+superpose(q1);
+
+// Step 2: Oracle function (marks item "11")
+function oracle() {
+    // Apply controlled-Z if both qubits are |1⟩
+    if measure(q0) == 1 && measure(q1) == 1 {
+        𓀃(oracle_qubit);  // Z gate (phase flip)
+    }
+}
+
+// Step 3: Diffusion operator (amplitude amplification)
+function diffusion() {
+    // Apply Hadamard
+    superpose(q0);
+    superpose(q1);
+    
+    // Apply conditional phase flip
+    𓀃(q0);  // Z gate
+    𓀃(q1);  // Z gate
+    
+    // Apply controlled-Z on |00⟩ state
+    if measure(q0) == 0 && measure(q1) == 0 {
+        𓀃(oracle_qubit);
+    }
+    
+    // Apply Hadamard again
+    superpose(q0);
+    superpose(q1);
+}
+
+// Step 4: Grover iteration (optimal is π/4 * sqrt(N) ≈ 1 for N=4)
+oracle();
+diffusion();
+
+// Step 5: Measure final state
+let result_q0 = measure(q0);
+let result_q1 = measure(q1);
+
+log("Grover search result:", result_q0, result_q1);
+log("Expected: 1, 1 (marked item found)");

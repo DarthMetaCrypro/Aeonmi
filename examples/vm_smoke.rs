@@ -1,13 +1,12 @@
-use aeonmi_project::core::{
-    ir::*,
-    vm::Interpreter,
-    ai_emitter::emit_ai,
-};
+use aeonmi_project::core::{ai_emitter::emit_ai, ir::*, vm::Interpreter};
 
 fn main() {
     let m = Module {
         name: "demo".into(),
-        imports: vec![Import { path: "std/io".into(), alias: Some("io".into()) }],
+        imports: vec![Import {
+            path: "std/io".into(),
+            alias: Some("io".into()),
+        }],
         decls: vec![
             Decl::Const(ConstDecl {
                 name: "PI".into(),

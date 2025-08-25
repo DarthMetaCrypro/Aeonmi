@@ -1,5 +1,5 @@
-use std::path::PathBuf;
 use colored::Colorize;
+use std::path::PathBuf;
 
 use super::compile::compile_pipeline;
 use crate::cli::EmitKind;
@@ -13,31 +13,16 @@ pub fn main_with_opts(
     let out_path = out.unwrap_or_else(|| PathBuf::from("aeonmi.run.js"));
 
     // Compile to JS, then try to run with Node
+
     compile_pipeline(
         Some(input.clone()),
         EmitKind::Js,
         out_path.clone(),
-<<<<<<< HEAD
-<<<<<<< HEAD
-        /*print_tokens*/ false,
-        /*print_ast*/ false,
-        pretty,
-        no_sema,
-        /*debug_titan*/ false,
-=======
         false, // print_tokens
         false, // print_ast
         pretty,
         no_sema,
         false, // debug_titan (default off here)
->>>>>>> 57cd645 (feat(cli): integrate new Aeonmi CLI + shard updates)
-=======
-        /*print_tokens*/ false,
-        /*print_ast*/ false,
-        pretty,
-        no_sema,
-        /*debug_titan*/ false,
->>>>>>> 0503a82 (VM wired to Shard; canonical .ai emitter; CLI/test fixes)
     )?;
 
     match std::process::Command::new("node").arg(&out_path).status() {

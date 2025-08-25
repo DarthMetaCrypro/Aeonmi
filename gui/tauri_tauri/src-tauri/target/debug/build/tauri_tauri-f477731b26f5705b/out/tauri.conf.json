@@ -1,0 +1,12 @@
+{
+  "package": {
+    "productName": "Aeonmi Tauri Prototype",
+    "version": "0.1.0"
+  },
+  "tauri": {
+    "bundle": {
+      "active": false,
+      "identifier": "com.darthmetacrypro.aeonmi"
+    }
+  }
+}

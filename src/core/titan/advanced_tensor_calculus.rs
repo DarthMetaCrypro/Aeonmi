@@ -1,3 +1,4 @@
+#![allow(clippy::type_complexity, clippy::needless_range_loop)]
 pub fn tensor_decomposition_cp(
     _tensor: &[Vec<Vec<f64>>],
 ) -> Result<(Vec<f64>, Vec<Vec<f64>>, Vec<Vec<f64>>), &'static str> {

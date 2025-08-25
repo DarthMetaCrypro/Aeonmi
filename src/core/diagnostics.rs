@@ -41,6 +41,24 @@ pub fn print_error(filename: &str, source: &str, title: &str, span: Span) {
     eprintln!();
 }
 
+#[derive(serde::Serialize)]
+pub struct JsonDiagnostic<'a> {
+    pub severity: &'a str,
+    pub message: &'a str,
+    pub file: &'a str,
+    pub line: usize,
+    pub col: usize,
+    pub len: usize,
+}
+
+/// Emit a machine-readable JSON line (prefixed) for downstream tools (GUI, editors).
+pub fn emit_json_error(file: &str, title: &str, span: &Span) {
+    let jd = JsonDiagnostic { severity: "error", message: title, file, line: span.line, col: span.col, len: span.len };
+    if let Ok(s) = serde_json::to_string(&jd) {
+        eprintln!("@@DIAG:{}", s);
+    }
+}
+
 fn nth_line(src: &str, n: usize) -> Option<String> {
     src.lines().nth(n.saturating_sub(1)).map(|s| s.to_string())
 }

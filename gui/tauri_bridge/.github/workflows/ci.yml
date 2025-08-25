@@ -55,7 +55,7 @@ jobs:
       - name: Build and run tests
         env:
           # Use the runner's cores to parallelize builds
-          CARGO_BUILD_JOBS: ${{ runner.cores }}
+          CARGO_BUILD_JOBS: 4
           RUSTFLAGS: "-C target-cpu=native"
         run: |
           cd gui/tauri_bridge

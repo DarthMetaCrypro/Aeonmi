@@ -1,12 +1,27 @@
 use anyhow::Result;
 use std::path::PathBuf;
+use std::fs;
+use std::io::Write;
+use chrono::Local;
 
 pub fn new_file(path: Option<PathBuf>) -> Result<()> {
-    if let Some(p) = path {
-        println!("new: creating '{}' (placeholder)", p.display());
-    } else {
-        println!("new: creating untitled.ai (placeholder)");
+    let target = path.unwrap_or_else(|| PathBuf::from("untitled.ai"));
+    if target.exists() {
+        println!("new: '{}' already exists (leaving unchanged)", target.display());
+        return Ok(());
     }
+    if let Some(parent) = target.parent() { if !parent.as_os_str().is_empty() { fs::create_dir_all(parent)?; } }
+    let now = Local::now().format("%Y-%m-%d %H:%M:%S");
+    let template = format!(r#"// Aeonmi source created {now}
+let greeting = "Hello Aeonmi";
+function square(x) {{ return x * x; }}
+let total = 0;
+for let i = 0; i < 5; i = i + 1 {{ total = total + square(i); }}
+log(greeting, total);
+"#);
+    let mut f = fs::File::create(&target)?;
+    f.write_all(template.as_bytes())?;
+    println!("new: created '{}'", target.display());
     Ok(())
 }
 

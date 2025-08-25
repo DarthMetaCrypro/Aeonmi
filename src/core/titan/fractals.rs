@@ -1,3 +1,4 @@
+#![allow(clippy::too_many_arguments, clippy::needless_range_loop)]
 pub fn mandelbrot(c_real: f64, c_imag: f64, max_iter: usize) -> usize {
     // Determines the iteration count for the Mandelbrot set at a given complex point
     let mut z_real = 0.0;

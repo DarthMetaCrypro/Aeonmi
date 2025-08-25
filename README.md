@@ -108,6 +108,22 @@ format [--check] <inputs...>
 
 lint [--fix] <inputs...>
 # linter (WIP)
+
+cargo <args...>
+# pass-through to system Cargo (e.g. `aeonmi cargo build --release`)
+
+python <script.py> [args...]
+# pass-through to system Python
+
+node <file.js> [args...]
+# pass-through to Node.js
+
+exec <file.(ai|js|py|rs)> [args...]
+# auto-detect by extension: .ai compiles then runs with node; .js via node; .py via python; .rs via rustc temp build
+# Flags:
+#   --watch       Re-run automatically on file change (poll 500ms)
+#   --keep-temp   Preserve temporary outputs (__exec_tmp.js / __exec_tmp_rs.exe) for inspection
+#   --no-run      (Internal/testing) Compile only; skip executing runtime (used when Node/Python absent)
 ```
 
 ## Interactive Shell (experimental)
@@ -166,6 +182,17 @@ Key bindings:
 | F1 | Toggle key/mouse debug overlay in status line |
 | Esc / Ctrl+Q | Quit (warns if unsaved) |
 | Tab | Insert 4 spaces |
+| Ctrl+F / Search button | Activate incremental search |
+| Enter / n | Next match while searching |
+| Shift+N | Previous match while searching |
+| Esc (in search) | Cancel search (first Esc exits search, second Esc may quit) |
+
+Improved search UX:
+* Inline status shows `/query [current/total]`.
+* Dynamic highlight of matches; counts update as you type.
+* `n` / `Enter` move forward, `Shift+N` moves backward.
+* First Esc exits search mode; second Esc handles quit logic.
+* Last search query persists across sessions in `.aeonmi_last_search` (auto-loaded on next launch when pressing Ctrl+F).
 
 The status line shows contextual results (save, compile success, errors, etc.).
 
@@ -206,13 +233,95 @@ run examples/hello.ai
 edit --tui examples/hello.ai   # make changes, F5 to compile, F6 to run
 ```
 
+### Fast Create Workflow
+
+You can now create a starter file and optionally open/compile/run in one command:
+
+```powershell
+# Create a new file with template (does not open)
+cargo run -- new --file demo.ai
+
+# Create + open line editor
+cargo run -- new --file demo.ai --open
+
+# Create + open TUI editor
+cargo run -- new --file demo.ai --open --tui
+
+# Create + emit AI canonical form immediately (default emits AI now)
+cargo run -- new --file demo.ai --compile
+
+# Create + emit AI + also run (compiles JS second for execution)
+cargo run -- new --file demo.ai --compile --run
+```
+
+Flags:
+* `--open` open editor after creation (line mode unless `--tui`).
+* `--tui` open the TUI editor (implies `--open`).
+* `--compile` emits `output.ai` (AI canonical) by default now.
+* `--run` compiles AI then JS and executes via Node (JS backend still required to run).
+
+Rationale: AEONMI focuses on its native `.ai` form first; JS emission is still available for execution and interoperability.
+
 ### Troubleshooting
 
 | Issue | Resolution |
 |-------|------------|
 | `qsim` says quantum not built | Re-run with `--features quantum` |
 | Node not found when running JS | Install Node.js and ensure `node` is in PATH |
+| `cargo` not found (Windows) | See Cargo PATH section below |
 | Colors missing on Windows | Use Windows Terminal or VS Code integrated terminal |
+#### Cargo PATH / Execution Issues (Windows)
+
+If PowerShell cannot run `cargo` inside Aeonmi passthrough commands:
+
+```powershell
+where cargo              # should show something like C:\Users\<you>\.cargo\bin\cargo.exe
+& "$env:USERPROFILE\.cargo\bin\cargo.exe" --version  # force direct execution
+[Environment]::GetEnvironmentVariable('Path','User')    # ensure it contains ;%USERPROFILE%\.cargo\bin
+```
+
+If `where cargo` returns nothing, (re)install Rust via <https://rustup.rs/>. After installation, restart PowerShell or run:
+
+```powershell
+$env:Path += ";$env:USERPROFILE\.cargo\bin"
+```
+
+If double‑clicking `.rs` files launches the wrong program, it does not affect CLI usage, but you can reset file associations in Windows Settings > Default Apps.
+
+Test passthrough:
+
+```powershell
+aeonmi cargo --version
+aeonmi python --version
+aeonmi node --version
+```
+
+If only `aeonmi cargo` fails while plain `cargo` works, confirm no alias/shim interference (`Get-Command cargo`).
+
+### Exec Subcommand Details
+
+`aeonmi exec` offers quick single-file execution across multiple ecosystems:
+
+| Extension | Behavior |
+|-----------|----------|
+| `.ai` | Compiles to temporary `__exec_tmp.js` then runs with Node (removed unless `--keep-temp`) |
+| `.js` | Direct Node execution (skip with `--no-run`) |
+| `.py` | Python interpreter execution (skip with `--no-run`) |
+| `.rs` | One-off `rustc -O` build to `__exec_tmp_rs(.exe)` then run (artifact removed unless `--keep-temp`) |
+
+Flags:
+* `--watch` — poll source and re-run automatically when timestamp changes.
+* `--keep-temp` — retain generated artifacts for debugging.
+* `--no-run` — compile only (hidden; primarily for CI/tests without Node/Python). You can also simulate via: `aeonmi exec file.ai --no-run`.
+
+Watch loop can be limited to a single iteration for testing by setting environment variable:
+
+```powershell
+$env:AEONMI_WATCH_ONCE = "1"; aeonmi exec script.ai --watch --no-run
+```
+
+Artifacts cleanup: By default temporary files are deleted after successful execution. On failure they are left in place for inspection.
+
 | Mouse selection blocked in TUI | Press F9 to disable mouse capture |
 | Unsaved changes warning on exit | Press Ctrl+S then Esc again |
 
@@ -300,6 +409,84 @@ cargo run -- ast examples/functions.ai
 # Compile & run in one shot (JS target -> node)
 cargo run -- run examples/hello.ai --out output.js
 ```
+
+## AI Integration (Multi-Provider Chat)
+
+Aeonmi includes an experimental "Mother AI Module" supporting multiple providers behind feature flags. Providers are opt-in to keep the default build lean.
+
+### Enable Providers
+
+Enable one or more AI providers at build/run time using Cargo features:
+
+```powershell
+cargo run --features ai-openai -- ai chat --list
+cargo run --features ai-openai,ai-perplexity -- ai chat --list
+```
+
+Available feature flags:
+* `ai-openai`
+* `ai-copilot`
+* `ai-perplexity`
+* `ai-deepseek`
+
+Each current implementation uses blocking HTTP (reqwest) for simplicity; future versions may introduce async + streaming.
+
+### Environment Variables
+
+Set required API keys (only the ones for the features you enabled):
+
+```powershell
+$env:OPENAI_API_KEY = "sk-your-key"          # for ai-openai
+$env:GITHUB_COPILOT_TOKEN = "ghu_xxx"        # (planned) for ai-copilot
+$env:PERPLEXITY_API_KEY = "pxp_your-key"     # for ai-perplexity
+$env:DEEPSEEK_API_KEY = "ds_your-key"        # for ai-deepseek
+```
+
+Optional overrides:
+* `AEONMI_OPENAI_MODEL` (default: `gpt-4o-mini`)
+
+### List Enabled Providers
+
+```powershell
+cargo run --features ai-openai,ai-perplexity -- ai chat --list
+```
+
+### Simple Chat
+
+If you enable only one provider you can omit `--provider`:
+
+```powershell
+$env:OPENAI_API_KEY = "sk-your-key"
+cargo run --features ai-openai -- ai chat "Explain QUBE in one sentence"
+```
+
+Streaming (OpenAI only currently):
+
+```powershell
+cargo run --features ai-openai -- ai chat --stream "Stream a short description of Aeonmi"
+```
+
+With multiple providers, specify `--provider`:
+
+```powershell
+cargo run --features ai-openai,ai-perplexity -- ai chat --provider perplexity "Compare QUBE to traditional ASTs"
+```
+
+You can also pipe a prompt from stdin (omit the prompt argument):
+
+```powershell
+"Summarize Aeonmi goals" | cargo run --features ai-openai -- ai chat
+```
+
+### Roadmap (AI)
+
+* Streaming responses (server-sent events / chunked)
+* Concurrent multi-provider fan-out
+* Structured refactor suggestions and code patch proposals
+* Context injection from local project files
+* Secure key storage / keychain integration
+* Rate limiting & caching layer
+
 
 ## License
 
