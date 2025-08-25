@@ -9,10 +9,8 @@
 *.dll binary
 *.wasm binary
 
-# If adopting Git LFS, uncomment lines below and install git-lfs, then run:
+# Git LFS (activated for debug symbol / metadata artifacts). Ensure collaborators run:
 #   git lfs install
-#   git lfs track "*.pdb"
-#   git add .gitattributes
-#
-# *.pdb filter=lfs diff=lfs merge=lfs -text
-# *.rmeta filter=lfs diff=lfs merge=lfs -text
+#   git pull --force
+*.pdb filter=lfs diff=lfs merge=lfs -text
+*.rmeta filter=lfs diff=lfs merge=lfs -text
