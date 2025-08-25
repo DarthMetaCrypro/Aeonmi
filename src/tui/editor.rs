@@ -970,10 +970,14 @@ fn ui(f: &mut ratatui::Frame<'_>, app: &App) {
                     break;
                 }
             }
-            if rest.chars().next().unwrap().is_whitespace() {
-                spans.push(Span::raw(rest.chars().next().unwrap().to_string()));
-                i += 1;
-                continue;
+            if let Some(first) = rest.chars().next() {
+                if first.is_whitespace() {
+                    spans.push(Span::raw(first.to_string()));
+                    i += first.len_utf8();
+                    continue;
+                }
+            } else {
+                break; // nothing left
             }
             let mut end = i;
             for (j, ch) in line[i..].char_indices() {
