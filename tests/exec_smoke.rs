@@ -28,3 +28,35 @@ fn exec_js_runs_directly() {
         eprintln!("(warn) exec js failed: likely node missing; skipping assertion");
     }
 }
+
+#[test]
+fn native_run_env() {
+    use std::process::Command;
+    let output = Command::new(env!("CARGO_BIN_EXE_aeonmi_project"))
+        .env("AEONMI_NATIVE", "1")
+        .arg("run")
+        .arg("examples/hello.ai")
+        .output()
+        .expect("failed to run native aeonmi");
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains("native: executing"), "stdout missing native execution marker: {stdout}");
+}
+
+#[test]
+fn shard_native_run_command() {
+    use std::process::{Command, Stdio};
+    let mut child = Command::new(env!("CARGO_BIN_EXE_aeonmi_project"))
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .spawn()
+        .expect("spawn shard");
+    {
+        use std::io::Write;
+        let stdin = child.stdin.as_mut().unwrap();
+        writeln!(stdin, "native-run examples/hello.ai").ok();
+        writeln!(stdin, "exit").ok();
+    }
+    let out = child.wait_with_output().expect("wait shard");
+    let stdout = String::from_utf8_lossy(&out.stdout);
+    assert!(stdout.contains("native: executing"), "stdout missing native execution marker in shard: {stdout}");
+}

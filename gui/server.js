@@ -2,7 +2,12 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const http = require('http');
 const WebSocket = require('ws');
-const pty = require('node-pty');
+let pty = null;
+try {
+  pty = require('node-pty');
+} catch (e) {
+  console.warn('[gui] node-pty not available, falling back to simple echo shell emulation');
+}
 const path = require('path');
 
 const app = express();
@@ -12,36 +17,41 @@ app.use(express.static(path.join(__dirname, 'static')));
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
-wss.on('connection', function connection(ws) {
-  // Try to spawn the compiled Aeonmi binary if present, otherwise fallback to a shell
+function detectBinary() {
   const repoRoot = process.cwd();
-  // Prefer the user-requested 'Aeonmi Shard' executable name, fall back to common names.
+  const fs = require('fs');
   const candidates = [];
   if (process.platform === 'win32') {
-    candidates.push('Aeonmi Shard.exe', 'Aeonmi.exe', 'aeonmi_project.exe');
+    // Include canonical lowercase names; previous list missed some
+    candidates.push('aeonmi.exe', 'Aeonmi.exe', 'aeonmi_project.exe');
   } else {
-    candidates.push('Aeonmi Shard', 'Aeonmi', 'aeonmi_project');
+    candidates.push('aeonmi', 'Aeonmi', 'aeonmi_project');
   }
-  let spawnCmd = null;
   for (const name of candidates) {
     const pth = path.join(repoRoot, 'target', 'debug', name);
-    if (require('fs').existsSync(pth)) {
-      spawnCmd = pth;
-      break;
-    }
+    if (fs.existsSync(pth)) return pth;
   }
-  if (!spawnCmd) {
-    // fallback to a shell if no binary found
-    spawnCmd = process.platform === 'win32' ? 'powershell.exe' : 'bash';
-  }
+  return null;
+}
 
-  const p = pty.spawn(spawnCmd, spawnArgs, {
-    name: 'xterm-color',
-    cols: 80,
-    rows: 24,
-    cwd: process.cwd(),
-    env: process.env
-  });
+wss.on('connection', function connection(ws) {
+  let spawnCmd = detectBinary();
+  if (!pty) {
+    ws.send(JSON.stringify({ type: 'output', data: '[pseudo-terminal]\r\nnode-pty not installed; limited echo mode.\r\n' }));
+    ws.on('message', msg => {
+      try { const m = JSON.parse(msg); if (m.type === 'input') { ws.send(JSON.stringify({ type: 'output', data: m.data })); } } catch {}
+    });
+    return;
+  }
+  if (!spawnCmd) spawnCmd = process.platform === 'win32' ? 'powershell.exe' : 'bash';
+  const spawnArgs = [];
+  let p;
+  try {
+    p = pty.spawn(spawnCmd, spawnArgs, { name: 'xterm-color', cols: 80, rows: 24, cwd: process.cwd(), env: process.env });
+  } catch (e) {
+    ws.send(JSON.stringify({ type: 'output', data: `Failed to spawn PTY: ${e}\r\n` }));
+    return;
+  }
 
   p.on('data', function(data) {
     ws.send(JSON.stringify({ type: 'output', data }));
@@ -87,22 +97,7 @@ app.post('/api/save', (req, res) => {
 
 // Spawn a detached native terminal running the Aeonmi Shard (or fallback shell)
 app.post('/api/detach', (req, res) => {
-  const repoRoot = process.cwd();
-  const fs = require('fs');
-  const candidates = [];
-  if (process.platform === 'win32') {
-    candidates.push('Aeonmi Shard.exe', 'Aeonmi.exe', 'aeonmi_project.exe');
-  } else {
-    candidates.push('Aeonmi Shard', 'Aeonmi', 'aeonmi_project');
-  }
-  let binPath = null;
-  for (const name of candidates) {
-    const pth = path.join(repoRoot, 'target', 'debug', name);
-    if (fs.existsSync(pth)) {
-      binPath = pth;
-      break;
-    }
-  }
+  const binPath = detectBinary();
 
   // Command to run in terminal
   let cmd = null;
@@ -144,6 +139,10 @@ app.post('/api/detach', (req, res) => {
   }
 });
 
+app.get('/health', (_req, res) => res.json({ ok: true, bin: !!detectBinary() }));
+
 server.listen(4000, () => {
-  console.log('GUI prototype server started at http://localhost:4000');
+  console.log('[gui] server at http://localhost:4000');
+  const bin = detectBinary();
+  if (bin) console.log(`[gui] found binary: ${bin}`); else console.log('[gui] no binary found yet; will fall back to shell');
 });

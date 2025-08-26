@@ -133,6 +133,9 @@ exec <file.(ai|js|py|rs)> [args...]
 #   --watch       Re-run automatically on file change (poll 500ms)
 #   --keep-temp   Preserve temporary outputs (__exec_tmp.js / __exec_tmp_rs.exe) for inspection
 #   --no-run      (Internal/testing) Compile only; skip executing runtime (used when Node/Python absent)
+
+native <file.ai> [--emit-ai FILE] [--watch]
+# Run an .ai file directly on the Aeonmi native VM (equivalent to setting AEONMI_NATIVE=1 with run). Optional --emit-ai writes canonical form first.
 ```
 
 ## Interactive Shell (experimental)
@@ -333,6 +336,32 @@ Artifacts cleanup: By default temporary files are deleted after successful execu
 
 | Mouse selection blocked in TUI | Press F9 to disable mouse capture |
 | Unsaved changes warning on exit | Press Ctrl+S then Esc again |
+
+### Native Interpreter (Node-less Fallback / Opt-In)
+
+Aeonmi now ships an initial native interpreter implementing a tree-walk VM over the lowered IR. By default execution of `.ai` still prefers the historical JS emission + Node.js runtime. The native path is used when either:
+
+1. Node.js is not detected on PATH, or
+2. You explicitly request native mode with the environment variable `AEONMI_NATIVE=1`.
+
+Supported today: literals, variable declarations & assignment, arithmetic / comparison / logical operators, functions & calls, `if` / `while` / `for`, returns, and built-ins `print`, `log`, `time_ms`, `rand`. Quantum and hieroglyphic operations currently lower to placeholder function names (no physical simulation yet).
+
+Opt-in examples:
+
+```bash
+AEONMI_NATIVE=1 aeonmi run examples/hello.ai
+AEONMI_NATIVE=1 aeonmi exec examples/hello.ai
+```
+
+PowerShell:
+
+```powershell
+$env:AEONMI_NATIVE = "1"; aeonmi run examples/hello.ai
+```
+
+When native mode executes with `--no-sema` you'll see a note mirroring the JS path. Errors are reported with the same pretty diagnostics when `--pretty-errors` is enabled.
+
+Roadmap (native): semantic analysis integration, richer type coercions, quantum op execution hooks, glyph intrinsic dispatch, performance optimizations (bytecode / arena), and deterministic random with seed control.
 
 ### Roadmap Notes (Preview)
 

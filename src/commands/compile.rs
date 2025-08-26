@@ -9,6 +9,8 @@ use crate::core::code_generator::CodeGenerator;
 use crate::core::diagnostics::{print_error, emit_json_error, Span};
 use crate::core::lexer::{Lexer, LexerError};
 use crate::core::parser::{Parser as AeParser, ParserError}; // JS + AI backends
+use crate::core::artifact_cache::{get_artifact, put_artifact};
+use sha1::{Sha1, Digest};
 
 #[allow(dead_code, clippy::too_many_arguments)]
 pub fn main_with_opts(
@@ -146,28 +148,22 @@ pub fn compile_pipeline(
         println!("note: semantic analysis skipped");
     }
 
-    // Generate code (JS or canonical .ai)
-    let output_string = match emit {
-        EmitKind::Ai => {
-            let mut gen = CodeGenerator::new_ai();
-            match gen.generate(&ast) {
-                Ok(s) => s,
-                Err(e) => {
-                    eprintln!("{} AI emit failed: {}", "error:".bright_red().bold(), e);
-                    exit(1);
-                }
+    // Artifact cache key: hash(source)+emit kind
+    let mut hasher = Sha1::new(); hasher.update(source.as_bytes()); hasher.update(match emit { EmitKind::Ai=>b"AI", EmitKind::Js=>b"JS" });
+    let key = format!("{:x}", hasher.finalize());
+    let output_string = if let Some(entry) = get_artifact(&key) { String::from_utf8(entry.data).unwrap_or_default() } else {
+        let generated = match emit {
+            EmitKind::Ai => {
+                let mut gen = CodeGenerator::new_ai();
+                match gen.generate(&ast) { Ok(s)=>s, Err(e)=>{ eprintln!("{} AI emit failed: {}", "error:".bright_red().bold(), e); exit(1);} }
             }
-        }
-        EmitKind::Js => {
-            let mut gen = CodeGenerator::new(); // legacy JS backend
-            match gen.generate(&ast) {
-                Ok(s) => s,
-                Err(e) => {
-                    eprintln!("{} JS emit failed: {}", "error:".bright_red().bold(), e);
-                    exit(1);
-                }
+            EmitKind::Js => {
+                let mut gen = CodeGenerator::new();
+                match gen.generate(&ast) { Ok(s)=>s, Err(e)=>{ eprintln!("{} JS emit failed: {}", "error:".bright_red().bold(), e); exit(1);} }
             }
-        }
+        };
+        put_artifact(key.clone(), generated.as_bytes().to_vec());
+        generated
     };
 
     // Ensure output directory exists

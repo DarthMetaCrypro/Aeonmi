@@ -11,12 +11,16 @@ pub enum ASTNode {
     // Declarations
     Function {
         name: String,
-        params: Vec<String>,
+        line: usize,
+        column: usize,
+        params: Vec<FunctionParam>,
         body: Vec<ASTNode>,
     },
     VariableDecl {
         name: String,
         value: Box<ASTNode>,
+        line: usize,
+        column: usize,
     },
     // Statements / simple stmt-like exprs
     Block(Vec<ASTNode>),
@@ -42,6 +46,8 @@ pub enum ASTNode {
     Assignment {
         name: String,
         value: Box<ASTNode>,
+        line: usize,
+        column: usize,
     },
     Call {
         callee: Box<ASTNode>,
@@ -57,6 +63,7 @@ pub enum ASTNode {
         expr: Box<ASTNode>,
     },
     Identifier(String),
+    IdentifierSpanned { name: String, line: usize, column: usize, len: usize },
     NumberLiteral(f64),
     StringLiteral(String),
     BooleanLiteral(bool),
@@ -74,26 +81,38 @@ pub enum ASTNode {
     Error(String),
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct FunctionParam {
+    pub name: String,
+    pub line: usize,
+    pub column: usize,
+}
+
 impl ASTNode {
     // Utility constructors
     pub fn new_function(name: &str, params: Vec<&str>, body: Vec<ASTNode>) -> Self {
         Self::Function {
             name: name.to_string(),
-            params: params.into_iter().map(String::from).collect(),
+            line: 0,
+            column: 0,
+            params: params.into_iter().map(|p| FunctionParam { name: p.to_string(), line: 0, column: 0 }).collect(),
             body,
         }
     }
+    pub fn new_function_at(name: &str, line: usize, column: usize, params: Vec<FunctionParam>, body: Vec<ASTNode>) -> Self {
+        Self::Function { name: name.to_string(), line, column, params, body }
+    }
     pub fn new_variable_decl(name: &str, value: ASTNode) -> Self {
-        Self::VariableDecl {
-            name: name.to_string(),
-            value: Box::new(value),
-        }
+        Self::VariableDecl { name: name.to_string(), value: Box::new(value), line: 0, column: 0 }
+    }
+    pub fn new_variable_decl_at(name: &str, value: ASTNode, line: usize, column: usize) -> Self {
+        Self::VariableDecl { name: name.to_string(), value: Box::new(value), line, column }
     }
     pub fn new_assignment(name: &str, value: ASTNode) -> Self {
-        Self::Assignment {
-            name: name.to_string(),
-            value: Box::new(value),
-        }
+        Self::Assignment { name: name.to_string(), value: Box::new(value), line: 0, column: 0 }
+    }
+    pub fn new_assignment_at(name: &str, value: ASTNode, line: usize, column: usize) -> Self {
+        Self::Assignment { name: name.to_string(), value: Box::new(value), line, column }
     }
     pub fn new_call(callee: ASTNode, args: Vec<ASTNode>) -> Self {
         Self::Call {
@@ -114,6 +133,7 @@ impl ASTNode {
             expr: Box::new(expr),
         }
     }
+    pub fn new_identifier_spanned(name: &str, line: usize, column: usize, len: usize) -> Self { Self::IdentifierSpanned { name: name.into(), line, column, len } }
     pub fn new_if(cond: ASTNode, then_branch: ASTNode, else_branch: Option<ASTNode>) -> Self {
         Self::If {
             condition: Box::new(cond),
@@ -201,11 +221,11 @@ mod tests {
             vec![ASTNode::NumberLiteral(1.0)],
         );
         let asn = ASTNode::new_assignment("x", call);
-        let ASTNode::Assignment { name, value } = asn else {
+    let ASTNode::Assignment { name, value, .. } = asn else {
             panic!("Expected Assignment")
         };
         assert_eq!(name, "x");
-        let ASTNode::Call { callee, args } = *value else {
+    let ASTNode::Call { callee, args } = *value else {
             panic!("Expected Call")
         };
         assert_eq!(*callee, ASTNode::Identifier("f".into()));

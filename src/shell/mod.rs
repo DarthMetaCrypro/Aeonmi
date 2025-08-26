@@ -96,6 +96,7 @@ pub fn start(config_path: Option<PathBuf>, pretty: bool, skip_sema: bool) -> any
                     if let Err(e) = res {
                         eprintln!("{} {}", "err:".red().bold(), e);
                     }
+                std::env::set_var("AEONMI_NATIVE", "1");
                 } else {
                     usage("rm <path>");
                 }

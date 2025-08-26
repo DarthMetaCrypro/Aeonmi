@@ -10,6 +10,11 @@ const saveBtn = document.getElementById('save');
 const compileAiBtn = document.getElementById('compile_ai');
 const compileJsBtn = document.getElementById('compile_js');
 const runJsBtn = document.getElementById('run_js');
+const circuitShowBtn = document.getElementById('circuit_show');
+const circuitExportBtn = document.getElementById('circuit_export');
+const codeActionsBtn = document.getElementById('code_actions_btn');
+const circuitDownloadBtn = document.getElementById('circuit_download');
+const circuitPanel = document.getElementById('circuit_panel');
 const diagnosticsPanel = document.getElementById('diagnostics');
 const filepathInput = document.getElementById('filepath');
 // AI chat elements
@@ -19,6 +24,9 @@ const aiSendBtn = document.getElementById('ai_send');
 const aiOutput = document.getElementById('ai_output');
 const aiListBtn = document.getElementById('ai_list');
 const aiStreamBtn = document.getElementById('ai_stream');
+const aiSetKeyBtn = document.getElementById('ai_set_key');
+const aiShowKeyBtn = document.getElementById('ai_show_key');
+const aiDeleteKeyBtn = document.getElementById('ai_delete_key');
 let monacoEditor = null;
 let monacoInstance = null;
 
@@ -217,6 +225,8 @@ async function refreshProviders() {
   try {
     const list = await invoke('ai_list_providers');
     (list || []).forEach(p => { const opt = document.createElement('option'); opt.value = p; opt.textContent = p; aiProviderSelect.appendChild(opt); });
+  // Load saved provider preference
+  try { const prefs = await invoke('prefs_get_all'); if (prefs && prefs.ai_provider) { aiProviderSelect.value = prefs.ai_provider; } } catch {}
   } catch (e) {
     ['openai','perplexity','deepseek','copilot'].forEach(p => { const opt = document.createElement('option'); opt.value = p; opt.textContent = p; aiProviderSelect.appendChild(opt); });
   }
@@ -257,4 +267,52 @@ aiStreamBtn?.addEventListener('click', async () => {
     if (payload.done) { aiOutput.textContent += '\n[done]'; }
   });
   try { await invoke('ai_chat_stream', { provider: prov, prompt }); } catch (e) { aiOutput.textContent += 'Error: ' + e; }
+});
+
+aiProviderSelect?.addEventListener('change', async () => {
+  const prov = aiProviderSelect.value;
+  try { await invoke('ai_set_provider', { name: prov }); await invoke('prefs_set', { key: 'ai_provider', value: prov }); } catch(e){ console.warn('provider set failed', e); }
+});
+
+aiSetKeyBtn?.addEventListener('click', async () => {
+  const prov = aiProviderSelect.value; if (!prov) return;
+  const key = prompt(`Enter API key for ${prov}`); if (!key) return;
+  try { await invoke('api_key_set', { provider: prov, key }); status.textContent = 'key saved'; } catch(e){ alert('Key save failed: '+e); }
+});
+
+aiShowKeyBtn?.addEventListener('click', async () => {
+  const prov = aiProviderSelect.value; if (!prov) return;
+  try { const keyOpt = await invoke('api_key_get', { provider: prov }); if (keyOpt) { alert(`Key(${prov}): ${'*'.repeat(Math.max(0,keyOpt.length-4))}${keyOpt.slice(-4)}`); } else { alert('No key stored'); } } catch(e){ alert('Show failed: '+e); }
+});
+
+aiDeleteKeyBtn?.addEventListener('click', async () => {
+  const prov = aiProviderSelect.value; if (!prov) return;
+  if (!confirm(`Delete key for ${prov}?`)) return;
+  try { await invoke('api_key_delete', { provider: prov }); status.textContent='key deleted'; } catch(e){ alert('Delete failed: '+e); }
+});
+
+circuitShowBtn?.addEventListener('click', async () => {
+  try {
+    const circStr = await invoke('aeonmi_quantum_circuit', { source: getSource() });
+    let circ = {}; try { circ = JSON.parse(circStr); } catch {}
+    circuitPanel.innerHTML = '<b>Circuit</b><br/>' + (circ.gates||[]).map(g=>`${g.gate}(${(g.qubits||[]).join(',')})`).join('<br/>');
+  } catch(e){ circuitPanel.innerHTML = 'Circuit error: '+e; }
+});
+
+circuitExportBtn?.addEventListener('click', async () => {
+  try {
+    const respStr = await invoke('aeonmi_quantum_circuit_export', { source: getSource() });
+    let resp={}; try { resp=JSON.parse(respStr);} catch {}
+    const jsonEsc = (resp.json||'').replace(/</g,'&lt;');
+    const qasmEsc = (resp.pseudo_qasm||'').replace(/</g,'&lt;');
+    circuitPanel.innerHTML = `<b>Circuit Export</b><br/><details open><summary>JSON</summary><pre style="white-space:pre-wrap;font-size:11px;">${jsonEsc}</pre></details><details><summary>Pseudo-QASM</summary><pre style="white-space:pre-wrap;font-size:11px;">${qasmEsc}</pre></details>`;
+  } catch(e){ circuitPanel.innerHTML = 'Export error: '+e; }
+});
+
+codeActionsBtn?.addEventListener('click', async () => {
+  try { const actsStr = await invoke('aeonmi_code_actions', { source: getSource() }); let acts=[]; try{acts=JSON.parse(actsStr);}catch{} circuitPanel.innerHTML = '<b>Code Actions</b><br/>' + acts.map(a=>`${a.kind}: ${a.title}`).join('<br/>'); } catch(e){ circuitPanel.innerHTML='Actions error: '+e; }
+});
+
+circuitDownloadBtn?.addEventListener('click', async () => {
+  try { const respStr = await invoke('aeonmi_quantum_circuit_export', { source: getSource() }); let resp={}; try{resp=JSON.parse(respStr);}catch{}; const ts = Date.now(); const base = `circuit_${ts}`; const jsonPath = base+`.json`; const qasmPath = base+`.qasm.txt`; await invoke('save_file', { path: jsonPath, contents: resp.json||'' }); await invoke('save_file', { path: qasmPath, contents: resp.pseudo_qasm||'' }); status.textContent = `saved ${jsonPath} & ${qasmPath}`; } catch(e){ alert('Download failed: '+e); }
 });

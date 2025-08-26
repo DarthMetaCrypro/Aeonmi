@@ -117,6 +117,12 @@ pub enum Command {
     /// Watch input and re-run when changed
     #[arg(long = "watch", action = ArgAction::SetTrue)]
     watch: bool,
+    /// Force native VM interpreter (no JS emit / Node). Env AEONMI_NATIVE=1 also works.
+    #[arg(long = "native", action = ArgAction::SetTrue)]
+    native: bool,
+    /// Additionally emit canonical AI form to FILE (no JS) before executing (works with or without --native)
+    #[arg(long = "emit-ai", value_name = "FILE")]
+    emit_ai: Option<PathBuf>,
     },
 
     /// Quantum execution (Titan local or Qiskit backends)
@@ -270,6 +276,18 @@ pub enum Command {
     /// (AI/JS only) Compile but skip executing node (useful for tests without node installed)
     #[arg(long = "no-run", action = ArgAction::SetTrue, hide = true)]
     no_run: bool,
+    },
+
+    /// Run an .ai file with the native VM (no JS / Node).
+    Native {
+        #[arg(value_name = "INPUT")]
+        input: PathBuf,
+        /// Additionally emit canonical AI form to FILE prior to execution.
+        #[arg(long = "emit-ai", value_name = "FILE")]
+        emit_ai: Option<PathBuf>,
+        /// Watch file for changes and re-run.
+        #[arg(long = "watch", action = ArgAction::SetTrue)]
+        watch: bool,
     },
 }
 

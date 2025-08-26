@@ -2,15 +2,44 @@ use futures::{SinkExt, StreamExt};
 use std::path::PathBuf;
 use portable_pty::CommandBuilder;
 use tracing::{error, info};
-use warp::Filter;
+#[allow(unused_imports)]
+use warp::Filter; // Deprecated: HTTP layer replaced by Tauri commands
+
+// Reuse core compiler pieces for diagnostics / compile
+use aeonmi_project::core::lexer::{Lexer, LexerError};
+use aeonmi_project::core::parser::{Parser as AeParser, ParserError};
+use aeonmi_project::core::semantic_analyzer::SemanticAnalyzer;
+use aeonmi_project::commands::compile::compile_pipeline;
+use aeonmi_project::cli::EmitKind;
+use aeonmi_project::core::diagnostics::{Span, emit_json_error};
+use serde::Serialize;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt::init();
-    info!("Starting tauri_bridge PTY server");
+    info!("tauri_bridge binary deprecated: use Tauri app invoke handlers instead. PTY WebSocket kept for now.");
 
-    // Serve static files
-    let static_dir = warp::fs::dir("static");
+    // Old HTTP routes removed. Keeping only PTY websocket (under /pty) & detach for transitional use.
+
+    // POST /compile { "input": "path", "emit": "ai|js", "out": "optional" }
+    // compile/run/diagnostics/ai/quantum legacy endpoints removed
+
+    // POST /run { "input": "file.ai", "native": bool }
+
+    // Helper: naive find first occurrence of identifier for semantic error positioning
+    fn locate_ident(src: &str, name: &str) -> (usize, usize) {
+        for (i, line) in src.lines().enumerate() {
+            if let Some(idx) = line.find(name) {
+                return (i + 1, idx + 1);
+            }
+        }
+        (1,1)
+    }
+
+    // POST /diagnostics { "source": "code", "path": "virtual.ai" }
+
+    // POST /ai { provider, prompt }
+    // Legacy API routes removed.
 
     // WebSocket endpoint
     let ws_route = warp::path("pty")
@@ -58,9 +87,8 @@ async fn main() -> anyhow::Result<()> {
         warp::reply::with_status("detached", warp::http::StatusCode::OK)
     });
 
-    let routes = static_dir.or(ws_route).or(detach_route);
-
-    info!("Listening on 127.0.0.1:9001");
+    let routes = ws_route.or(detach_route);
+    info!("Listening (transitional) on 127.0.0.1:9001 for PTY only");
     warp::serve(routes).run(([127, 0, 0, 1], 9001)).await;
 
     Ok(())

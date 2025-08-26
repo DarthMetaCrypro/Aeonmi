@@ -81,19 +81,19 @@ impl CodeGenerator {
                 s.push_str("}\n");
                 s
             }
-            ASTNode::VariableDecl { name, value } => {
+            ASTNode::VariableDecl { name, value, .. } => {
                 format!("let {} = {};\n", name, self.emit_expr_js(value))
             }
-            ASTNode::Function { name, params, body } => {
+            ASTNode::Function { name, params, body, .. } => {
                 let mut s = String::new();
-                s.push_str(&format!("function {}({}) ", name, params.join(", ")));
+                s.push_str(&format!("function {}({}) ", name, params.iter().map(|p| p.name.clone()).collect::<Vec<_>>().join(", ")));
                 let block = ASTNode::Block(body.clone());
                 s.push_str(&self.emit_js(&block));
                 s
             }
             ASTNode::Return(expr) => format!("return {};\n", self.emit_expr_js(expr)),
             ASTNode::Log(expr) => format!("console.log({});\n", self.emit_expr_js(expr)),
-            ASTNode::Assignment { name, value } => {
+            ASTNode::Assignment { name, value, .. } => {
                 format!("{} = {};\n", name, self.emit_expr_js(value))
             }
             ASTNode::Call { .. } => format!("{};\n", self.emit_expr_js(node)),
@@ -149,6 +149,7 @@ impl CodeGenerator {
             ASTNode::BinaryExpr { .. }
             | ASTNode::UnaryExpr { .. }
             | ASTNode::Identifier(_)
+            | ASTNode::IdentifierSpanned { .. }
             | ASTNode::NumberLiteral(_)
             | ASTNode::StringLiteral(_)
             | ASTNode::BooleanLiteral(_) => format!("{};\n", self.emit_expr_js(node)),
@@ -181,6 +182,7 @@ impl CodeGenerator {
     fn emit_expr_js(&mut self, node: &ASTNode) -> String {
         match node {
             ASTNode::Identifier(s) => s.clone(),
+            ASTNode::IdentifierSpanned { name, .. } => name.clone(),
             ASTNode::NumberLiteral(n) => {
                 if n.fract() == 0.0 {
                     format!("{}", *n as i64)
@@ -210,7 +212,7 @@ impl CodeGenerator {
                     .join(", ");
                 format!("{}({})", c, a)
             }
-            ASTNode::Assignment { name, value } => {
+            ASTNode::Assignment { name, value, .. } => {
                 format!("{} = {}", name, self.emit_expr_js(value))
             }
             ASTNode::QuantumOp { op, qubits } => {

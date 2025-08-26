@@ -1,6 +1,6 @@
 //! Parser for Aeonmi/QUBE/Titan with precedence parsing + spanned errors.
 
-use crate::core::ast::ASTNode;
+use crate::core::ast::{ASTNode, FunctionParam};
 use crate::core::token::{Token, TokenKind};
 
 #[derive(Debug, Clone)]
@@ -80,24 +80,27 @@ impl Parser {
 
     fn parse_variable_decl(&mut self) -> Result<ASTNode, ParserError> {
         self.consume(TokenKind::Let, "Expected 'let'")?;
+        let line = self.peek().line;
+        let column = self.peek().column;
         let name = self.consume_identifier("Expected variable name")?;
         self.consume(TokenKind::Equals, "Expected '=' in variable declaration")?;
         let value = self.parse_expression()?;
-        self.consume(
-            TokenKind::Semicolon,
-            "Expected ';' after variable declaration",
-        )?;
-        Ok(ASTNode::new_variable_decl(&name, value))
+        self.consume(TokenKind::Semicolon, "Expected ';' after variable declaration")?;
+        Ok(ASTNode::new_variable_decl_at(&name, value, line, column))
     }
 
     fn parse_function_decl(&mut self) -> Result<ASTNode, ParserError> {
-        self.consume(TokenKind::Function, "Expected 'function'")?;
+        let func_tok = self.consume(TokenKind::Function, "Expected 'function'")?;
+        let name_tok_line = self.peek().line;
+        let name_tok_col = self.peek().column;
         let name = self.consume_identifier("Expected function name")?;
         self.consume(TokenKind::OpenParen, "Expected '(' after function name")?;
-        let mut params = Vec::new();
+        let mut params: Vec<FunctionParam> = Vec::new();
         if !self.check(&TokenKind::CloseParen) {
             loop {
-                params.push(self.consume_identifier("Expected parameter name")?);
+                let p_line = self.peek().line; let p_col = self.peek().column;
+                let pname = self.consume_identifier("Expected parameter name")?;
+                params.push(FunctionParam { name: pname, line: p_line, column: p_col });
                 if !self.match_token(&[TokenKind::Comma]) {
                     break;
                 }
@@ -108,11 +111,7 @@ impl Parser {
             ASTNode::Block(stmts) => stmts,
             _ => return Err(self.err_here("Function body must be a block")),
         };
-        Ok(ASTNode::new_function(
-            &name,
-            params.iter().map(|s| s.as_str()).collect(),
-            body,
-        ))
+        Ok(ASTNode::new_function_at(&name, func_tok.line, func_tok.column, params, body))
     }
 
     fn parse_return(&mut self) -> Result<ASTNode, ParserError> {
@@ -225,8 +224,11 @@ impl Parser {
         if self.match_token(&[TokenKind::Equals]) {
             match expr {
                 ASTNode::Identifier(name) => {
-                    let value = self.parse_assignment()?;
-                    Ok(ASTNode::new_assignment(&name, value))
+                    let line = self.previous().line; let column = self.previous().column; let value = self.parse_assignment()?; Ok(ASTNode::new_assignment_at(&name, value, line, column))
+                }
+                ASTNode::IdentifierSpanned { name, line: id_line, column: id_col, .. } => {
+                    // use identifier's own position for better span
+                    let value = self.parse_assignment()?; Ok(ASTNode::new_assignment_at(name, value, *id_line, *id_col))
                 }
                 _ => Err(self.err_here("Invalid assignment target")),
             }
@@ -318,7 +320,7 @@ impl Parser {
             TokenKind::NumberLiteral(v) => Ok(ASTNode::NumberLiteral(v)),
             TokenKind::StringLiteral(s) => Ok(ASTNode::StringLiteral(s)),
             TokenKind::BooleanLiteral(b) => Ok(ASTNode::BooleanLiteral(b)),
-            TokenKind::Identifier(name) => Ok(ASTNode::Identifier(name)),
+            TokenKind::Identifier(name) => Ok(ASTNode::new_identifier_spanned(&name, tok.line, tok.column, name.len())),
             TokenKind::OpenParen => {
                 let expr = self.parse_expression()?;
                 self.consume(TokenKind::CloseParen, "Expected ')'")?;

@@ -133,7 +133,7 @@ fn main() -> anyhow::Result<()> {
             }
         }
 
-        Some(Command::Run { input, out, watch }) => {
+        Some(Command::Run { input, out, watch, native, emit_ai }) => {
             if watch {
                 use std::time::{Duration, SystemTime};
                 use std::thread::sleep;
@@ -141,7 +141,40 @@ fn main() -> anyhow::Result<()> {
                     .and_then(|m| m.modified())
                     .unwrap_or(SystemTime::UNIX_EPOCH);
                 loop {
-                    let _ = commands::run::main_with_opts(input.clone(), out.clone(), args.pretty_errors, args.no_sema);
+                    let _ = {
+                        // Optional AI emit only
+                        if let Some(ai_path) = &emit_ai {
+                            let _ = commands::compile::compile_pipeline(
+                                Some(input.clone()),
+                                EmitKind::Ai,
+                                ai_path.clone(),
+                                false,
+                                false,
+                                args.pretty_errors,
+                                args.no_sema,
+                                args.debug_titan,
+                            );
+                        }
+                        if native || std::env::var("AEONMI_NATIVE").ok().as_deref() == Some("1") {
+                            // Inline native run (simplified duplicate of run_native) to avoid changing public fn
+                            use crate::core::lexer::Lexer;
+                            use crate::core::parser::{Parser as AeParser, ParserError};
+                            use crate::core::lowering::lower_ast_to_ir;
+                            use crate::core::vm::Interpreter;
+                            use crate::core::diagnostics::{print_error, emit_json_error, Span};
+                            use crate::core::lexer::LexerError;
+                            let source = match std::fs::read_to_string(&input) { Ok(s) => s, Err(e) => { eprintln!("read error: {e}"); String::new() } };
+                            let mut lexer = Lexer::from_str(&source);
+                            let tokens = match lexer.tokenize() { Ok(t)=>t, Err(e)=>{ if args.pretty_errors { match e { LexerError::UnexpectedCharacter(_,l,c)|LexerError::UnterminatedString(l,c)|LexerError::InvalidNumber(_,l,c)|LexerError::InvalidQubitLiteral(_,l,c)|LexerError::UnterminatedComment(l,c)=>{ emit_json_error(&input.display().to_string(), &format!("{e}"), &Span::single(l,c)); print_error(&input.display().to_string(), &source, &format!("{e}"), Span::single(l,c)); } _=> eprintln!("lex error: {e}") } } else { eprintln!("lex error: {e}"); } vec![] } };
+                            if !tokens.is_empty() {
+                                let mut parser = AeParser::new(tokens.clone());
+                                match parser.parse() { Ok(ast) => { if args.no_sema { println!("note: semantic analysis skipped (native)"); } match lower_ast_to_ir(&ast, "main") { Ok(module)=>{ let mut interp = Interpreter::new(); if let Err(e)=interp.run_module(&module){ eprintln!("runtime error: {}", e.message); } }, Err(e)=> eprintln!("lowering error: {e}"), } }, Err(ParserError{message,line,column}) => { if args.pretty_errors { emit_json_error(&input.display().to_string(), &format!("Parsing error: {message}"), &Span::single(line,column)); print_error(&input.display().to_string(), &source, &format!("Parsing error: {message}"), Span::single(line,column)); } else { eprintln!("parse error: {message}"); } } }
+                            }
+                            Ok(())
+                        } else {
+                            commands::run::main_with_opts(input.clone(), out.clone(), args.pretty_errors, args.no_sema)
+                        }
+                    };
                     sleep(Duration::from_millis(500));
                     if let Ok(meta) = std::fs::metadata(&input) {
                         if let Ok(m) = meta.modified() {
@@ -154,7 +187,26 @@ fn main() -> anyhow::Result<()> {
                     }
                 }
             } else {
-                commands::run::main_with_opts(input, out, args.pretty_errors, args.no_sema)
+                // Single run
+                if let Some(ai_path) = &emit_ai {
+                    let _ = commands::compile::compile_pipeline(
+                        Some(input.clone()),
+                        EmitKind::Ai,
+                        ai_path.clone(),
+                        false,
+                        false,
+                        args.pretty_errors,
+                        args.no_sema,
+                        args.debug_titan,
+                    );
+                }
+                if native || std::env::var("AEONMI_NATIVE").ok().as_deref() == Some("1") {
+                    // Reuse exec path logic by calling run::main_with_opts with env forcing native
+                    std::env::set_var("AEONMI_NATIVE", "1");
+                    commands::run::main_with_opts(input, out, args.pretty_errors, args.no_sema)
+                } else {
+                    commands::run::main_with_opts(input, out, args.pretty_errors, args.no_sema)
+                }
             }
         }
 
@@ -368,32 +420,88 @@ fn main() -> anyhow::Result<()> {
                     .to_lowercase();
                 match ext.as_str() {
                     "ai" => {
-                        let out_js = PathBuf::from("__exec_tmp.js");
-                        commands::compile::compile_pipeline(
-                            Some(file.clone()),
-                            EmitKind::Js,
-                            out_js.clone(),
-                            false,
-                            false,
-                            pretty,
-                            skip_sema,
-                            debug_titan,
-                        )?;
-                        if !no_run {
-                            let status = std::process::Command::new("node")
-                                .arg(&out_js)
-                                .args(passthrough)
-                                .status();
-                            match status {
-                                Ok(s) if s.success() => {}
-                                Ok(s) => anyhow::bail!("node exited with status {}", s),
-                                Err(e) => anyhow::bail!("failed to execute node: {e}"),
+                        let force_native = std::env::var("AEONMI_NATIVE").ok().as_deref() == Some("1");
+                        let node_available = std::process::Command::new("node")
+                            .arg("--version")
+                            .output()
+                            .map(|o| o.status.success())
+                            .unwrap_or(false);
+                        if force_native || !node_available {
+                            // Native interpretation path
+                            println!("native: executing '{}' via Aeonmi VM", file.display());
+                            use crate::core::lexer::Lexer;
+                            use crate::core::parser::{Parser as AeParser, ParserError};
+                            use crate::core::lowering::lower_ast_to_ir;
+                            use crate::core::vm::Interpreter;
+                            use crate::core::diagnostics::{print_error, emit_json_error, Span};
+                            use crate::core::lexer::LexerError;
+                            let src = match std::fs::read_to_string(file) { Ok(s) => s, Err(e) => anyhow::bail!("read error: {e}") };
+                            let mut lexer = Lexer::from_str(&src);
+                            let tokens = match lexer.tokenize() {
+                                Ok(t) => t,
+                                Err(e) => {
+                                    if pretty {
+                                        match e {
+                                            LexerError::UnexpectedCharacter(_, line, col)
+                                            | LexerError::UnterminatedString(line, col)
+                                            | LexerError::InvalidNumber(_, line, col)
+                                            | LexerError::InvalidQubitLiteral(_, line, col)
+                                            | LexerError::UnterminatedComment(line, col) => {
+                                                emit_json_error(&file.display().to_string(), &format!("{}", e), &Span::single(line, col));
+                                                print_error(&file.display().to_string(), &src, &format!("{}", e), Span::single(line, col));
+                                            }
+                                            _ => eprintln!("lex error: {e}"),
+                                        }
+                                    } else { eprintln!("lex error: {e}"); }
+                                    return Ok(());
+                                }
+                            };
+                            let mut parser = AeParser::new(tokens.clone());
+                            let ast = match parser.parse() {
+                                Ok(a) => a,
+                                Err(ParserError { message, line, column }) => {
+                                    if pretty {
+                                        emit_json_error(&file.display().to_string(), &format!("Parsing error: {message}"), &Span::single(line, column));
+                                        print_error(&file.display().to_string(), &src, &format!("Parsing error: {message}"), Span::single(line, column));
+                                    } else { eprintln!("parse error: {message}"); }
+                                    return Ok(());
+                                }
+                            };
+                            if skip_sema { println!("note: semantic analysis skipped (native)"); }
+                            match lower_ast_to_ir(&ast, "main") {
+                                Ok(module) => {
+                                    let mut interp = Interpreter::new();
+                                    if !no_run { if let Err(e) = interp.run_module(&module) { eprintln!("runtime error: {}", e.message); } }
+                                }
+                                Err(e) => eprintln!("lowering error: {e}"),
                             }
+                            Ok(())
+                        } else {
+                            let out_js = PathBuf::from("__exec_tmp.js");
+                            commands::compile::compile_pipeline(
+                                Some(file.clone()),
+                                EmitKind::Js,
+                                out_js.clone(),
+                                false,
+                                false,
+                                pretty,
+                                skip_sema,
+                                debug_titan,
+                            )?;
+                            if !no_run {
+                                let status = std::process::Command::new("node")
+                                    .arg(&out_js)
+                                    .args(passthrough)
+                                    .status();
+                                match status {
+                                    Ok(s) if s.success() => {}
+                                    Ok(s) => anyhow::bail!("node exited with status {}", s),
+                                    Err(e) => anyhow::bail!("failed to execute node: {e}"),
+                                }
+                            }
+                            if !keep_temp { let _ = std::fs::remove_file(&out_js); }
+                            Ok(())
                         }
-                        if !keep_temp {
-                            let _ = std::fs::remove_file(&out_js);
-                        }
-                        Ok(())
                     }
                     "js" => {
                         if no_run {
@@ -491,6 +599,47 @@ fn main() -> anyhow::Result<()> {
                 Ok(())
             } else {
                 run_once(&file, &passthrough, args.pretty_errors, args.no_sema, args.debug_titan, keep_temp, no_run)
+            }
+        }
+
+        Some(Command::Native { input, emit_ai, watch }) => {
+            use std::time::{Duration, SystemTime};
+            use std::thread::sleep;
+            fn run_native_file(p: &PathBuf, emit_ai: &Option<PathBuf>, pretty: bool, skip_sema: bool) -> anyhow::Result<()> {
+                if let Some(ai_out) = emit_ai {
+                    let _ = commands::compile::compile_pipeline(
+                        Some(p.clone()),
+                        EmitKind::Ai,
+                        ai_out.clone(),
+                        false,
+                        false,
+                        pretty,
+                        skip_sema,
+                        false,
+                    );
+                }
+                std::env::set_var("AEONMI_NATIVE", "1");
+                commands::run::main_with_opts(p.clone(), None, pretty, skip_sema)
+            }
+            if watch {
+                let mut last_mtime = std::fs::metadata(&input)
+                    .and_then(|m| m.modified())
+                    .unwrap_or(SystemTime::UNIX_EPOCH);
+                loop {
+                    let _ = run_native_file(&input, &emit_ai, args.pretty_errors, args.no_sema);
+                    sleep(Duration::from_millis(500));
+                    if let Ok(meta) = std::fs::metadata(&input) {
+                        if let Ok(m) = meta.modified() {
+                            if m > last_mtime {
+                                last_mtime = m;
+                                println!("[watch] detected change, re-running (native)...");
+                                continue;
+                            }
+                        }
+                    }
+                }
+            } else {
+                run_native_file(&input, &emit_ai, args.pretty_errors, args.no_sema)
             }
         }
 
