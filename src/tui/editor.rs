@@ -25,7 +25,7 @@ use ratatui::{
 };
 
 use crate::cli::EmitKind;
-use crate::commands::compile::compile_pipeline;
+use crate::commands::compile::compile_pipeline_soft; // compile_pipeline unused in TUI (soft variant used)
 use crate::core::qpoly::QPolyMap;
 
 // ---------- Palette / Theme ----------
@@ -102,6 +102,7 @@ struct App {
     emit_mode: EmitMode,
     show_key_debug: bool,
     last_key_debug: String,
+    // mouse is always active now; field retained for compatibility but unused
     mouse_capture: bool,
     cursor_row: usize,
     cursor_col: usize,
@@ -278,7 +279,7 @@ impl App {
         match self.emit_mode {
             EmitMode::Ai => {
                 let out = PathBuf::from("output.ai");
-                match compile_pipeline(
+                match compile_pipeline_soft(
                     Some(self.filepath.clone()),
                     EmitKind::Ai,
                     out.clone(),
@@ -294,7 +295,7 @@ impl App {
             }
             EmitMode::Js => {
                 let out = PathBuf::from("output.js");
-                match compile_pipeline(
+                match compile_pipeline_soft(
                     Some(self.filepath.clone()),
                     EmitKind::Js,
                     out.clone(),
@@ -323,7 +324,7 @@ impl App {
             }
         }
         let out = PathBuf::from("aeonmi.run.js");
-        match compile_pipeline(
+    match compile_pipeline_soft(
             Some(self.filepath.clone()),
             EmitKind::Js,
             out.clone(),
@@ -385,23 +386,40 @@ pub fn run_editor_tui(
         QPolyMap::from_user_default_or_builtin()
     };
 
+    // --- Robust terminal setup with RAII guard ---
+    struct TerminalGuard;
+    impl Drop for TerminalGuard {
+        fn drop(&mut self) {
+            let _ = terminal::disable_raw_mode();
+            let mut out = io::stdout();
+            // Best effort: leave alt screen & disable mouse capture.
+            let _ = execute!(out, LeaveAlternateScreen, DisableMouseCapture, SetTitle("Aeonmi"));
+        }
+    }
     terminal::enable_raw_mode()?;
     let mut stdout = io::stdout();
     execute!(stdout, EnterAlternateScreen, EnableMouseCapture, SetTitle("Aeonmi Shard"))?;
+    let _guard = TerminalGuard; // ensures restoration even on panic
+    // Install a panic hook that also restores terminal (belt & suspenders)
+    let prev_hook = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |info| {
+        let _ = terminal::disable_raw_mode();
+        let mut out = io::stdout();
+        let _ = execute!(out, LeaveAlternateScreen, DisableMouseCapture, SetTitle("Aeonmi (panic)"));
+        eprintln!("\n(editor panic) {}", info);
+        prev_hook(info);
+    }));
+
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
     let app = App::new(filepath, map);
     let res = panic::catch_unwind(AssertUnwindSafe(|| run_app(&mut terminal, app, pretty, skip_sema)));
-
-    terminal::disable_raw_mode()?;
-    execute!(
-        terminal.backend_mut(),
-        LeaveAlternateScreen,
-        DisableMouseCapture,
-        SetTitle("Aeonmi")
-    )?;
-    terminal.show_cursor()?;
+    // Explicit show cursor (guard will handle rest)
+    let _ = terminal.show_cursor();
+    // Restore original panic hook (avoid affecting rest of CLI session)
+    let _ = std::panic::take_hook(); // drop our hook
+    // NOTE: We do not reinstall prev_hook; it's already invoked on panic; for normal path we stop intercepting.
 
     match res {
         Ok(inner) => inner,
@@ -421,9 +439,7 @@ pub fn run_editor_tui(
                     msg
                 ),
             );
-            anyhow::bail!(
-                "Editor crashed (panic captured). See tui_crash.log for details."
-            )
+            anyhow::bail!("Editor crashed (panic captured). See tui_crash.log for details.")
         }
     }
 }
@@ -484,15 +500,9 @@ fn run_app(
                             app.emit_mode = app.emit_mode.toggle();
                             app.set_status(format!("Emit → {}", app.emit_mode.label()));
                         }
+                        // F9 previously toggled mouse capture; now always on.
                         (KeyCode::F(9), _) => {
-                            app.mouse_capture = !app.mouse_capture;
-                            if app.mouse_capture {
-                                let _ = execute!(std::io::stdout(), EnableMouseCapture);
-                                app.set_status("Mouse capture ON (F9 to release)");
-                            } else {
-                                let _ = execute!(std::io::stdout(), DisableMouseCapture);
-                                app.set_status("Mouse capture OFF (F9 to recapture)");
-                            }
+                            app.set_status("Mouse always enabled — no toggle");
                         }
                         (KeyCode::F(5), _) => app.compile(pretty, skip_sema),
                         (KeyCode::F(6), _) => app.run(pretty, skip_sema),
@@ -565,8 +575,11 @@ fn run_app(
                                         app.buffer.lines().map(|s| s.to_string()).collect();
                                     if app.cursor_row < lines.len() {
                                         if app.cursor_col > 0 {
-                                            lines[app.cursor_row].remove(app.cursor_col - 1);
-                                            app.cursor_col -= 1;
+                                            let line = &mut lines[app.cursor_row];
+                                            let mut new_idx = app.cursor_col - 1;
+                                            while new_idx > 0 && !line.is_char_boundary(new_idx) { new_idx -= 1; }
+                                            line.replace_range(new_idx..app.cursor_col, "");
+                                            app.cursor_col = new_idx;
                                             app.dirty = true;
                                         } else if app.cursor_row > 0 {
                                             let prev_len = lines[app.cursor_row - 1].len();
@@ -599,8 +612,9 @@ fn run_app(
                                     }
                                     let (left, right) = if app.cursor_row < lines.len() {
                                         let line = &lines[app.cursor_row];
-                                        let (l, r) = line
-                                            .split_at(app.cursor_col.min(line.len()));
+                                        let mut split_idx = app.cursor_col.min(line.len());
+                                        while split_idx > 0 && split_idx < line.len() && !line.is_char_boundary(split_idx) { split_idx -= 1; }
+                                        let (l, r) = line.split_at(split_idx);
                                         (l.to_string(), r.to_string())
                                     } else {
                                         (String::new(), String::new())
@@ -675,7 +689,7 @@ fn run_app(
                                     }
                                     if app.cursor_row < lines.len() {
                                         lines[app.cursor_row].insert(app.cursor_col, ch);
-                                        app.cursor_col += 1;
+                                        app.cursor_col += ch.len_utf8();
                                         app.buffer = lines.join("\n");
                                         app.dirty = true;
                                     }
@@ -728,49 +742,38 @@ fn run_app(
                         }
                         (KeyCode::Left, _) => {
                             if app.cursor_col > 0 {
-                                app.cursor_col -= 1;
+                                let line = app.buffer.lines().nth(app.cursor_row).unwrap_or("");
+                                let mut new_idx = app.cursor_col - 1;
+                                while new_idx > 0 && !line.is_char_boundary(new_idx) { new_idx -= 1; }
+                                app.cursor_col = new_idx;
                             } else if app.cursor_row > 0 {
                                 app.cursor_row -= 1;
-                                app.cursor_col = app
-                                    .buffer
-                                    .lines()
-                                    .nth(app.cursor_row)
-                                    .map(|l| l.len())
-                                    .unwrap_or(0);
+                                let prev_line = app.buffer.lines().nth(app.cursor_row).unwrap_or("");
+                                app.cursor_col = prev_line.len();
                             }
                         }
                         (KeyCode::Right, _) => {
-                            let line_len = app
-                                .buffer
-                                .lines()
-                                .nth(app.cursor_row)
-                                .map(|l| l.len())
-                                .unwrap_or(0);
-                            if app.cursor_col < line_len {
-                                app.cursor_col += 1;
-                            } else {
-                                let line_count = app.buffer.lines().count();
-                                if app.cursor_row + 1 < line_count {
-                                    app.cursor_row += 1;
-                                    app.cursor_col = 0;
+                            if let Some(line) = app.buffer.lines().nth(app.cursor_row) {
+                                if app.cursor_col < line.len() {
+                                    let mut new_idx = app.cursor_col + 1;
+                                    while new_idx < line.len() && !line.is_char_boundary(new_idx) { new_idx += 1; }
+                                    app.cursor_col = new_idx;
+                                } else {
+                                    let line_count = app.buffer.lines().count();
+                                    if app.cursor_row + 1 < line_count {
+                                        app.cursor_row += 1;
+                                        app.cursor_col = 0;
+                                    }
                                 }
                             }
                         }
                         _ => {}
                     }
                 }
-                Event::Mouse(me) => {
-                    if app.mouse_capture {
-                        if app.show_key_debug {
-                            app.set_status(format!("mouse: {:?}", me));
-                        }
-                        if let crossterm::event::MouseEvent {
-                            kind: MouseEventKind::Down(MouseButton::Left),
-                            column,
-                            row,
-                            ..
-                        } = me
-                        {
+        Event::Mouse(me) => {
+            if app.show_key_debug { app.set_status(format!("mouse: {:?}", me)); }
+            let crossterm::event::MouseEvent { kind, column, row, .. } = me; // destructure
+            // Compute regions to allow click navigation in buffer area.
                             if row == 1 {
                                 let size = terminal.size()?;
                                 let area = Rect {
@@ -858,9 +861,63 @@ fn run_app(
                                         break;
                                     }
                                 }
+                            } else {
+                                // Click elsewhere: if inside buffer text area, move cursor.
+                                let size = terminal.size()?;
+                                // Recompute layout similar to ui().
+                                let rows_layout = Layout::default()
+                                    .direction(Direction::Vertical)
+                                    .constraints([
+                                        Constraint::Length(1),
+                                        Constraint::Length(1),
+                                        Constraint::Min(5),
+                                        Constraint::Length(1),
+                                        Constraint::Length(3),
+                                    ].as_ref())
+                                    .split(size);
+                                let main_split = Layout::default()
+                                    .direction(Direction::Horizontal)
+                                    .constraints([Constraint::Percentage(68), Constraint::Percentage(32)].as_ref())
+                                    .split(rows_layout[2]);
+                                let left_split = Layout::default()
+                                    .direction(Direction::Vertical)
+                                    .constraints([Constraint::Min(5), Constraint::Length(5)].as_ref())
+                                    .split(main_split[0]);
+                                let buf_area = left_split[0];
+                                if row >= buf_area.y && row < buf_area.y + buf_area.height {
+                                    // Inside buffer block (including borders). Adjust for border offset 1.
+                                    let click_line = (row - buf_area.y).saturating_sub(1) as usize + app.scroll;
+                                    if click_line < app.buffer.lines().count() {
+                                        app.cursor_row = click_line;
+                                        let line_str = app.buffer.lines().nth(app.cursor_row).unwrap_or("");
+                                        // Determine desired column based on displayed x (account for left border)
+                                        if column >= buf_area.x + 1 { // inside after left border
+                                            let rel_x = (column - buf_area.x - 1) as usize; // character cells
+                                            // Walk chars to compute byte offset matching rel_x (monospace assumption, width=1)
+                                            let mut byte_idx = 0;
+                                            let mut cells = 0;
+                                            for ch in line_str.chars() {
+                                                let w = 1; // future: unicode-width crate
+                                                if cells + w > rel_x { break; }
+                                                cells += w;
+                                                byte_idx += ch.len_utf8();
+                                            }
+                                            app.cursor_col = byte_idx.min(line_str.len());
+                                        } else {
+                                            app.cursor_col = 0;
+                                        }
+                                    } else {
+                                        // Clicked below last line: move to end
+                                        if let Some(last) = app.buffer.lines().last() {
+                                            app.cursor_row = app.buffer.lines().count().saturating_sub(1);
+                                            app.cursor_col = last.len();
+                                        }
+                                    }
+                                }
+                                if matches!(kind, MouseEventKind::Down(MouseButton::Left)) {
+                                    app.set_status(format!("Cursor → {}:{}", app.cursor_row+1, app.cursor_col));
+                                }
                             }
-                        }
-                    }
                 }
                 Event::Resize(_, _) => {}
                 _ => {}
@@ -945,24 +1002,27 @@ fn ui(f: &mut ratatui::Frame<'_>, app: &App) {
     let highlight = |line: &str, query: Option<&str>| -> Line {
         use ratatui::text::Span;
         let mut spans: Vec<Span> = Vec::new();
-        let mut i = 0;
         let lower_q = query.map(|q| q.to_lowercase());
         let keywords = [
             "function", "let", "if", "else", "while", "for", "return", "log", "superpose",
             "entangle", "measure", "qubit",
         ];
+        let mut i = 0; // byte index, always maintained at a char boundary
         while i < line.len() {
+            // safe because i is always at a boundary
             let rest = &line[i..];
             if rest.starts_with('"') {
-                if let Some(end) = rest[1..].find('"') {
-                    let token = &line[i..=i + end + 1];
+                if let Some(rel_end) = rest[1..].find('"') { // closing quote
+                    let end = i + 1 + rel_end; // position of closing quote
+                    let token = &line[i..=end];
                     spans.push(Span::styled(
                         token.to_string(),
                         Style::default().fg(Color::Rgb(255, 240, 0)),
                     ));
-                    i += end + 2;
+                    i = end + 1; // move past closing quote
                     continue;
                 } else {
+                    // Unterminated string: highlight rest and finish
                     spans.push(Span::styled(
                         rest.to_string(),
                         Style::default().fg(Color::Rgb(255, 240, 0)),
@@ -970,37 +1030,31 @@ fn ui(f: &mut ratatui::Frame<'_>, app: &App) {
                     break;
                 }
             }
-            if let Some(first) = rest.chars().next() {
-                if first.is_whitespace() {
-                    spans.push(Span::raw(first.to_string()));
-                    i += first.len_utf8();
+            // Whitespace passthrough
+            if let Some(ch) = rest.chars().next() {
+                if ch.is_whitespace() {
+                    spans.push(Span::raw(ch.to_string()));
+                    i += ch.len_utf8();
                     continue;
                 }
             } else {
-                break; // nothing left
+                break;
             }
-            let mut end = i;
-            for (j, ch) in line[i..].char_indices() {
-                if ch.is_whitespace() {
-                    break;
-                }
-                end = i + j;
+            // Consume non-whitespace token
+            let mut end = i; // exclusive end
+            for (off, ch) in line[i..].char_indices() {
+                if ch.is_whitespace() { break; }
+                end = i + off + ch.len_utf8();
             }
-            let mut token = &line[i..=end];
-            if token.ends_with(char::is_whitespace) {
-                token = token.trim_end();
-            }
+            if end <= i { break; }
+            let token = &line[i..end];
             let lower = token.to_lowercase();
             if keywords.contains(&lower.as_str()) {
                 spans.push(Span::styled(
                     token.to_string(),
-                    Style::default()
-                        .fg(Color::Rgb(130, 0, 200))
-                        .add_modifier(Modifier::BOLD),
+                    Style::default().fg(Color::Rgb(130, 0, 200)).add_modifier(Modifier::BOLD),
                 ));
-            } else if token.chars().all(|c| c.is_ascii_digit() || c == '.')
-                && token.chars().any(|c| c.is_ascii_digit())
-            {
+            } else if token.chars().all(|c| c.is_ascii_digit() || c == '.') && token.chars().any(|c| c.is_ascii_digit()) {
                 spans.push(Span::styled(
                     token.to_string(),
                     Style::default().fg(Color::Rgb(0, 255, 180)),
@@ -1009,9 +1063,7 @@ fn ui(f: &mut ratatui::Frame<'_>, app: &App) {
                 if !q.is_empty() && lower.contains(q) {
                     spans.push(Span::styled(
                         token.to_string(),
-                        Style::default()
-                            .bg(Color::Rgb(255, 240, 0))
-                            .fg(Color::Black),
+                        Style::default().bg(Color::Rgb(255, 240, 0)).fg(Color::Black),
                     ));
                 } else {
                     spans.push(Span::raw(token.to_string()));
@@ -1019,7 +1071,7 @@ fn ui(f: &mut ratatui::Frame<'_>, app: &App) {
             } else {
                 spans.push(Span::raw(token.to_string()));
             }
-            i = end + 1;
+            i = end; // already exclusive end (next token starts here)
         }
         Line::from(spans)
     };

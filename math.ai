@@ -1,0 +1,21 @@
+// Math operations in Aeonmi
+let a = 10;
+let b = 5;
+
+log("Addition: " + (a + b));
+log("Subtraction: " + (a - b));
+log("Multiplication: " + (a * b));
+log("Division: " + (a / b));
+
+// Comparison operators
+if (a > b) {
+    log(a + " is greater than " + b);
+}
+
+if (a == 10) {
+    log("a equals 10");
+}
+
+// Boolean operations
+let isPositive = a > 0;
+log("a is positive: " + isPositive);

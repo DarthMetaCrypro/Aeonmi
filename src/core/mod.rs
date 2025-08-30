@@ -26,7 +26,14 @@ pub mod types;
 pub mod titan;
 pub mod token;
 pub use token::TokenKind; // Re-export only TokenKind; Token not needed externally currently
+#[macro_use]
+pub mod debug; // gated debug logging (AEONMI_DEBUG=1) provides debug_log! macro
 pub mod vm;
+
+#[cfg(feature = "bytecode")]
+pub mod bytecode;
+#[cfg(feature = "bytecode")]
+pub mod vm_bytecode;
 
 #[cfg(feature = "quantum")]
 pub mod quantum_ir;

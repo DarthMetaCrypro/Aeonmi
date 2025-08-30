@@ -96,7 +96,6 @@ pub fn start(config_path: Option<PathBuf>, pretty: bool, skip_sema: bool) -> any
                     if let Err(e) = res {
                         eprintln!("{} {}", "err:".red().bold(), e);
                     }
-                std::env::set_var("AEONMI_NATIVE", "1");
                 } else {
                     usage("rm <path>");
                 }
@@ -209,9 +208,44 @@ pub fn start(config_path: Option<PathBuf>, pretty: bool, skip_sema: bool) -> any
             }
 
             "run" => {
-                // run <file.ai> [--out FILE]
+                // run <file.ai> [--native] [--out FILE]
                 if parts.is_empty() {
-                    usage("run <file.ai> [--out FILE]");
+                    usage("run <file.ai> [--native] [--out FILE]");
+                    continue;
+                }
+                let input = PathBuf::from(&parts[0]);
+                let mut out: Option<PathBuf> = None;
+                let mut native = false;
+                let mut j = 1;
+                while j < parts.len() {
+                    match parts[j].as_str() {
+                        "--out" if j + 1 < parts.len() => {
+                            out = Some(PathBuf::from(&parts[j + 1]));
+                            j += 2;
+                        }
+                        "--native" => {
+                            native = true;
+                            j += 1;
+                        }
+                        _ => {
+                            j += 1;
+                        }
+                    }
+                }
+                let res = if native {
+                    commands::run::run_native(&input, pretty, skip_sema)
+                } else {
+                    commands::run::main_with_opts(input, out, pretty, skip_sema)
+                };
+                if let Err(e) = res {
+                    eprintln!("{} {}", "err:".red().bold(), e);
+                }
+            }
+
+            "native-run" => {
+                // native-run <file.ai> [--out FILE]
+                if parts.is_empty() {
+                    usage("native-run <file.ai> [--out FILE]");
                     continue;
                 }
                 let input = PathBuf::from(&parts[0]);
@@ -223,12 +257,15 @@ pub fn start(config_path: Option<PathBuf>, pretty: bool, skip_sema: bool) -> any
                             out = Some(PathBuf::from(&parts[j + 1]));
                             j += 2;
                         }
-                        _ => {
-                            j += 1;
-                        }
+                        _ => j += 1,
                     }
                 }
-                if let Err(e) = commands::run::main_with_opts(input, out, pretty, skip_sema) {
+                // Temporarily force native interpreter
+                let prev = std::env::var("AEONMI_NATIVE").ok();
+                std::env::set_var("AEONMI_NATIVE", "1");
+                let res = commands::run::main_with_opts(input, out, pretty, skip_sema);
+                if let Some(v) = prev { std::env::set_var("AEONMI_NATIVE", v); } else { std::env::remove_var("AEONMI_NATIVE"); }
+                if let Err(e) = res {
                     eprintln!("{} {}", "err:".red().bold(), e);
                 }
             }
@@ -396,7 +433,7 @@ fn print_help() {
         "{}\n\
          {}\n  pwd                 # print working dir\n  cd [dir]            # change directory\n  ls [dir]            # list directory\n  mkdir <path>        # make directory\n  mv <src> <dst>      # move/rename\n  cp <src> <dst>      # copy file/dir\n\
          {}\n  cat <file>          # show file\n  rm <path>           # remove file/dir\n  edit [--tui] [FILE] # open editor (TUI with --tui)\n  exit                # quit shell\n\
-         {}\n  compile <file.ai> [--emit js|ai] [--out FILE] [--no-sema]\n  run <file.ai> [--out FILE]     # compile to JS and try Node\n\
+         {}\n  compile <file.ai> [--emit js|ai] [--out FILE] [--no-sema]\n  run <file.ai> [--native] [--out FILE] # run JS path or native if --native given\n  native-run <file.ai> [--out FILE] # legacy alias for native VM execution\n\
          {}\n  qsim <file.ai> [--shots NUM] [--backend titan|qiskit] # quantum simulation\n  qstate              # display quantum system info\n  qgates              # show available quantum gates\n  qexample [name]     # run quantum examples\n\
          {}\n  help                # show this help\n",
         "Aeonmi Shard — Quantum Programming Shell".bold().truecolor(0, 255, 180),

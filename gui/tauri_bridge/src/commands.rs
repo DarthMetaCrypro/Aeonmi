@@ -7,7 +7,7 @@ use aeonmi_project::core::semantic_analyzer::{SemanticAnalyzer, Severity};
 use aeonmi_project::core::symbols::{collect_symbols};
 use aeonmi_project::core::code_actions::suggest_actions;
 use aeonmi_project::core::types::TypeContext;
-use aeonmi_project::core::incremental::{parse_or_cached, parse_or_partial, DIAG_CACHE, LAST_REPLACED_INDEX, TYPE_DIAG_CACHE, CALL_GRAPH_METRICS, VAR_DEPS, record_reinfer_event, persist_metrics, record_function_infer, get_deep_propagation};
+use aeonmi_project::core::incremental::{parse_or_cached, parse_or_partial, DIAG_CACHE, LAST_REPLACED_INDEX, TYPE_DIAG_CACHE, CALL_GRAPH_METRICS, VAR_DEPS, record_reinfer_event, persist_metrics, record_function_infer, get_deep_propagation, record_savings};
 use aeonmi_project::core::quantum_extract::{extract_circuit, circuit_to_json, circuit_to_pseudo_qasm};
 use aeonmi_project::core::ast::ASTNode;
 use aeonmi_project::core::incremental::{snapshot_call_graph_metrics, VAR_DEPS, FUNCTION_METRICS, get_deep_propagation, SAVINGS_METRICS};
@@ -236,15 +236,22 @@ pub fn aeonmi_types(source: String) -> Result<String, String> {
                 }
                 let mut reinfer_count = 0usize;
                 let mut partial_elapsed_ns: u128 = 0;
-                for idx in to_reinfer { if let ASTNode::Function { .. } = &items[idx] { let start = std::time::Instant::now(); let mut dep_ctx = TypeContext::new(); dep_ctx.infer_program(&ASTNode::Program(vec![items[idx].clone()])); let dur = start.elapsed().as_nanos(); record_function_infer(idx, dur); cache.per_node[idx] = dep_ctx.diags.clone(); reinfer_count+=1; } }
+                let reinfer_indices: Vec<usize> = to_reinfer.iter().cloned().collect();
+                for idx in &reinfer_indices { if let ASTNode::Function { .. } = &items[*idx] { let start = std::time::Instant::now(); let mut dep_ctx = TypeContext::new(); dep_ctx.infer_program(&ASTNode::Program(vec![items[*idx].clone()])); let dur = start.elapsed().as_nanos(); record_function_infer(*idx, dur); cache.per_node[*idx] = dep_ctx.diags.clone(); reinfer_count+=1; partial_elapsed_ns += dur; } }
                 if reinfer_count>0 { record_reinfer_event(reinfer_count); }
-                // After recording function metrics, compute partial elapsed (sum of last_ns for affected) and estimated full cost (sum of avg for all functions) then record savings
+                // After recording function metrics, compute refined savings estimate:
+                // estimated_full = sum(actual for changed+reinferred) + sum(avg for untouched)
                 {
                     let fm = FUNCTION_METRICS.lock().unwrap();
-                    // Partial: sum last_ns for indices we just re-inferred
-                    partial_elapsed_ns = fm.iter().filter(|(idx, _)| cache.per_node.get(**idx).is_some()).map(|(_, m)| m.last_ns).sum();
-                    let total_est_full: u128 = fm.values().map(|m| if m.runs>0 { m.total_ns / m.runs as u128 } else { m.last_ns }).sum();
-                    if partial_elapsed_ns>0 && total_est_full>0 { aeonmi_project::core::incremental::record_partial_savings(partial_elapsed_ns, total_est_full); }
+                    // estimated full: for each defined function if it was reinferred use its actual dur this cycle (approx last_ns), else its average cost so far (avg_ns) or last_ns if 0 runs
+                    let mut est_full: u128 = 0;
+                    let defined: Vec<usize> = items.iter().enumerate().filter_map(|(i,n)| match n { ASTNode::Function { .. } => Some(i), _=>None }).collect();
+                    for i in defined {
+                        if let Some(m) = fm.get(&i) {
+                            if reinfer_indices.contains(&i) { est_full += m.last_ns; } else { est_full += if m.runs>0 { m.total_ns / m.runs as u128 } else { m.last_ns }; }
+                        }
+                    }
+                    if reinfer_count>0 && est_full>0 && partial_elapsed_ns>0 && (reinfer_indices.len() < defined.len()) { record_savings(partial_elapsed_ns, est_full); }
                 }
                 // Update metrics (functions, edges, variable edges)
                 {

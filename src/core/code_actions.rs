@@ -1,4 +1,5 @@
 //! Simple code actions scaffold.
+#![allow(dead_code)] // Entire module is a forward-looking scaffold not yet wired.
 //! Provides structure for future intelligent refactors.
 
 use crate::core::ast::ASTNode;
@@ -69,9 +70,10 @@ fn add_inline_variable_actions(ast: &ASTNode, out: &mut Vec<CodeAction>) {
     fn scan(node: &ASTNode, map: &mut std::collections::HashMap<String, Info>) {
         match node {
             ASTNode::VariableDecl { name, line, column, value: _ } => { map.entry(name.clone()).or_default().decl = Some((*line,*column)); }
-            ASTNode::IdentifierSpanned { name, line, column, .. } | ASTNode::Identifier(name) => {
+            ASTNode::IdentifierSpanned { name, line: _, column: _, .. } => {
                 let e = map.entry(name.clone()).or_default(); if e.decl.is_some() { e.uses += 1; }
             }
+            ASTNode::Identifier(name) => { let e = map.entry(name.clone()).or_default(); if e.decl.is_some() { e.uses += 1; } }
             ASTNode::Program(items) | ASTNode::Block(items) => { for it in items { scan(it, map); } }
             ASTNode::Function { body, .. } => { for it in body { scan(it, map); } }
             ASTNode::If { then_branch, else_branch, .. } => { scan(then_branch, map); if let Some(e)=else_branch { scan(e, map); } }

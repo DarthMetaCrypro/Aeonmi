@@ -1,6 +1,5 @@
 #[cfg(windows)]
 fn main() {
-    use std::io;
     let mut res = winres::WindowsResource::new();
     // Set icon (ensure assets/icon.ico exists and is a proper ICO)
     res.set_icon("assets/icon.ico");

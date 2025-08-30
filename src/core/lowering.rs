@@ -18,42 +18,37 @@ pub fn lower_ast_to_ir(program: &crate::core::ast::ASTNode, name: &str) -> Resul
     let imports: Vec<Import> = Vec::new();
 
     let mut decls: Vec<Decl> = Vec::new();
+    let mut main_stmts: Vec<Stmt> = Vec::new();
+    
     for item in items {
         match item {
-            ASTNode::Function { name: fn_name, params, body } => {
+            ASTNode::Function { name: fn_name, params, body, .. } => {
+                let param_names: Vec<String> = params.iter().map(|p| p.name.clone()).collect();
                 let mut stmts: Vec<Stmt> = Vec::new();
                 for stmt_node in body {
                     stmts.push(lower_stmt_ast(&stmt_node)?);
                 }
                 decls.push(Decl::Fn(FnDecl {
                     name: fn_name,
-                    params,
+                    params: param_names,
                     body: Block { stmts },
                 }));
             }
-            ASTNode::VariableDecl { name, value } => {
-                decls.push(Decl::Let(LetDecl {
-                    name,
-                    value: Some(lower_expr_ast(&value)?),
-                }));
-            }
-            // Top-level statements become a synthetic fn `main`.
+            // All other top-level items go into main function
             other => {
                 let stmt = lower_stmt_ast(&other)?;
-                if let Some(Decl::Fn(f)) = decls
-                    .iter_mut()
-                    .find(|d| matches!(d, Decl::Fn(FnDecl { name, .. }) if name == "main"))
-                {
-                    f.body.stmts.push(stmt);
-                } else {
-                    decls.push(Decl::Fn(FnDecl {
-                        name: "main".to_string(),
-                        params: vec![],
-                        body: Block { stmts: vec![stmt] },
-                    }));
-                }
+                main_stmts.push(stmt);
             }
         }
+    }
+
+    // Create main function if there are any statements
+    if !main_stmts.is_empty() {
+        decls.push(Decl::Fn(FnDecl {
+            name: "main".to_string(),
+            params: vec![],
+            body: Block { stmts: main_stmts },
+        }));
     }
 
     let mut m = Module { name: name.to_string(), imports, decls };
@@ -79,7 +74,7 @@ fn lower_stmt_ast(n: &crate::core::ast::ASTNode) -> Result<Stmt, String> {
             callee: Box::new(Expr::Ident("log".into())),
             args: vec![lower_expr_ast(expr)?],
         }),
-        A::Assignment { name, value } => Stmt::Assign {
+    A::Assignment { name, value, .. } => Stmt::Assign {
             target: Expr::Ident(name.clone()),
             value: lower_expr_ast(value)?,
         },
@@ -114,7 +109,7 @@ fn lower_stmt_ast(n: &crate::core::ast::ASTNode) -> Result<Stmt, String> {
         }
 
         // Decls at statement position
-        A::VariableDecl { name, value } => Stmt::Let {
+    A::VariableDecl { name, value, .. } => Stmt::Let {
             name: name.clone(),
             value: Some(lower_expr_ast(value)?),
         },
@@ -142,8 +137,9 @@ fn lower_stmt_ast(n: &crate::core::ast::ASTNode) -> Result<Stmt, String> {
             },
         }),
 
-        A::Error(msg) => Stmt::Expr(Expr::Lit(Lit::String(format!("/* error: {msg} */")))),
-        A::Program(_) => unreachable!("Program nodes are handled at the top level"),
+    A::Error(msg) => Stmt::Expr(Expr::Lit(Lit::String(format!("/* error: {msg} */")))),
+    A::Program(_) => unreachable!("Program nodes are handled at the top level"),
+    A::IdentifierSpanned { name, .. } => Stmt::Expr(Expr::Ident(name.clone())),
     })
 }
 
@@ -164,11 +160,11 @@ fn lower_block_ast(n: &crate::core::ast::ASTNode) -> Result<Block, String> {
 fn lower_stmt_init_ast(n: &crate::core::ast::ASTNode) -> Result<Stmt, String> {
     use crate::core::ast::ASTNode as A;
     Ok(match n {
-        A::VariableDecl { name, value } => Stmt::Let {
+    A::VariableDecl { name, value, .. } => Stmt::Let {
             name: name.clone(),
             value: Some(lower_expr_ast(value)?),
         },
-        A::Assignment { name, value } => Stmt::Assign {
+    A::Assignment { name, value, .. } => Stmt::Assign {
             target: Expr::Ident(name.clone()),
             value: lower_expr_ast(value)?,
         },
@@ -215,7 +211,7 @@ fn lower_expr_ast(n: &crate::core::ast::ASTNode) -> Result<Expr, String> {
             Expr::Call { callee: Box::new(Expr::Ident(fname)), args }
         }
 
-        A::HieroglyphicOp { symbol, args } => Expr::Call {
+    A::HieroglyphicOp { symbol, args } => Expr::Call {
             callee: Box::new(Expr::Ident("__glyph".into())),
             args: {
                 let mut v = Vec::with_capacity(args.len() + 1);
@@ -226,6 +222,8 @@ fn lower_expr_ast(n: &crate::core::ast::ASTNode) -> Result<Expr, String> {
                 v
             },
         },
+
+    A::IdentifierSpanned { name, .. } => Expr::Ident(name.clone()),
 
         A::Block(_)
         | A::If { .. }

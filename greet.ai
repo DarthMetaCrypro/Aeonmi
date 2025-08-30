@@ -1,0 +1,11 @@
+let user = "Traveler"; log("Hello, " + user + "!");
+
+let r1 = rand(); let r2 = rand();
+
+let a1 = (r1 / 10); let a2 = (a1 / 10); let fact_pick = (a2 / 10);
+
+let b1 = (r2 / 10); let b2 = (b1 / 10); let quote_pick = (b2 / 10);
+
+if (fact_pick == 0) { log("Fun fact: Honey never spoils."); } else if (fact_pick == 1) { log("Fun fact: Octopuses have three hearts."); } else if (fact_pick == 2) { log("Fun fact: Bananas are berries; strawberries aren't."); } else if (fact_pick == 3) { log("Fun fact: A day on Venus is longer than a year on Venus."); } else { log("Fun fact: Wombat poop is cube-shaped."); }
+
+if (quote_pick == 0) { log("Motivation: Keep going; you're closer than you think."); } else if (quote_pick == 1) { log("Motivation: Small steps add up to big change."); } else if (quote_pick == 2) { log("Motivation: Focus, commit, grow."); } else if (quote_pick == 3) { log("Motivation: Progress > perfection."); } else { log("Motivation: Your future is built today."); }

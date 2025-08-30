@@ -1,3 +1,4 @@
+#![allow(dead_code)] // Large experimental surface; many analysis/AI/quantum scaffolds not yet invoked.
 // Make the same modules available from the library crate so anything under
 // src/tui/* (compiled as part of lib) can reach them via `crate::...`.
 pub mod cli;

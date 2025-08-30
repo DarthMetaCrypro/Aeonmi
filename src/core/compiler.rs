@@ -149,6 +149,7 @@ impl Compiler {
 /// Build a minimal IR `Module` from a `.qube` file so `emit --format ai` works.
 /// This does NOT parse yet; it just creates an IR that prints a stub line.
 /// Replace with real AST→IR lowering when ready.
+#[allow(dead_code)]
 pub fn compile_file_to_ir(path: &Path) -> Result<Module, String> {
     // Ensure the file exists/readable (so CLI errors are still real)
     let _src =
@@ -177,6 +178,7 @@ pub fn compile_file_to_ir(path: &Path) -> Result<Module, String> {
     })
 }
 
+#[allow(dead_code)]
 fn module_name_from_path(path: &Path) -> String {
     path.file_stem()
         .and_then(|s| s.to_str())
@@ -188,6 +190,7 @@ fn module_name_from_path(path: &Path) -> String {
 
 /// Compile the given `.qube` to JS and run it with Node.
 /// Matches existing console messages used by tests. Node errors are non-fatal.
+#[allow(dead_code)]
 pub fn compile_and_run_js(input: &PathBuf) -> Result<(), String> {
     let src = fs::read_to_string(input)
         .map_err(|e| format!("failed to read {}: {e}", input.display()))?;
@@ -216,6 +219,7 @@ pub fn compile_and_run_js(input: &PathBuf) -> Result<(), String> {
 }
 
 /// Compile the given `.qube` to JS and write it to `out` (or default name).
+#[allow(dead_code)]
 pub fn compile_and_write_js(input: &PathBuf, out: Option<&PathBuf>) -> Result<(), String> {
     let src = fs::read_to_string(input)
         .map_err(|e| format!("failed to read {}: {e}", input.display()))?;

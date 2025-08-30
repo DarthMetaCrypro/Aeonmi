@@ -103,6 +103,7 @@ impl CodeGenerator {
                 else_branch,
             } => {
                 let mut s = String::new();
+                // Tests expect exactly one extra pair around the emitted binary expression (which is already parenthesized)
                 s.push_str(&format!("if ({}) ", self.emit_expr_js(condition)));
                 s.push_str(&self.wrap_stmt_js(then_branch));
                 if let Some(e) = else_branch {
@@ -270,6 +271,12 @@ impl CodeGenerator {
             TokenKind::Star => "*",
             TokenKind::Slash => "/",
             TokenKind::Equals => "=",
+            TokenKind::DoubleEquals => "==",
+            TokenKind::NotEquals => "!=",
+            TokenKind::LessThan => "<",
+            TokenKind::LessEqual => "<=",
+            TokenKind::GreaterThan => ">",
+            TokenKind::GreaterEqual => ">=",
             // Only match the variants that exist in TokenKind
             _ => "/*op*/",
         }

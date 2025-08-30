@@ -62,6 +62,10 @@ pub struct AeonmiCli {
     #[arg(long = "ast", action = ArgAction::SetTrue, hide = true)]
     pub ast_legacy: bool,
 
+    /// Hidden: dump metrics JSON (fallback if subcommand shadowed)
+    #[arg(long = "metrics-dump", action = ArgAction::SetTrue, hide = true, global = true)]
+    pub metrics_dump_flag: bool,
+
     #[command(subcommand)]
     pub cmd: Option<Command>,
 }
@@ -120,9 +124,21 @@ pub enum Command {
     /// Force native VM interpreter (no JS emit / Node). Env AEONMI_NATIVE=1 also works.
     #[arg(long = "native", action = ArgAction::SetTrue)]
     native: bool,
+    /// Use bytecode VM (feature: bytecode). Env AEONMI_BYTECODE=1 also works.
+    #[arg(long = "bytecode", action = ArgAction::SetTrue)]
+    bytecode: bool,
     /// Additionally emit canonical AI form to FILE (no JS) before executing (works with or without --native)
     #[arg(long = "emit-ai", value_name = "FILE")]
     emit_ai: Option<PathBuf>,
+    /// Print optimization stats (bytecode mode only)
+    #[arg(long = "opt-stats", action = ArgAction::SetTrue)]
+    opt_stats: bool,
+    /// Emit optimization stats JSON (implies --bytecode)
+    #[arg(long = "opt-stats-json", action = ArgAction::SetTrue)]
+    opt_stats_json: bool,
+    /// Disassemble compiled bytecode (implies --bytecode)
+    #[arg(long = "disasm", action = ArgAction::SetTrue)]
+    disasm: bool,
     },
 
     /// Quantum execution (Titan local or Qiskit backends)
@@ -253,6 +269,102 @@ pub enum Command {
         args: Vec<String>,
     },
 
+    /// Dump persisted metrics (call graph, variable deps, function timings, savings)
+    #[command(name = "metrics-dump")]
+    MetricsDump,
+
+    /// Force immediate metrics persistence (bypass debounce) and then exit
+    #[command(name = "metrics-flush")]
+    MetricsFlush,
+
+    /// Print the absolute path to the metrics JSON file
+    #[command(name = "metrics-path")]
+    MetricsPath,
+
+    /// Show top N slowest functions by average inference time
+    #[command(name = "metrics-top")]
+    MetricsTop {
+        /// Limit number of entries (default 10)
+        #[arg(long = "limit", value_name = "N", default_value_t = 10)]
+        limit: usize,
+        /// Output JSON instead of table
+        #[arg(long = "json", action = ArgAction::SetTrue)]
+        json: bool,
+    },
+
+    /// Configure runtime metrics parameters (EMA alpha, window capacity)
+    #[command(name = "metrics-config")]
+    MetricsConfig {
+        /// Set EMA alpha percent (1-100)
+        #[arg(long = "set-ema", value_name = "PCT")]
+        set_ema: Option<u64>,
+        /// Set rolling window capacity (4-256)
+        #[arg(long = "set-window", value_name = "N")]
+        set_window: Option<usize>,
+        /// Set savings history capacity (8-256)
+        #[arg(long = "set-history-cap", value_name = "N")]
+        set_history_cap: Option<usize>,
+        /// Reset to defaults (ema=20, window=16)
+        #[arg(long = "reset", action = ArgAction::SetTrue)]
+        reset: bool,
+        /// Show current config (implied if no setters)
+        #[arg(long = "json", action = ArgAction::SetTrue)]
+        json: bool,
+    },
+
+    /// Control deep propagation behavior for incremental analysis
+    #[command(name = "metrics-deep")]
+    MetricsDeep {
+        /// Enable deep propagation
+        #[arg(long = "enable", action = ArgAction::SetTrue)]
+        enable: bool,
+        /// Disable deep propagation
+        #[arg(long = "disable", action = ArgAction::SetTrue)]
+        disable: bool,
+        /// Output JSON status
+        #[arg(long = "json", action = ArgAction::SetTrue)]
+        json: bool,
+    },
+
+    /// Re-encrypt all stored API keys with the current KDF/derivation (rotation/migration)
+    #[command(name = "key-rotate")]
+    KeyRotate {
+        /// Output JSON report
+        #[arg(long = "json", action = ArgAction::SetTrue)]
+        json: bool,
+    },
+
+    /// List stored API key providers
+    #[command(name = "key-list")]
+    KeyList {
+        /// JSON output
+        #[arg(long = "json", action = ArgAction::SetTrue)]
+        json: bool,
+    },
+    /// Get (decrypt) an API key for a provider
+    #[command(name = "key-get")]
+    KeyGet {
+        #[arg(value_name = "PROVIDER")]
+        provider: String,
+        /// JSON output
+        #[arg(long = "json", action = ArgAction::SetTrue)]
+        json: bool,
+    },
+    /// Set (create/update) an API key for a provider
+    #[command(name = "key-set")]
+    KeySet {
+        #[arg(value_name = "PROVIDER")]
+        provider: String,
+        #[arg(value_name = "KEY")]
+        key: String,
+    },
+    /// Delete an API key for a provider
+    #[command(name = "key-delete")]
+    KeyDelete {
+        #[arg(value_name = "PROVIDER")]
+        provider: String,
+    },
+
     /// Auto-detect and run a file by extension (.ai, .js, .py, .rs)
     ///
     /// Examples:
@@ -289,38 +401,100 @@ pub enum Command {
         #[arg(long = "watch", action = ArgAction::SetTrue)]
         watch: bool,
     },
+
+    /// Benchmark / synthesize function inference metrics (requires feature: debug-metrics)
+    #[cfg(feature = "debug-metrics")]
+    #[command(name = "metrics-bench")]
+    MetricsBench {
+        /// Number of synthetic functions
+        #[arg(long = "functions", value_name = "N", default_value_t = 5)]
+        functions: usize,
+        /// Samples per function
+        #[arg(long = "samples", value_name = "N", default_value_t = 10)]
+        samples: usize,
+        /// Base duration ns for first sample
+        #[arg(long = "base-ns", value_name = "NS", default_value_t = 1000)]
+        base_ns: u128,
+        /// Increment per sample
+        #[arg(long = "step-ns", value_name = "NS", default_value_t = 100)]
+        step_ns: u128,
+        /// Add random jitter percent (0-100)
+        #[arg(long = "jitter-pct", value_name = "PCT", default_value_t = 0)]
+        jitter_pct: u64,
+        /// Distribution: linear|exp
+        #[arg(long = "dist", value_name = "KIND", default_value = "linear")]
+        dist: String,
+        /// Sort output by: ema|avg|last (no effect on generation order)
+        #[arg(long = "sort", value_name = "FIELD", default_value = "ema")]
+        sort: String,
+    /// RNG seed (u64) for reproducibility (default fixed)
+    #[arg(long = "seed", value_name = "SEED")]
+    seed: Option<u64>,
+        /// Reset metrics before benchmarking
+        #[arg(long = "reset", action = ArgAction::SetTrue)]
+        reset: bool,
+        /// JSON output summary
+        #[arg(long = "json", action = ArgAction::SetTrue)]
+        json: bool,
+        /// Also emit CSV to file (columns: index,runs,ema_ns,avg_ns,last_ns,total_ns)
+        #[arg(long = "csv", value_name = "FILE")]
+        csv: Option<std::path::PathBuf>,
+    },
+
+    /// Dump internal metrics state (windows, EMA, savings history) for debugging (feature: debug-metrics)
+    #[cfg(feature = "debug-metrics")]
+    #[command(name = "metrics-debug")]
+    MetricsDebug {
+        /// JSON output (always JSON currently)
+        #[arg(long = "pretty", action = ArgAction::SetTrue)]
+        pretty: bool,
+    },
+
+    /// Export function metrics to CSV (read-only; always available)
+    #[command(name = "metrics-export")]
+    MetricsExport {
+        /// Output CSV file path
+        #[arg(value_name = "FILE")]
+        file: std::path::PathBuf,
+    },
+
+    /// Inject synthetic savings sample (test hook, feature debug-metrics)
+    #[cfg(feature = "debug-metrics")]
+    #[command(name = "metrics-inject-savings")]
+    MetricsInjectSavings {
+        #[arg(long = "partial", value_name = "NS")]
+        partial: u128,
+        #[arg(long = "full", value_name = "NS")]
+        full: u128,
+    },
+    /// Inject synthetic function timing (test hook, feature debug-metrics)
+    #[cfg(feature = "debug-metrics")]
+    #[command(name = "metrics-inject-func")]
+    MetricsInjectFunc {
+        #[arg(long = "index", value_name = "I")]
+        index: usize,
+        #[arg(long = "dur", value_name = "NS")]
+        dur: u128,
+    },
 }
 
-#[derive(Debug, Subcommand)]
+#[derive(Subcommand, Debug, Clone)]
 pub enum VmAction {
     Start,
     Stop,
     Status,
     Reset,
-    Snapshot { #[arg(value_name = "NAME")] name: String },
-    Restore { #[arg(value_name = "NAME")] name: String },
-    Mount { #[arg(value_name = "DIR")] dir: PathBuf },
+    Snapshot { name: String },
+    Restore { name: String },
+    Mount { dir: std::path::PathBuf },
 }
 
-#[derive(Debug, Subcommand)]
+#[derive(Subcommand, Debug, Clone)]
 pub enum AiAction {
     Suggest,
     Debug,
     Optimize,
-    Explain { #[arg(value_name = "SECTION")] section: Option<String> },
-    Refactor { #[arg(value_name = "RULE")] rule: Option<String> },
-    Chat {
-        /// Provider name (openai, copilot, perplexity, deepseek)
-        #[arg(long = "provider", value_name = "NAME")]
-        provider: Option<String>,
-        /// Prompt text (if omitted will read from stdin)
-        #[arg(value_name = "PROMPT")] 
-        prompt: Option<String>,
-    /// List enabled providers instead of sending a prompt
-    #[arg(long = "list", default_value_t = false)]
-    list: bool,
-    /// Stream tokens (currently OpenAI only)
-    #[arg(long = "stream", default_value_t = false)]
-    stream: bool,
-    },
+    Explain { section: Option<String> },
+    Refactor { rule: Option<String> },
+    Chat { provider: Option<String>, prompt: Option<String>, list: bool, stream: bool },
 }

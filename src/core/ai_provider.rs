@@ -1,4 +1,5 @@
 //! AI provider abstraction scaffold.
+#![allow(dead_code)] // Many items intentionally unused until AI integrations are wired fully.
 use async_trait::async_trait;
 use serde::{Serialize, Deserialize};
 use std::sync::Arc;

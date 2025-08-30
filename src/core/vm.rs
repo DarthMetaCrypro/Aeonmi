@@ -6,6 +6,8 @@
 use crate::core::ir::*;
 use std::collections::HashMap;
 use std::time::{SystemTime, UNIX_EPOCH};
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::Once;
 
 #[derive(Debug, Clone)]
 pub enum Value {
@@ -151,8 +153,10 @@ impl Interpreter {
     }
 
     pub fn run_module(&mut self, m: &Module) -> Result<(), RuntimeError> {
+    debug_log!("vm: run_module decls={} ", m.decls.len());
         // Load top-level decls
         for d in &m.decls {
+            debug_log!("vm: processing decl: {:?}", d);
             match d {
                 Decl::Const(c) => {
                     let v = self.eval_expr(&c.value)?;
@@ -167,6 +171,7 @@ impl Interpreter {
                     self.env.define(l.name.clone(), v);
                 }
                 Decl::Fn(f) => {
+                    debug_log!("vm: load fn '{}'", f.name);
                     let func = Value::Function(Function {
                         params: f.params.clone(),
                         body: f.body.clone(),
@@ -178,7 +183,10 @@ impl Interpreter {
         }
         // If there is a `main` fn with zero params, run it.
         if let Some(Value::Function(_)) = self.env.get("main") {
+            debug_log!("vm: calling main()" );
             let _ = self.call_ident("main", vec![])?;
+        } else {
+            debug_log!("vm: no main() found" );
         }
         Ok(())
     }
@@ -219,8 +227,8 @@ impl Interpreter {
                 for (p, v) in fun.params.iter().zip(args.into_iter()) {
                     self.env.define(p.clone(), v);
                 }
-                // Execute
-                let ret = self.exec_block(&fun.body);
+                // Execute - don't create another scope in exec_block for function bodies
+                let ret = self.exec_function_block(&fun.body);
                 // Restore
                 let out = match ret {
                     ControlFlow::Ok => Ok(Value::Null),
@@ -246,6 +254,20 @@ impl Interpreter {
             }
         }
         self.env.pop();
+        ControlFlow::Ok
+    }
+
+    fn exec_function_block(&mut self, b: &Block) -> ControlFlow {
+    debug_log!("vm: exec_function_block" );
+        // Don't create an additional scope - function call already created one
+        for s in &b.stmts {
+            match self.exec_stmt(s) {
+                ControlFlow::Ok => {}
+                other => {
+                    return other;
+                }
+            }
+        }
         ControlFlow::Ok
     }
 
@@ -341,6 +363,7 @@ impl Interpreter {
                 } else {
                     Value::Null
                 };
+                debug_log!("vm: let {} = {:?}", name, v);
                 self.env.define(name.clone(), v);
                 ControlFlow::Ok
             }
@@ -373,10 +396,15 @@ impl Interpreter {
                 crate::core::ir::Lit::Number(n) => Value::Number(*n),
                 crate::core::ir::Lit::String(s) => Value::String(s.clone()),
             },
-            Ident(s) => self
-                .env
-                .get(s)
-                .ok_or_else(|| err(format!("Undefined identifier `{}`", s)))?,
+            Ident(s) => {
+                debug_log!("vm: lookup '{}'", s);
+                let result = self
+                    .env
+                    .get(s)
+                    .ok_or_else(|| err(format!("Undefined identifier `{}`", s)))?;
+                debug_log!("vm: found '{}' -> {:?}", s, result);
+                result
+            }
             Call { callee, args } => {
                 // Fast path: direct ident call (avoids allocating callee Value if builtin/func)
                 if let Expr::Ident(name) = &**callee {
@@ -550,15 +578,39 @@ fn builtin_time_ms(_i: &mut Interpreter, _args: Vec<Value>) -> Result<Value, Run
     Ok(Value::Number(now.as_millis() as f64))
 }
 
-fn builtin_rand(_i: &mut Interpreter, _args: Vec<Value>) -> Result<Value, RuntimeError> {
-    // Simple LCG for determinism across runs (not crypto).
-    // seed = time-based mod; in a real impl, keep a per-VM seed.
-    let nanos = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_nanos();
-    let mut x = (nanos & 0xFFFF_FFFF) as u64;
+static GLOBAL_SEED: AtomicU64 = AtomicU64::new(0);
+static INIT_SEED: Once = Once::new();
+
+fn init_seed_once() {
+    INIT_SEED.call_once(|| {
+        // Order of precedence:
+        // 1. AEONMI_SEED env var (u64 parse)
+        // 2. Time-based fallback (nanos lower 32 bits)
+        let from_env = std::env::var("AEONMI_SEED").ok().and_then(|s| s.parse::<u64>().ok());
+        let seed = from_env.unwrap_or_else(|| {
+            (SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+                & 0xFFFF_FFFF) as u64
+        });
+        // Avoid zero seed (LCG degenerate cycles shorter sometimes)
+        let seed = if seed == 0 { 1 } else { seed };
+        GLOBAL_SEED.store(seed, Ordering::Relaxed);
+    });
+}
+
+fn lcg_next() -> u64 {
+    init_seed_once();
+    // Parameters from Numerical Recipes LCG (same as original placeholder constants)
+    let mut x = GLOBAL_SEED.load(Ordering::Relaxed);
     x = x.wrapping_mul(1664525).wrapping_add(1013904223);
+    GLOBAL_SEED.store(x, Ordering::Relaxed);
+    x
+}
+
+fn builtin_rand(_i: &mut Interpreter, _args: Vec<Value>) -> Result<Value, RuntimeError> {
+    let x = lcg_next();
     Ok(Value::Number(((x >> 8) as f64) / (u32::MAX as f64)))
 }
 
@@ -589,7 +641,7 @@ fn display(v: &Value) -> String {
                 .join(", ");
             format!("{{{}}}", s)
         }
-        Value::Function(_) => "<fn>".into(),
+        Value::Function(_) => "<fn>".to_string(),
         Value::Builtin(b) => format!("<builtin:{}>", b.name),
     }
 }

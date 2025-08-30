@@ -1,0 +1,6 @@
+#![cfg(feature = "bytecode")]
+use aeonmi_project::core::lexer::Lexer;use aeonmi_project::core::parser::Parser;use aeonmi_project::core::bytecode::BytecodeCompiler;use aeonmi_project::core::vm_bytecode::{VM,Value};
+fn eval(src:&str, limit:usize)->Option<Value>{let mut l=Lexer::from_str(src);let toks=l.tokenize().unwrap();let mut p=Parser::new(toks);let ast=p.parse().unwrap();let chunk=BytecodeCompiler::new().compile(&ast);let mut vm=VM::new(&chunk); // naive guard: run loop externally
+let mut steps=0; while steps<limit { if vm.ip>=vm.chunk.code.len() { break; } match vm.chunk.code[vm.ip] { _=>{} } if vm.run().is_some(){break;} steps+=1;} vm.stack.pop() }
+
+#[test]fn simple_recursion(){let src="fn fact(n){ if (n==0){ return 1; } return n * fact(n-1); } return fact(5);";let mut lex=Lexer::from_str(src);let toks=lex.tokenize().unwrap();let mut p=Parser::new(toks);let ast=p.parse().unwrap();let chunk=BytecodeCompiler::new().compile(&ast);let mut vm=VM::new(&chunk);let v=vm.run();match v {Some(Value::Number(n))=>assert_eq!(n,120.0),_=>panic!("bad {v:?}")} }

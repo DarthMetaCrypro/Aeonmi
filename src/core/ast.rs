@@ -5,6 +5,7 @@ use crate::core::token::TokenKind;
 
 /// Represents nodes in the Abstract Syntax Tree.
 #[derive(Debug, Clone, PartialEq)]
+#[allow(dead_code)] // Many variants used only in experimental passes / future features
 pub enum ASTNode {
     // Program root
     Program(Vec<ASTNode>),
@@ -62,6 +63,7 @@ pub enum ASTNode {
         op: TokenKind,
         expr: Box<ASTNode>,
     },
+    #[allow(dead_code)]
     Identifier(String),
     IdentifierSpanned { name: String, line: usize, column: usize, len: usize },
     NumberLiteral(f64),
@@ -90,6 +92,7 @@ pub struct FunctionParam {
 
 impl ASTNode {
     // Utility constructors
+    #[allow(dead_code)]
     pub fn new_function(name: &str, params: Vec<&str>, body: Vec<ASTNode>) -> Self {
         Self::Function {
             name: name.to_string(),
@@ -102,12 +105,14 @@ impl ASTNode {
     pub fn new_function_at(name: &str, line: usize, column: usize, params: Vec<FunctionParam>, body: Vec<ASTNode>) -> Self {
         Self::Function { name: name.to_string(), line, column, params, body }
     }
+    #[allow(dead_code)]
     pub fn new_variable_decl(name: &str, value: ASTNode) -> Self {
         Self::VariableDecl { name: name.to_string(), value: Box::new(value), line: 0, column: 0 }
     }
     pub fn new_variable_decl_at(name: &str, value: ASTNode, line: usize, column: usize) -> Self {
         Self::VariableDecl { name: name.to_string(), value: Box::new(value), line, column }
     }
+    #[allow(dead_code)]
     pub fn new_assignment(name: &str, value: ASTNode) -> Self {
         Self::Assignment { name: name.to_string(), value: Box::new(value), line: 0, column: 0 }
     }

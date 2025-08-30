@@ -1,6 +1,6 @@
 //! Scope map builder for safer renames.
 use crate::core::ast::ASTNode;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 #[derive(Debug, Clone, Default)]
 pub struct ScopeEntry {

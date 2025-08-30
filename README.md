@@ -14,6 +14,8 @@
 
 Aeonmi is an advanced programming language and compiler framework designed for AI‑native, secure, and multi‑dimensional computing. It introduces **QUBE**, a symbolic/hieroglyphic inner‑core language aimed at adaptive, self‑modifying operations with quantum‑resistant security and deep AI integration.
 
+> New: A comprehensive language + tooling manual is now available: see **[Aeonmi Language Guide](docs/Aeonmi_Language_Guide.md)** for a structured, beginner→expert path, patterns, limitations, roadmap hints, and quantum examples.
+
 ## Branch Status
 
 | Role | Branch | Description | Guidance |
@@ -90,6 +92,14 @@ cargo run -- --help
 
 # Legacy/test binary
 cargo run --bin aeonmi_project -- --help
+
+### Optional Features
+
+| Feature | Purpose | Notes |
+|---------|---------|-------|
+| quantum | Enable quantum backend operations | Pulls in `nalgebra`, `num-complex`. |
+| qiskit | Qiskit bridge (Python) | Requires Python environment; builds with `pyo3`, `numpy`. |
+| kdf-argon2 | Stronger Argon2id-based key derivation for API key encryption | Fallback is SHA256(user||host||salt); enable with `--features kdf-argon2`. |
 ```
 
 ## CLI Usage (subject to change)
@@ -99,6 +109,14 @@ High‑level subcommands currently wired into the CLI:
 ```text
 run <file.ai> [--out FILE] [--pretty-errors] [--no-sema]
 # compile to JS and try executing with Node
+  Bytecode / Optimization (feature: bytecode):
+    --bytecode           Execute via internal bytecode VM instead of JS/native lowering
+    --disasm             Print disassembly of compiled chunk (implies --bytecode)
+  --opt-stats          Print human-readable optimization stats summary (implies --bytecode)
+  --opt-stats-json     Emit optimization stats as pretty JSON (implies --bytecode; if built with feature debug-metrics merges into metrics JSON under compileOptStats)
+  Environment:
+    AEONMI_BYTECODE=1    Implicitly enable bytecode VM without passing --bytecode
+    AEONMI_MAX_FRAMES=N  Set max call frame depth for bytecode recursion guard (default 256, clamped 4..65536)
 
 tokens <file.ai>
 # emit lexer tokens
@@ -115,6 +133,10 @@ repl
 format [--check] <inputs...>
 # formatter (WIP)
 
+* **New Features**:
+  * `metrics-config --set-history-cap N` – adjust savings sample history (8–256). Reset restores to 32.
+  * Optional: `--seed SEED` for reproducible jitter/distribution.
+  * `metrics-export FILE.csv` – export current function metrics to CSV (always available; no debug-metrics feature required).
 lint [--fix] <inputs...>
 # linter (WIP)
 
@@ -136,6 +158,23 @@ exec <file.(ai|js|py|rs)> [args...]
 
 native <file.ai> [--emit-ai FILE] [--watch]
 # Run an .ai file directly on the Aeonmi native VM (equivalent to setting AEONMI_NATIVE=1 with run). Optional --emit-ai writes canonical form first.
+
+metrics-dump
+# Pretty-print the current aggregated metrics JSON (call graph, variable deps, function timings, savings).
+
+metrics-flush
+# Force an immediate metrics persistence (bypasses debounce) and echo the JSON.
+
+metrics-path
+# Print the absolute path to the persisted metrics file.
+`metrics-top` – show hottest functions by recent (EMA) and lifetime average inference time. Sorts by `ema_ns` (recently expensive). Supports `--limit N` and `--json` (now includes `ema_ns`). Metrics schema v5 also exposes cumulative_savings_pct and cumulative_partial_pct derived from estimated full cost.
+metrics-top [--limit N] [--json]
+# Display top N slowest functions by average inference time (default 10). Use --json for machine-readable output.
+key-rotate
+# Re-encrypt all stored API keys with the current derivation (e.g., after enabling `--features kdf-argon2`). Shows per-provider results and preserves existing keys.
+
+Ctrl-C / Shutdown Persistence
+# Metrics are flushed on normal shutdown and also on Ctrl-C via a signal handler calling force_persist_metrics to reduce loss of recent timing samples.
 ```
 
 ## Interactive Shell (experimental)
@@ -361,7 +400,236 @@ $env:AEONMI_NATIVE = "1"; aeonmi run examples/hello.ai
 
 When native mode executes with `--no-sema` you'll see a note mirroring the JS path. Errors are reported with the same pretty diagnostics when `--pretty-errors` is enabled.
 
-Roadmap (native): semantic analysis integration, richer type coercions, quantum op execution hooks, glyph intrinsic dispatch, performance optimizations (bytecode / arena), and deterministic random with seed control.
+---
+
+## Aeonmi Language Guide (Beginner ➜ Intermediate ➜ Advanced)
+
+> Status: This reflects the CURRENT implemented subset in the native VM path (tree‑walk interpreter) and JS lowering. Some features mentioned as “Planned” are not yet parsed (attempting them now will raise a lexing or parsing error). This guide focuses on what you can reliably use today plus patterns to work around missing constructs.
+
+### 1. First Program
+
+```ai
+log("Hello, Aeonmi!");
+```
+
+Run (native):
+```powershell
+Aeonmi.exe run --native hello.ai
+```
+
+### 2. Lexical Basics
+| Item | Supported Now | Notes |
+|------|---------------|-------|
+| Whitespace | Yes | Spaces, tabs, newlines separate tokens. |
+| Comments | Yes | Line comments start with `#` (put comment on its own line). |
+| Identifiers | Yes | Start with letter or `_`, then letters / digits / `_`. Case sensitive. |
+| Strings | Yes | Double quotes `"..."`. Escape handling currently minimal (prefer plain text). |
+| Numbers | Yes | Integer literals (no fractional parsing yet unless already implemented in your branch). |
+| Booleans | Yes | `true`, `false` (if lexer currently recognizes; else represent with 1 / 0). |
+| Arrays / `[]` | Not yet | Using `[` causes a lexing error today. See “Sequences Without Arrays”. |
+| `%` (modulo) | Not yet | Use division + subtraction patterns. |
+| `&&`, `||` | If implemented | If absent, emulate with nested `if`. |
+
+### 3. Statements
+| Construct | Form | Example |
+|-----------|------|---------|
+| Variable Declaration | `let name = expr;` | `let x = 10;` |
+| Assignment | `name = expr;` | `x = x + 1;` |
+| If | `if (condition) { ... } else { ... }` | `if (x == 0) { log("zero"); } else { log("non-zero"); }` |
+| While | `while (condition) { ... }` | `while (i < 10) { log(i); i = i + 1; }` |
+| For (if implemented) | `for (init; cond; step) { ... }` | (Check existing examples) |
+| Function Decl (if implemented) | `fn name(params) { ... }` | `fn add(a, b) { return a + b; }` |
+| Return | `return expr;` | `return x;` |
+| Log / Print | `log(expr);` / `print(expr);` | `log("Value:" + v);` |
+
+> Parentheses around `if` / `while` conditions ARE required (otherwise: “Parsing error: Expected '(' after if”).
+
+### 4. Expressions & Operators
+Currently safe core:
+```
+Arithmetic: +  -  *  /
+Comparison: == != < <= > >=
+Logical (if present): ! (unary not), &&, || (verify availability) 
+Grouping: (expr)
+Concatenation: String + String/Number (the `+` operator does double duty)
+```
+
+Missing / Not Yet: `%`, `++`, `--`, `?:`, bitwise ops.
+
+### 5. Built‑ins (Native VM subset)
+| Name | Purpose | Example |
+|------|---------|---------|
+| `log` | Print value (newline) | `log(x);` |
+| `print` | (Alias if implemented) | `print("raw");` |
+| `time_ms` | Millisecond timestamp | `let t = time_ms();` |
+| `rand` | Pseudo random integer | `let r = rand();` |
+
+Planned / Extended (Quantum etc.) show up as identifiers but may be stubs in native mode.
+
+### 6. Control Flow Patterns
+
+Loop with manual counter:
+```ai
+let i = 0;
+while (i < 5) {
+  log("i = " + i);
+  i = i + 1;
+}
+```
+
+Early return in a function (if functions enabled):
+```ai
+fn abs(n) {
+  if (n < 0) { return -n; }
+  return n;
+}
+log(abs(-5));
+```
+
+### 7. Random Selection Without Arrays or Modulo
+
+Problem: Need one item from N choices; arrays and `%` not available.
+
+Pattern:
+```ai
+let r = rand();
+let r10 = (r / 10);       # shrink
+let r100 = (r10 / 10);    # shrink again
+let pick = (r100 / 10);   # coarse bucket
+
+if (pick == 0) { log("Choice A"); }
+else if (pick == 1) { log("Choice B"); }
+else if (pick == 2) { log("Choice C"); }
+else { log("Fallback"); }
+```
+
+### 8. Emulating Lists (Sequences Without `[]`)
+Until literal arrays exist, store enumerated constants in a function chain:
+```ai
+fn say_fact(n) {
+  if (n == 0) { log("Honey never spoils."); return; }
+  if (n == 1) { log("Octopuses have three hearts."); return; }
+  if (n == 2) { log("Bananas are berries; strawberries aren't."); return; }
+  if (n == 3) { log("A day on Venus is longer than a year on Venus."); return; }
+  log("Wombat poop is cube-shaped.");
+}
+
+let r = rand();
+let a = (r / 10);
+let b = (a / 10);
+let pick = (b / 10);
+say_fact(pick);
+```
+
+### 9. String Building
+Use `+` to concatenate:
+```ai
+let name = "Traveler";
+log("Hello, " + name + "!");
+```
+No template literals yet; just chain `+`.
+
+### 10. Debugging & Errors
+| Error Kind | Likely Cause | Fix |
+|------------|-------------|-----|
+| `Lexing error: Unexpected character '['` | Arrays not implemented | Remove `[` / use pattern in §8 |
+| `Lexing error: Unexpected character '%'
+` | Modulo not implemented | Use division + subtraction buckets |
+| `Parsing error: Expected '(' after if` | Missing parentheses | Add `( )` around condition |
+| Runtime error (if any) | Built‑in misuse / unhandled state | Add logging around variables |
+
+Pretty diagnostics (with caret spans) appear when you pass `--pretty-errors` to CLI or enable pretty mode in shell environment.
+
+### 11. Semantic Analyzer Skips
+You can bypass semantic analysis (some checks) for fast iteration:
+```powershell
+Aeonmi.exe run --native --no-sema demo.ai
+```
+You may lose early detection of type/usage mistakes in that run.
+
+### 12. Native vs JS Backend Differences
+| Aspect | JS Path | Native VM |
+|--------|---------|-----------|
+| Execution | Transpiles to JS then Node | Direct interpretation |
+| Speed (small scripts) | Node startup overhead | No external process |
+| Feature Gaps | Potential broader syntax (future) | Emerging parity; arrays/modulo pending |
+| Debug Env | Use JS tooling | Set `AEONMI_DEBUG=1` for internal debug logs |
+
+Force native:
+```powershell
+Aeonmi.exe run --native file.ai
+```
+
+### 13. Suggested Progression Path
+1. Output & variables (`log`, `let`).
+2. Arithmetic & comparisons.
+3. Conditionals (`if` / `else`).
+4. Loops (`while`).
+5. Functions (once enabled in your build) & returns.
+6. Randomness patterns with `rand`.
+7. Refactor repeated chains into helper functions.
+8. (Later) Adopt arrays, modulo, richer types when released.
+
+### 14. Idiomatic Patterns (Today)
+| Goal | Pattern |
+|------|---------|
+| Clamp value to max 4 | `if (n > 4) { n = 4; }` |
+| Ensure non‑negative | `if (n < 0) { n = 0; }` |
+| Select one of N strings | Cascading `if (pick == k)` |
+| Loop fixed times | Counter + `while (i < N)` |
+
+### 15. Example: Mini “DailyMotivate”
+```ai
+let user = "Traveler";
+log("Hello, " + user + "!");
+
+let r1 = rand(); let r2 = rand();
+let a1 = (r1 / 10); let a2 = (a1 / 10); let fact_pick = (a2 / 10);
+let b1 = (r2 / 10); let b2 = (b1 / 10); let quote_pick = (b2 / 10);
+
+if (fact_pick == 0) { log("Fun fact: Honey never spoils."); }
+else if (fact_pick == 1) { log("Fun fact: Octopuses have three hearts."); }
+else if (fact_pick == 2) { log("Fun fact: Bananas are berries; strawberries aren't."); }
+else if (fact_pick == 3) { log("Fun fact: A day on Venus is longer than a year on Venus."); }
+else { log("Fun fact: Wombat poop is cube-shaped."); }
+
+if (quote_pick == 0) { log("Motivation: Keep going; you're closer than you think."); }
+else if (quote_pick == 1) { log("Motivation: Small steps add up to big change."); }
+else if (quote_pick == 2) { log("Motivation: Focus, commit, grow."); }
+else if (quote_pick == 3) { log("Motivation: Progress > perfection."); }
+else { log("Motivation: Your future is built today."); }
+```
+
+### 16. Roadmap Hints (Not Yet Available In Your Build)
+Planned / emerging (watch release notes):
+* Array literals `[...]` with indexing `name[i]`.
+* `%` operator and possibly other arithmetic.
+* Enhanced string escapes / interpolation.
+* Structured data (records / objects) & pattern matching (experimental design stage).
+
+If you experiment early and hit lexing errors, fall back to the emulation patterns above.
+
+### 17. Checklist for New .ai Files
+1. Start with `let` declarations and a `log` to confirm execution.
+2. Introduce one new construct at a time.
+3. If you see a lexing error: remove unsupported symbol (`[`, `%`, etc.).
+4. Always wrap `if` / `while` conditions in parentheses.
+5. Keep comments on their own lines starting with `#`.
+
+### 18. Quick Troubleshooting Flow
+| Symptom | Step 1 | Step 2 | Step 3 |
+|---------|--------|--------|--------|
+| Unexpected character `[` | Replace with cascaded `if` | Move data to helper fn | Track roadmap |
+| Unexpected character `%` | Replace with divide/shrink pattern | Use subtraction loop | Await operator support |
+| Stuck variable value | Insert `log("DEBUG:" + v);` lines | Re-run with native | Isolate minimal snippet |
+| Program silent | Add first line `log("START");` | Check file path | Ensure run command order: `run file.ai --native` |
+
+---
+
+End of Language Guide. Contributions (suggested clarifications, new pattern examples) are welcome via issue tickets.
+
+
+Roadmap (native): semantic analysis integration, richer type coercions, quantum op execution hooks, glyph intrinsic dispatch, performance optimizations (bytecode / arena).
 
 ### Roadmap Notes (Preview)
 
@@ -538,6 +806,7 @@ $env:DEEPSEEK_API_KEY = "ds_your-key"        # for ai-deepseek
 
 Optional overrides:
 * `AEONMI_OPENAI_MODEL` (default: `gpt-4o-mini`)
+* `AEONMI_SEED` (u64) – deterministic global seed for native VM `rand()` and synthetic metrics generation (when a bench seed flag isn't provided)
 
 ### List Enabled Providers
 
@@ -585,3 +854,62 @@ You can also pipe a prompt from stdin (omit the prompt argument):
 ## License
 
 This software is licensed under the Aeonmi Proprietary Software License Agreement. See **LICENSE** for details.
+
+`metrics-config` – configure runtime metrics parameters. Examples:
+```powershell
+# Show current config (ema alpha %, window)
+aeonmi metrics-config
+# Set EMA alpha to 35%
+aeonmi metrics-config --set-ema 35
+# Set rolling window size to 32
+ aeonmi metrics-config --set-window 32
+# JSON output
+ aeonmi metrics-config --json
+# Reset to defaults
+aeonmi metrics-config --reset
+```
+`metrics-deep` – enable/disable deep propagation (transitive caller expansion regardless of size):
+```powershell
+# Enable deep propagation
+aeonmi metrics-deep --enable
+# Disable
+aeonmi metrics-deep --disable
+# JSON status
+aeonmi metrics-deep --json
+```
+`metrics-bench` (feature `debug-metrics`) – generate synthetic metrics.
+Flags: `--functions N`, `--samples N`, `--base-ns`, `--step-ns`, `--jitter-pct P`, `--dist linear|exp`, `--sort ema|avg|last`, `--csv file.csv`, `--reset`, `--json`, `--seed S` (if omitted falls back to `AEONMI_SEED` or default 0xC0FFEE).
+Example:
+```powershell
+cargo run --features debug-metrics -- metrics-bench --functions 8 --samples 12 --base-ns 500 --step-ns 50 --jitter-pct 15 --dist exp --csv bench.csv --json --reset
+```
+`metrics-debug` (feature `debug-metrics`) – dump raw internal metric structures (windows, EMA, savings history).
+```powershell
+cargo run --features debug-metrics -- metrics-debug --pretty
+```
+
+Metrics Schema Evolution (current version = 6):
+| Version | Additions |
+|---------|-----------|
+| 3 | Initial persisted call graph + function timings |
+| 4 | Exponential moving average (ema_ns) |
+| 5 | Cumulative savings percentages (cumulative_savings_pct, cumulative_partial_pct) |
+| 6 | Rolling window averages (window_avg_ns), recent window savings (recent_window_*), sample history (recent_samples), pruning (functionMetricsPruned), runtime config (emaAlphaPct, windowCapacity), deepPropagation flag |
+
+Savings Metrics Fields:
+- cumulative_savings_ns / cumulative_partial_ns / cumulative_estimated_full_ns
+- cumulative_savings_pct = savings_ns / estimated_full_ns * 100
+- cumulative_partial_pct = partial_ns / estimated_full_ns * 100
+- recent_window_partial_ns / recent_window_estimated_full_ns / recent_window_savings_pct (rolling over last N samples; N = history_cap default 32)
+- recent_samples: array of { partial_ns, estimated_full_ns, savings_ns }
+
+Pruning: function metrics with last_run_epoch_ms before session start are excluded at build_json time and counted in functionMetricsPruned.
+
+Runtime Configuration Sources:
+1. Environment variables at process start:
+   - AEONMI_EMA_ALPHA (1-100, default 20)
+   - AEONMI_METRICS_WINDOW (4-256, default 16)
+2. CLI: metrics-config setters override the atomic values for the life of the process.
+
+Deterministic Randomness:
+* Set `AEONMI_SEED` to fix the native interpreter `rand()` sequence. Absent this, a time-based seed initializes the LCG once. Seed value 0 is coerced to 1.

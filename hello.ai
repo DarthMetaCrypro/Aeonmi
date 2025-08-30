@@ -1,0 +1,11 @@
+log("Hello from Aeonmi!");
+
+let x = 42;
+log("The answer is: " + x);
+
+function greet(name) {
+    return "Welcome to Aeonmi, " + name + "!";
+}
+
+let greeting = greet("Developer");
+log(greeting);

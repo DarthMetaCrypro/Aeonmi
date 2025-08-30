@@ -7,12 +7,14 @@ use crate::core::ast::ASTNode;
 use std::sync::Mutex;
 use once_cell::sync::Lazy;
 use sha1::{Sha1, Digest};
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::time::{Instant, Duration};
 
 #[derive(Debug, Clone)]
 pub struct NodeSpan { pub start_line: usize, pub end_line: usize }
 
+#[derive(Clone)]
 pub struct CachedParse {
     pub hash: String,
     pub ast: ASTNode,
@@ -31,11 +33,15 @@ static CACHE: Lazy<Mutex<Option<CachedParse>>> = Lazy::new(|| Mutex::new(None));
 
 // Cache of last semantic diagnostics grouped per top-level node (index aligned with Program children)
 #[derive(Debug, Clone, Default)]
+#[allow(dead_code)]
 pub struct TopLevelDiagCache { pub per_node: Vec<Vec<crate::core::semantic_analyzer::SemanticDiagnostic>> }
+#[allow(dead_code)]
 pub static DIAG_CACHE: Lazy<Mutex<TopLevelDiagCache>> = Lazy::new(|| Mutex::new(TopLevelDiagCache::default()));
 pub static LAST_REPLACED_INDEX: Lazy<Mutex<Option<usize>>> = Lazy::new(|| Mutex::new(None));
 #[derive(Debug, Clone, Default)]
+#[allow(dead_code)]
 pub struct TopLevelTypeDiagCache { pub per_node: Vec<Vec<crate::core::types::TypeDiagnostic>> }
+#[allow(dead_code)]
 pub static TYPE_DIAG_CACHE: Lazy<Mutex<TopLevelTypeDiagCache>> = Lazy::new(|| Mutex::new(TopLevelTypeDiagCache::default()));
 
 // Call graph + variable dependency metrics (global, for inspection & incremental invalidation stats)
@@ -56,54 +62,174 @@ pub static VAR_DEPS: Lazy<Mutex<VarDeps>> = Lazy::new(|| Mutex::new(VarDeps::def
 pub static DEEP_PROPAGATION: AtomicBool = AtomicBool::new(false);
 
 // Per-function inference timing metrics (index-based; names resolved on query)
-#[derive(Debug, Default, Clone)]
-pub struct FunctionInferenceMetric { pub total_ns: u128, pub runs: u64, pub last_ns: u128 }
+// ema_ns tracks an exponential moving average (recent-weighted) of inference duration.
+#[derive(Debug, Clone)]
+pub struct FunctionInferenceMetric { pub total_ns: u128, pub runs: u64, pub last_ns: u128, pub ema_ns: u128, pub window: VecDeque<u128>, pub last_run_epoch_ms: u64 }
+impl Default for FunctionInferenceMetric { fn default() -> Self { Self { total_ns:0, runs:0, last_ns:0, ema_ns:0, window:VecDeque::new(), last_run_epoch_ms:0 } } }
 pub static FUNCTION_METRICS: Lazy<Mutex<HashMap<usize, FunctionInferenceMetric>>> = Lazy::new(|| Mutex::new(HashMap::new()));
+static LAST_PERSIST: Lazy<Mutex<Option<Instant>>> = Lazy::new(|| Mutex::new(None));
+const PERSIST_DEBOUNCE: Duration = Duration::from_millis(500);
+// Runtime configurable EMA alpha (1..=100) via env AEONMI_EMA_ALPHA (default 20)
+pub static EMA_ALPHA_RUNTIME: once_cell::sync::Lazy<std::sync::atomic::AtomicU64> = once_cell::sync::Lazy::new(|| {
+    let v = std::env::var("AEONMI_EMA_ALPHA").ok().and_then(|s| s.parse::<u64>().ok()).filter(|v| (1..=100).contains(v)).unwrap_or(20);
+    std::sync::atomic::AtomicU64::new(v)
+});
+// Rolling window capacity via env AEONMI_METRICS_WINDOW (default 16, min 4, max 256)
+pub static WINDOW_CAP_RUNTIME: once_cell::sync::Lazy<std::sync::atomic::AtomicUsize> = once_cell::sync::Lazy::new(|| {
+    let v = std::env::var("AEONMI_METRICS_WINDOW").ok().and_then(|s| s.parse::<usize>().ok()).filter(|v| *v>=4 && *v<=256).unwrap_or(16);
+    std::sync::atomic::AtomicUsize::new(v)
+});
+static SESSION_START_EPOCH_MS: once_cell::sync::Lazy<u64> = once_cell::sync::Lazy::new(|| current_epoch_ms());
 
-// Partial vs estimated full inference savings metrics
-#[derive(Debug, Default, Clone)]
-pub struct SavingsMetrics { pub cumulative_savings_ns: u128, pub cumulative_partial_ns: u128, pub cumulative_estimated_full_ns: u128 }
+fn current_epoch_ms() -> u64 { use std::time::{SystemTime, UNIX_EPOCH}; SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_millis() as u64).unwrap_or(0) }
+pub fn session_start_epoch_ms() -> u64 { *SESSION_START_EPOCH_MS }
+pub fn set_ema_alpha(pct: u64) { if (1..=100).contains(&pct) { EMA_ALPHA_RUNTIME.store(pct, Ordering::Relaxed); } }
+pub fn set_window_capacity(n: usize) { if n>=4 && n<=256 { WINDOW_CAP_RUNTIME.store(n, Ordering::Relaxed); } }
+
+// Partial vs estimated full inference savings metrics with recent window history
+#[derive(Debug, Clone)]
+pub struct SavingsSample { pub partial_ns: u128, pub estimated_full_ns: u128, pub savings_ns: u128 }
+#[derive(Debug, Clone)]
+pub struct SavingsMetrics { pub cumulative_savings_ns: u128, pub cumulative_partial_ns: u128, pub cumulative_estimated_full_ns: u128, pub history: VecDeque<SavingsSample>, pub window_partial_ns: u128, pub window_est_full_ns: u128, pub history_cap: usize }
+impl Default for SavingsMetrics { fn default() -> Self { Self { cumulative_savings_ns:0, cumulative_partial_ns:0, cumulative_estimated_full_ns:0, history:VecDeque::new(), window_partial_ns:0, window_est_full_ns:0, history_cap:32 } } }
+impl SavingsMetrics { pub fn push_sample(&mut self, partial: u128, est_full: u128) { let savings = est_full.saturating_sub(partial); self.cumulative_partial_ns += partial; self.cumulative_estimated_full_ns += est_full; self.cumulative_savings_ns += savings; self.window_partial_ns += partial; self.window_est_full_ns += est_full; let sample = SavingsSample { partial_ns: partial, estimated_full_ns: est_full, savings_ns: savings }; if self.history.len() == self.history_cap { if let Some(old) = self.history.pop_front() { // adjust window counters removing old sample
+ self.window_partial_ns = self.window_partial_ns.saturating_sub(old.partial_ns); self.window_est_full_ns = self.window_est_full_ns.saturating_sub(old.estimated_full_ns); }
+ } self.history.push_back(sample); } }
 pub static SAVINGS_METRICS: Lazy<Mutex<SavingsMetrics>> = Lazy::new(|| Mutex::new(SavingsMetrics::default()));
+#[allow(dead_code)]
+pub fn record_savings(partial_ns: u128, estimated_full_ns: u128) { if partial_ns == 0 || estimated_full_ns == 0 { return; } if let Ok(mut sm) = SAVINGS_METRICS.lock() { sm.push_sample(partial_ns, estimated_full_ns); } }
+/// Back-compat wrapper (tests expect this name). Records a partial inference duration and
+/// the estimated full duration. Ignores samples where either is zero or estimated is less
+/// than partial (invalid / inverted measurement).
+pub fn record_partial_savings(partial_ns: u128, estimated_full_ns: u128) {
+    if partial_ns == 0 || estimated_full_ns == 0 || estimated_full_ns < partial_ns { return; }
+    record_savings(partial_ns, estimated_full_ns);
+}
+pub fn set_history_cap(n: usize) { if n>=8 && n<=256 { if let Ok(mut sm)=SAVINGS_METRICS.lock() { sm.history_cap = n; while sm.history.len()>sm.history_cap { if let Some(old)=sm.history.pop_front() { sm.window_partial_ns = sm.window_partial_ns.saturating_sub(old.partial_ns); sm.window_est_full_ns = sm.window_est_full_ns.saturating_sub(old.estimated_full_ns); } } } } }
 
+#[allow(dead_code)]
 pub fn record_function_infer(idx: usize, dur: u128) {
     if let Ok(mut m) = FUNCTION_METRICS.lock() {
         let entry = m.entry(idx).or_insert_with(FunctionInferenceMetric::default);
         entry.total_ns += dur; entry.runs += 1; entry.last_ns = dur;
+    entry.last_run_epoch_ms = current_epoch_ms();
+    let alpha = EMA_ALPHA_RUNTIME.load(Ordering::Relaxed) as u128;
+    if entry.runs == 1 { entry.ema_ns = dur; } else { entry.ema_ns = (entry.ema_ns * (100 - alpha) + dur * alpha) / 100; }
+    let cap = WINDOW_CAP_RUNTIME.load(Ordering::Relaxed);
+    if entry.window.len()==cap { entry.window.pop_front(); }
+    entry.window.push_back(dur);
     }
 }
 
 pub fn set_deep_propagation(v: bool) { DEEP_PROPAGATION.store(v, Ordering::Relaxed); }
 pub fn get_deep_propagation() -> bool { DEEP_PROPAGATION.load(Ordering::Relaxed) }
 
-const METRICS_FILE: &str = "aeonmi_metrics.json";
-const METRICS_VERSION: u32 = 3; // bumped for savings metrics addition
+fn metrics_file_path() -> std::path::PathBuf {
+    // Use user config dir (~/.config/aeonmi/aeonmi_metrics.json) for consistency with keys
+    let base = dirs_next::config_dir().unwrap_or(std::env::temp_dir()).join("aeonmi");
+    if let Err(e) = std::fs::create_dir_all(&base) { eprintln!("metrics dir create error: {e}"); }
+    base.join("aeonmi_metrics.json")
+}
+const METRICS_FILE: &str = "aeonmi_metrics.json"; // kept for legacy; actual path computed dynamically
+const METRICS_VERSION: u32 = 6; // bumped for rolling window & history
+
+pub fn metrics_file_location() -> std::path::PathBuf { metrics_file_path() }
+
+pub fn build_metrics_json() -> serde_json::Value {
+    let m = CALL_GRAPH_METRICS.lock().ok().map(|g| g.clone()).unwrap_or_default();
+    let v = VAR_DEPS.lock().ok().map(|g| g.clone()).unwrap_or_default();
+    let fm = FUNCTION_METRICS.lock().ok().map(|g| g.clone()).unwrap_or_default();
+    let sm = SAVINGS_METRICS.lock().ok().map(|g| g.clone()).unwrap_or_default();
+    let session_start = session_start_epoch_ms();
+    let mut pruned = 0usize;
+    let function_metrics: HashMap<String, serde_json::Value> = fm.iter().filter_map(|(idx, fm)| {
+        if fm.last_run_epoch_ms>0 && fm.last_run_epoch_ms < session_start { pruned +=1; return None; }
+        let window_avg_ns = if !fm.window.is_empty() { fm.window.iter().copied().sum::<u128>() / fm.window.len() as u128 } else { 0 };        
+        Some((idx.to_string(), serde_json::json!({
+            "runs": fm.runs,
+            "total_ns": fm.total_ns,
+            "last_ns": fm.last_ns,
+            "avg_ns": if fm.runs>0 { fm.total_ns / fm.runs as u128 } else { 0 },
+            "ema_ns": fm.ema_ns,
+            "window_avg_ns": window_avg_ns,
+            "last_run_epoch_ms": fm.last_run_epoch_ms
+        })))
+    }).collect();
+    let savings_pct = if sm.cumulative_estimated_full_ns>0 { (sm.cumulative_savings_ns as f64 / sm.cumulative_estimated_full_ns as f64) * 100.0 } else { 0.0 };
+    let partial_pct = if sm.cumulative_estimated_full_ns>0 { (sm.cumulative_partial_ns as f64 / sm.cumulative_estimated_full_ns as f64) * 100.0 } else { 0.0 };
+    let recent_window_savings_pct = if sm.window_est_full_ns>0 { (sm.history.iter().map(|s| s.savings_ns).sum::<u128>() as f64 / sm.window_est_full_ns as f64) *100.0 } else { 0.0 };
+    let ema_alpha = EMA_ALPHA_RUNTIME.load(Ordering::Relaxed);
+    let window_cap = WINDOW_CAP_RUNTIME.load(Ordering::Relaxed);
+    serde_json::json!({
+        "version": METRICS_VERSION,
+        "metrics": {"functions": m.functions, "edges": m.edges, "reinfer_events": m.reinfer_events, "variable_edges": m.variable_edges},
+        "varReads": v.reads.iter().map(|(k, set)| (k, set.iter().collect::<Vec<_>>())).collect::<std::collections::HashMap<_,_>>(),
+        "varWrites": v.writes.iter().map(|(k, set)| (k, set.iter().collect::<Vec<_>>())).collect::<std::collections::HashMap<_,_>>(),
+        "functionMetrics": function_metrics,
+        "functionMetricsPruned": pruned,
+        "emaAlphaPct": ema_alpha,
+        "windowCapacity": window_cap,
+        "deepPropagation": get_deep_propagation(),
+        "savings": {"cumulative_savings_ns": sm.cumulative_savings_ns, "cumulative_partial_ns": sm.cumulative_partial_ns, "cumulative_estimated_full_ns": sm.cumulative_estimated_full_ns, "cumulative_savings_pct": savings_pct, "cumulative_partial_pct": partial_pct, "recent_window_partial_ns": sm.window_partial_ns, "recent_window_estimated_full_ns": sm.window_est_full_ns, "recent_window_savings_pct": recent_window_savings_pct, "recent_samples": sm.history.iter().map(|s| serde_json::json!({"partial_ns": s.partial_ns, "estimated_full_ns": s.estimated_full_ns, "savings_ns": s.savings_ns})).collect::<Vec<_>>() }
+    })
+}
+
+/// Ensure a stub metrics file exists even if no metrics recorded yet (CLI tooling friendliness).
+pub fn ensure_metrics_file_exists() {
+    let path = metrics_file_path();
+    if path.exists() { return; }
+    let json = build_metrics_json();
+    let _ = std::fs::write(&path, serde_json::to_string_pretty(&json).unwrap_or_default());
+}
 
 pub fn persist_metrics() {
-    if let (Ok(m), Ok(v), Ok(fm), Ok(sm)) = (CALL_GRAPH_METRICS.lock(), VAR_DEPS.lock(), FUNCTION_METRICS.lock(), SAVINGS_METRICS.lock()) {
-        let function_metrics: HashMap<String, serde_json::Value> = fm.iter().map(|(idx, fm)| (
-            idx.to_string(),
-            serde_json::json!({
-                "runs": fm.runs,
-                "total_ns": fm.total_ns,
-                "last_ns": fm.last_ns,
-                "avg_ns": if fm.runs>0 { fm.total_ns / fm.runs as u128 } else { 0 }
-            })
-        )).collect();
-        let json = serde_json::json!({
-            "version": METRICS_VERSION,
-            "metrics": {"functions": m.functions, "edges": m.edges, "reinfer_events": m.reinfer_events, "variable_edges": m.variable_edges},
-            "varReads": v.reads.iter().map(|(k, set)| (k, set.iter().collect::<Vec<_>>())).collect::<std::collections::HashMap<_,_>>(),
-            "varWrites": v.writes.iter().map(|(k, set)| (k, set.iter().collect::<Vec<_>>())).collect::<std::collections::HashMap<_,_>>(),
-            "functionMetrics": function_metrics,
-            "deepPropagation": get_deep_propagation(),
-            "savings": {"cumulative_savings_ns": sm.cumulative_savings_ns, "cumulative_partial_ns": sm.cumulative_partial_ns, "cumulative_estimated_full_ns": sm.cumulative_estimated_full_ns}
-        });
-        let _ = std::fs::write(METRICS_FILE, serde_json::to_string_pretty(&json).unwrap_or_default());
+    // Debounce check
+    {
+        if let Ok(mut last) = LAST_PERSIST.lock() {
+            let now = Instant::now();
+            if let Some(prev) = *last { if now.duration_since(prev) < PERSIST_DEBOUNCE { return; } }
+            *last = Some(now);
+        }
+    }
+    if CALL_GRAPH_METRICS.lock().is_ok() { // cheap check; build JSON anyway
+        let json = build_metrics_json();
+    let path = metrics_file_path();
+    if let Err(e) = std::fs::write(&path, serde_json::to_string_pretty(&json).unwrap_or_default()) { eprintln!("persist_metrics write error: {e}"); }
     }
 }
 
+/// Force persistence ignoring debounce (used by metrics-flush CLI)
+pub fn force_persist_metrics() {
+    if CALL_GRAPH_METRICS.lock().is_ok() {
+        let json = build_metrics_json();
+    let path = metrics_file_path();
+    if let Err(e) = std::fs::write(&path, serde_json::to_string_pretty(&json).unwrap_or_default()) { eprintln!("force_persist_metrics write error: {e}"); }
+    }
+}
+
+// Drop guard to flush metrics on shutdown (best-effort, ignores errors)
+pub struct MetricsFlushGuard;
+impl Drop for MetricsFlushGuard {
+    fn drop(&mut self) { force_persist_metrics(); }
+}
+
+pub fn install_shutdown_flush_guard() -> MetricsFlushGuard { MetricsFlushGuard }
+
+/// Helper to compute caller propagation set given reverse edges (rev[target] -> callers)
+#[allow(dead_code)]
+pub fn compute_transitive_callers(changed: usize, rev: &Vec<Vec<usize>>, deep: bool, shallow_limit: usize) -> std::collections::HashSet<usize> {
+    let mut set: std::collections::HashSet<usize> = std::collections::HashSet::new();
+    for &caller in &rev[changed] { set.insert(caller); }
+    if deep || set.len() < shallow_limit {
+        let mut queue: std::collections::VecDeque<usize> = set.iter().copied().collect();
+        while let Some(cur) = queue.pop_front() { for &c in &rev[cur] { if set.insert(c) { queue.push_back(c); } } }
+    }
+    set
+}
+
 pub fn load_metrics() {
-    if let Ok(data) = std::fs::read_to_string(METRICS_FILE) {
+    let path = metrics_file_path();
+    if let Ok(data) = std::fs::read_to_string(path) {
         if let Ok(val) = serde_json::from_str::<serde_json::Value>(&data) {
             if let Some(mo) = val.get("metrics") { if let Ok(mut m) = CALL_GRAPH_METRICS.lock() {
                 m.functions = mo.get("functions").and_then(|v| v.as_u64()).unwrap_or(0) as usize;
@@ -111,17 +237,19 @@ pub fn load_metrics() {
                 m.reinfer_events = mo.get("reinfer_events").and_then(|v| v.as_u64()).unwrap_or(0) as usize;
                 m.variable_edges = mo.get("variable_edges").and_then(|v| v.as_u64()).unwrap_or(0) as usize;
             }}
-            if let Some(fr) = val.get("varReads") { if let Ok(mut vd)=VAR_DEPS.lock() { if let Some(obj)=fr.as_object() { for (k, arr) in obj { let mut set=HashSet::new(); if let Some(a)=arr.as_array() { for v in a { if let Some(s)=v.as_str() { set.insert(s.to_string()); } } } vd.reads.insert(k.clone(), set); } } } }
-            if let Some(fw) = val.get("varWrites") { if let Ok(mut vd)=VAR_DEPS.lock() { if let Some(obj)=fw.as_object() { for (k, arr) in obj { let mut set=HashSet::new(); if let Some(a)=arr.as_array() { for v in a { if let Some(s)=v.as_str() { set.insert(s.to_string()); } } } vd.writes.insert(k.clone(), set); } } } }
-            if let Some(fm) = val.get("functionMetrics") { if let Ok(mut map)=FUNCTION_METRICS.lock() { if let Some(obj)=fm.as_object() { for (k,v) in obj { if let Ok(idx)=k.parse::<usize>() { let mut metric=FunctionInferenceMetric::default(); metric.runs=v.get("runs").and_then(|x| x.as_u64()).unwrap_or(0); metric.total_ns=v.get("total_ns").and_then(|x| x.as_u64()).unwrap_or(0) as u128; metric.last_ns=v.get("last_ns").and_then(|x| x.as_u64()).unwrap_or(0) as u128; map.insert(idx, metric); } } } } }
+            if let Some(fr) = val.get("varReads") { if let Ok(mut vd)=VAR_DEPS.lock() { if let Some(obj)=fr.as_object() { for (k, arr) in obj { let mut set: HashSet<usize> = HashSet::new(); if let Some(a)=arr.as_array() { for v in a { if let Some(s)=v.as_str() { if let Ok(idx)=s.parse::<usize>() { set.insert(idx); } } } } vd.reads.insert(k.clone(), set); } } } }
+            if let Some(fw) = val.get("varWrites") { if let Ok(mut vd)=VAR_DEPS.lock() { if let Some(obj)=fw.as_object() { for (k, arr) in obj { let mut set: HashSet<usize> = HashSet::new(); if let Some(a)=arr.as_array() { for v in a { if let Some(s)=v.as_str() { if let Ok(idx)=s.parse::<usize>() { set.insert(idx); } } } } vd.writes.insert(k.clone(), set); } } } }
+                if let Some(fm) = val.get("functionMetrics") { if let Ok(mut map)=FUNCTION_METRICS.lock() { if let Some(obj)=fm.as_object() { for (k,v) in obj { if let Ok(idx)=k.parse::<usize>() { let mut metric=FunctionInferenceMetric::default(); metric.runs=v.get("runs").and_then(|x| x.as_u64()).unwrap_or(0); metric.total_ns=v.get("total_ns").and_then(|x| x.as_u64()).unwrap_or(0) as u128; metric.last_ns=v.get("last_ns").and_then(|x| x.as_u64()).unwrap_or(0) as u128; metric.ema_ns=v.get("ema_ns").and_then(|x| x.as_u64()).unwrap_or(metric.last_ns as u64) as u128; map.insert(idx, metric); } } } } }
             if let Some(dp)=val.get("deepPropagation") { if let Some(b)=dp.as_bool() { set_deep_propagation(b); } }
-            if let Some(sv)=val.get("savings") { if let Ok(mut sm)=SAVINGS_METRICS.lock() { sm.cumulative_savings_ns = sv.get("cumulative_savings_ns").and_then(|x| x.as_u64()).unwrap_or(0) as u128; sm.cumulative_partial_ns = sv.get("cumulative_partial_ns").and_then(|x| x.as_u64()).unwrap_or(0) as u128; sm.cumulative_estimated_full_ns = sv.get("cumulative_estimated_full_ns").and_then(|x| x.as_u64()).unwrap_or(0) as u128; } }
+            if let Some(sv)=val.get("savings") { if let Ok(mut sm)=SAVINGS_METRICS.lock() { sm.cumulative_savings_ns = sv.get("cumulative_savings_ns").and_then(|x| x.as_u64()).unwrap_or(0) as u128; sm.cumulative_partial_ns = sv.get("cumulative_partial_ns").and_then(|x| x.as_u64()).unwrap_or(0) as u128; sm.cumulative_estimated_full_ns = sv.get("cumulative_estimated_full_ns").and_then(|x| x.as_u64()).unwrap_or(0) as u128; if let Some(arr)=sv.get("recent_samples").and_then(|x| x.as_array()) { for s in arr { let p = s.get("partial_ns").and_then(|x| x.as_u64()).unwrap_or(0) as u128; let e = s.get("estimated_full_ns").and_then(|x| x.as_u64()).unwrap_or(0) as u128; if p>0 && e>0 { sm.push_sample(p,e); } } } } }
         }
     }
 }
 
+#[allow(dead_code)]
 pub fn reset_metrics_session() { if let Ok(mut m)=CALL_GRAPH_METRICS.lock() { m.reinfer_events = 0; } }
 
+#[allow(dead_code)]
 pub fn reset_metrics_full() {
     if let Ok(mut cg)=CALL_GRAPH_METRICS.lock() { *cg = CallGraphMetrics::default(); }
     if let Ok(mut vd)=VAR_DEPS.lock() { *vd = VarDeps::default(); }
@@ -130,14 +258,19 @@ pub fn reset_metrics_full() {
     persist_metrics();
 }
 
+pub fn reset_runtime_metrics_config() { set_ema_alpha(20); set_window_capacity(16); set_history_cap(32); }
+
+#[allow(dead_code)]
 pub fn record_reinfer_event(count: usize) {
     if let Ok(mut m) = CALL_GRAPH_METRICS.lock() { m.reinfer_events += count; }
 }
 
+#[allow(dead_code)]
 pub fn snapshot_call_graph_metrics() -> CallGraphMetrics { CALL_GRAPH_METRICS.lock().unwrap().clone() }
 
 // Compute variable dependency map (reads/writes) for all top-level functions in an AST.
 // This mirrors logic used in the GUI command for selective reinference.
+#[allow(dead_code)]
 pub fn compute_var_deps(ast: &ASTNode) -> VarDeps {
     let mut var_reads: HashMap<String, HashSet<usize>> = HashMap::new();
     let mut var_writes: HashMap<String, HashSet<usize>> = HashMap::new();
@@ -203,7 +336,7 @@ pub fn parse_or_partial(source: &str) -> Result<(ASTNode,bool), String> {
             let mut parser = AeParser::new(tokens);
             if let Ok(new_ast) = parser.parse() {
                 // Expect Program root; splice children matched by position count 1: we take its children as replacement if exactly one top node else fallback
-                if let ASTNode::Program(mut new_items) = new_ast.clone() {
+                if let ASTNode::Program(new_items) = new_ast.clone() {
                     if let ASTNode::Program(mut old_items) = prev.ast.clone() {
                         // Only proceed if counts match target replacement length
                         if new_items.len() == overlap_indices.len() {
@@ -258,3 +391,5 @@ fn compute_dirty_info(new_src: &str) -> DirtyInfo {
 
 #[allow(dead_code)]
 pub fn dirty_region(source: &str) -> DirtyInfo { compute_dirty_info(source) }
+
+pub fn debug_snapshot() -> serde_json::Value { let fm = FUNCTION_METRICS.lock().unwrap().clone(); let sm = SAVINGS_METRICS.lock().unwrap().clone(); serde_json::json!({ "functions": fm.iter().map(|(i,m)| (i.to_string(), serde_json::json!({"runs": m.runs, "last_ns": m.last_ns, "ema_ns": m.ema_ns, "window": m.window, "last_run_epoch_ms": m.last_run_epoch_ms}))).collect::<serde_json::Value>(), "savings_history_len": sm.history.len(), "savings_recent_samples": sm.history.iter().map(|s| { serde_json::json!({"partial": s.partial_ns, "est_full": s.estimated_full_ns, "savings": s.savings_ns}) }).collect::<Vec<_>>() }) }

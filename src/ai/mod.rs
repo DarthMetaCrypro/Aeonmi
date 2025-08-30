@@ -26,6 +26,7 @@ pub struct AiRegistry {
 }
 
 impl AiRegistry {
+    #[allow(unused_mut)]
     pub fn new() -> Self {
         let mut r = Self { providers: Vec::new() };
         #[cfg(feature = "ai-openai")]
@@ -36,7 +37,7 @@ impl AiRegistry {
         { r.providers.push(Box::new(perplexity::Perplexity::default())); }
         #[cfg(feature = "ai-deepseek")]
         { r.providers.push(Box::new(deepseek::DeepSeek::default())); }
-        r
+    r
     }
     pub fn list(&self) -> Vec<&'static str> { self.providers.iter().map(|p| p.name()).collect() }
     pub fn first(&self) -> Option<&Box<dyn AiProvider>> { self.providers.first() }

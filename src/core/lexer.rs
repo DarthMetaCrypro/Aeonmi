@@ -283,6 +283,26 @@ impl Lexer {
                 }
             }
 
+            // Map standalone Unicode operator glyphs directly to their token kinds.
+            // This allows users to paste code containing ≤ ≥ ≠ ＝ ⇔ ∷ ≔ without needing chord expansion.
+            if let Some(tok_kind) = match ch {
+                '≤' => Some(TokenKind::LessEqual),
+                '≥' => Some(TokenKind::GreaterEqual),
+                '≠' => Some(TokenKind::NotEquals),
+                '＝' => Some(TokenKind::DoubleEquals),
+                '≔' => Some(TokenKind::ColonEquals), // map ≔ to :=
+                _ => None,
+            } {
+                let (line, col) = self.pos();
+                self.advance_char();
+                let token = Token::new(tok_kind, ch.to_string(), line, col);
+                {
+                    let view = self.view();
+                    for plugin in self.plugins.iter_mut() { plugin.after_token(view, &token); }
+                }
+                return Ok(Some(token));
+            }
+
             let result = if self.in_ai_block {
                 self.lex_in_ai_block(ch)
             } else if ch == '/' && self.peek_char() == Some('/') {
@@ -697,6 +717,8 @@ impl Lexer {
             ('<', Some('=')) => Some(TokenKind::LessEqual),
             ('>', Some('=')) => Some(TokenKind::GreaterEqual),
             (':', Some('=')) => Some(TokenKind::ColonEquals),
+            ('&', Some('&')) => Some(TokenKind::AndAnd),
+            ('|', Some('|')) => Some(TokenKind::OrOr),
             _ => None,
         }
     }
@@ -715,7 +737,7 @@ impl Lexer {
             '}' => Some(TokenKind::CloseBrace),
             '<' => Some(TokenKind::LessThan),
             '>' => Some(TokenKind::GreaterThan),
-            '|' => Some(TokenKind::Pipe),
+            '|' => Some(TokenKind::Pipe), // single '|' retained for qubit or pipe future, '||' handled above
 
             // Many specialized glyphs are represented as hieroglyphic operations
             glyph if is_hieroglyphic(glyph) => Some(TokenKind::HieroglyphicOp(glyph.to_string())),

@@ -90,17 +90,16 @@ impl Parser {
     }
 
     fn parse_function_decl(&mut self) -> Result<ASTNode, ParserError> {
-        let func_tok = self.consume(TokenKind::Function, "Expected 'function'")?;
-        let name_tok_line = self.peek().line;
-        let name_tok_col = self.peek().column;
-        let name = self.consume_identifier("Expected function name")?;
-        self.consume(TokenKind::OpenParen, "Expected '(' after function name")?;
+    let func_tok = self.consume(TokenKind::Function, "Expected 'function'")?;
+    let func_line = func_tok.line; let func_col = func_tok.column;
+    let name = self.consume_identifier("Expected function name")?;
+    self.consume(TokenKind::OpenParen, "Expected '(' after function name")?;
         let mut params: Vec<FunctionParam> = Vec::new();
         if !self.check(&TokenKind::CloseParen) {
             loop {
-                let p_line = self.peek().line; let p_col = self.peek().column;
                 let pname = self.consume_identifier("Expected parameter name")?;
-                params.push(FunctionParam { name: pname, line: p_line, column: p_col });
+                // For now, param spans reuse function token line/col (could refine with lexer spans)
+                params.push(FunctionParam { name: pname, line: func_line, column: func_col });
                 if !self.match_token(&[TokenKind::Comma]) {
                     break;
                 }
@@ -111,7 +110,7 @@ impl Parser {
             ASTNode::Block(stmts) => stmts,
             _ => return Err(self.err_here("Function body must be a block")),
         };
-        Ok(ASTNode::new_function_at(&name, func_tok.line, func_tok.column, params, body))
+    Ok(ASTNode::new_function_at(&name, func_line, func_col, params, body))
     }
 
     fn parse_return(&mut self) -> Result<ASTNode, ParserError> {
@@ -214,8 +213,19 @@ impl Parser {
     }
 
     /* ── Precedence ───────────────────────────────────────── */
-    pub fn parse_expression(&mut self) -> Result<ASTNode, ParserError> {
-        self.parse_assignment()
+    pub fn parse_expression(&mut self) -> Result<ASTNode, ParserError> { self.parse_logical_or() }
+
+    // logical_or: logical_and ( '||' logical_and )*
+    fn parse_logical_or(&mut self) -> Result<ASTNode, ParserError> {
+        let mut expr = self.parse_logical_and()?;
+        while self.match_token(&[TokenKind::OrOr]) { let op = self.previous().kind.clone(); let right = self.parse_logical_and()?; expr = ASTNode::new_binary_expr(op, expr, right); }
+        Ok(expr)
+    }
+    // logical_and: equality ( '&&' equality )*
+    fn parse_logical_and(&mut self) -> Result<ASTNode, ParserError> {
+        let mut expr = self.parse_assignment()?; // parse below level (assignment/equality chain)
+        while self.match_token(&[TokenKind::AndAnd]) { let op = self.previous().kind.clone(); let right = self.parse_assignment()?; expr = ASTNode::new_binary_expr(op, expr, right); }
+        Ok(expr)
     }
 
     // assignment: Identifier '=' assignment | equality
@@ -227,8 +237,7 @@ impl Parser {
                     let line = self.previous().line; let column = self.previous().column; let value = self.parse_assignment()?; Ok(ASTNode::new_assignment_at(&name, value, line, column))
                 }
                 ASTNode::IdentifierSpanned { name, line: id_line, column: id_col, .. } => {
-                    // use identifier's own position for better span
-                    let value = self.parse_assignment()?; Ok(ASTNode::new_assignment_at(name, value, *id_line, *id_col))
+                    let value = self.parse_assignment()?; Ok(ASTNode::new_assignment_at(&name, value, id_line, id_col))
                 }
                 _ => Err(self.err_here("Invalid assignment target")),
             }

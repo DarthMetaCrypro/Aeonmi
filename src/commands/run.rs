@@ -12,7 +12,8 @@ use crate::core::vm::Interpreter;
 use crate::core::diagnostics::{print_error, emit_json_error, Span};
 use crate::core::lexer::LexerError;
 
-fn run_native(
+/// Public native interpreter entry (no JS emission)
+pub fn run_native(
     input: &PathBuf,
     pretty: bool,
     no_sema: bool,
@@ -77,7 +78,7 @@ fn run_native(
         println!("note: semantic analysis skipped (native)");
     }
     // Lower & interpret
-    println!("native: executing '{}' via Aeonmi VM", input.display());
+    println!("DEBUG: RUN PATH - native: executing '{}' via Aeonmi VM", input.display());
     match lower_ast_to_ir(&ast, "main") {
         Ok(module) => {
             let mut interp = Interpreter::new();

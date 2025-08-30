@@ -4,7 +4,7 @@
 use std::collections::HashMap;
 use std::sync::Mutex;
 use once_cell::sync::Lazy;
-use std::time::{Instant, Duration};
+use std::time::Instant;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 #[derive(Clone, Debug)]
