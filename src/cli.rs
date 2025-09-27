@@ -1,8 +1,9 @@
 use clap::{ArgAction, Parser, Subcommand, ValueEnum};
 use std::path::PathBuf;
 
-#[derive(Copy, Clone, Debug, ValueEnum)]
-#[derive(Default)]
+use crate::cli_vault::VaultCommand as VaultSubcommand;
+
+#[derive(Copy, Clone, Debug, ValueEnum, Default)]
 pub enum EmitKind {
     #[clap(alias = "js")]
     #[default]
@@ -107,9 +108,9 @@ pub enum Command {
         /// Enable Titan debug mode during compilation (overrides global if set)
         #[arg(long = "debug-titan", action = ArgAction::SetTrue)]
         debug_titan: bool,
-    /// Watch input for changes and re-run the emit when modified
-    #[arg(long = "watch", action = ArgAction::SetTrue)]
-    watch: bool,
+        /// Watch input for changes and re-run the emit when modified
+        #[arg(long = "watch", action = ArgAction::SetTrue)]
+        watch: bool,
     },
 
     /// Run an .ai file directly (compile-to-js + execute with Node if available)
@@ -118,27 +119,27 @@ pub enum Command {
         input: PathBuf,
         #[arg(long = "out", value_name = "FILE")]
         out: Option<PathBuf>,
-    /// Watch input and re-run when changed
-    #[arg(long = "watch", action = ArgAction::SetTrue)]
-    watch: bool,
-    /// Force native VM interpreter (no JS emit / Node). Env AEONMI_NATIVE=1 also works.
-    #[arg(long = "native", action = ArgAction::SetTrue)]
-    native: bool,
-    /// Use bytecode VM (feature: bytecode). Env AEONMI_BYTECODE=1 also works.
-    #[arg(long = "bytecode", action = ArgAction::SetTrue)]
-    bytecode: bool,
-    /// Additionally emit canonical AI form to FILE (no JS) before executing (works with or without --native)
-    #[arg(long = "emit-ai", value_name = "FILE")]
-    emit_ai: Option<PathBuf>,
-    /// Print optimization stats (bytecode mode only)
-    #[arg(long = "opt-stats", action = ArgAction::SetTrue)]
-    opt_stats: bool,
-    /// Emit optimization stats JSON (implies --bytecode)
-    #[arg(long = "opt-stats-json", action = ArgAction::SetTrue)]
-    opt_stats_json: bool,
-    /// Disassemble compiled bytecode (implies --bytecode)
-    #[arg(long = "disasm", action = ArgAction::SetTrue)]
-    disasm: bool,
+        /// Watch input and re-run when changed
+        #[arg(long = "watch", action = ArgAction::SetTrue)]
+        watch: bool,
+        /// Force native VM interpreter (no JS emit / Node). Env AEONMI_NATIVE=1 also works.
+        #[arg(long = "native", action = ArgAction::SetTrue)]
+        native: bool,
+        /// Use bytecode VM (feature: bytecode). Env AEONMI_BYTECODE=1 also works.
+        #[arg(long = "bytecode", action = ArgAction::SetTrue)]
+        bytecode: bool,
+        /// Additionally emit canonical AI form to FILE (no JS) before executing (works with or without --native)
+        #[arg(long = "emit-ai", value_name = "FILE")]
+        emit_ai: Option<PathBuf>,
+        /// Print optimization stats (bytecode mode only)
+        #[arg(long = "opt-stats", action = ArgAction::SetTrue)]
+        opt_stats: bool,
+        /// Emit optimization stats JSON (implies --bytecode)
+        #[arg(long = "opt-stats-json", action = ArgAction::SetTrue)]
+        opt_stats_json: bool,
+        /// Disassemble compiled bytecode (implies --bytecode)
+        #[arg(long = "disasm", action = ArgAction::SetTrue)]
+        disasm: bool,
     },
 
     /// Quantum execution (Titan local or Qiskit backends)
@@ -249,6 +250,15 @@ pub enum Command {
     Ai {
         #[command(subcommand)]
         action: AiAction,
+    },
+
+    /// Domain Quantum Vault operations
+    Vault {
+        #[command(subcommand)]
+        action: VaultSubcommand,
+        /// Render Ratatui dashboard for supported subcommands
+        #[arg(long = "tui", action = ArgAction::SetTrue)]
+        tui: bool,
     },
 
     /// Run a Cargo command (passthrough to system `cargo`). Example: aeonmi cargo build --release
@@ -379,15 +389,15 @@ pub enum Command {
         /// Additional arguments passed to the underlying runtime
         #[arg(value_name = "ARGS", trailing_var_arg = true)]
         args: Vec<String>,
-    /// Watch the file and re-run on change
-    #[arg(long = "watch", action = ArgAction::SetTrue)]
-    watch: bool,
-    /// Keep temporary compiled artifacts (e.g., __exec_tmp.js)
-    #[arg(long = "keep-temp", action = ArgAction::SetTrue)]
-    keep_temp: bool,
-    /// (AI/JS only) Compile but skip executing node (useful for tests without node installed)
-    #[arg(long = "no-run", action = ArgAction::SetTrue, hide = true)]
-    no_run: bool,
+        /// Watch the file and re-run on change
+        #[arg(long = "watch", action = ArgAction::SetTrue)]
+        watch: bool,
+        /// Keep temporary compiled artifacts (e.g., __exec_tmp.js)
+        #[arg(long = "keep-temp", action = ArgAction::SetTrue)]
+        keep_temp: bool,
+        /// (AI/JS only) Compile but skip executing node (useful for tests without node installed)
+        #[arg(long = "no-run", action = ArgAction::SetTrue, hide = true)]
+        no_run: bool,
     },
 
     /// Run an .ai file with the native VM (no JS / Node).
@@ -427,9 +437,9 @@ pub enum Command {
         /// Sort output by: ema|avg|last (no effect on generation order)
         #[arg(long = "sort", value_name = "FIELD", default_value = "ema")]
         sort: String,
-    /// RNG seed (u64) for reproducibility (default fixed)
-    #[arg(long = "seed", value_name = "SEED")]
-    seed: Option<u64>,
+        /// RNG seed (u64) for reproducibility (default fixed)
+        #[arg(long = "seed", value_name = "SEED")]
+        seed: Option<u64>,
         /// Reset metrics before benchmarking
         #[arg(long = "reset", action = ArgAction::SetTrue)]
         reset: bool,
@@ -494,7 +504,16 @@ pub enum AiAction {
     Suggest,
     Debug,
     Optimize,
-    Explain { section: Option<String> },
-    Refactor { rule: Option<String> },
-    Chat { provider: Option<String>, prompt: Option<String>, list: bool, stream: bool },
+    Explain {
+        section: Option<String>,
+    },
+    Refactor {
+        rule: Option<String>,
+    },
+    Chat {
+        provider: Option<String>,
+        prompt: Option<String>,
+        list: bool,
+        stream: bool,
+    },
 }

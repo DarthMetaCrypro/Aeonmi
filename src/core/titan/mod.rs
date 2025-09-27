@@ -26,6 +26,7 @@ pub mod quantum_gates;
 pub mod quantum_math;
 pub mod quantum_superposition;
 pub mod quantum_tensor_ops;
+pub mod quantum_vault;
 pub mod statistics;
 pub mod stochastic_processes;
 pub mod symbolic_math;
