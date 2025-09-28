@@ -1,7 +1,47 @@
+### Rust build output
 /target/
+**/target/
+
+### Virtual envs / Python
 /.venv/
 **/*.pyc
+
+### Node modules (prevent huge vendor commits)
+/node_modules/
+**/node_modules/
+
+### Generated runtime artifacts
 aeonmi.run.js
 output.js
-/target
-aeonmi.run.js
+output.ai
+__exec_tmp*.js
+__exec_tmp_rs*
+workspace_build.log
+workspace_test.log
+tui_crash.log
+.aeonmi_last_search
+
+### OS / editor
+*.swp
+*.DS_Store
+
+### Debug / toolchain large files
+*.pdb
+*.rmeta
+
+### Misc (previous accidental commits) — ensure these are removed if still in history
+return
+true
+self.parse_for()
+self.parse_function_decl()
+self.parse_hieroglyphic_op()
+self.parse_if()
+self.parse_log()
+self.parse_return()
+self.parse_variable_decl()
+self.parse_while()
+stmts
+sym
+
+# If you want to keep any of the above, remove the entry.
+

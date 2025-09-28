@@ -1,0 +1,114 @@
+// Complete Aeonmi Language Demo - Showcasing all features
+// This demonstrates the full power of the Aeonmi.ai programming language
+
+// ═══ Variable Declarations ═══
+let pi = 3.14159;
+let message = "Welcome to Aeonmi Programming";
+let is_quantum_ready = true;
+
+// ═══ Function Definitions ═══
+function fibonacci(n) {
+    if n <= 1 {
+        return n;
+    } else {
+        return fibonacci(n - 1) + fibonacci(n - 2);
+    }
+}
+
+function quantum_oracle(state) {
+    // Advanced quantum state manipulation
+    superpose(state);
+    let amplitude = measure(state);
+    return amplitude;
+}
+
+// ═══ Quantum Computing Section ═══
+qubit alice_qubit;
+qubit bob_qubit;
+qubit control_qubit;
+
+// Initialize quantum system
+superpose(alice_qubit);
+superpose(bob_qubit);
+
+// Create entangled state
+entangle(alice_qubit, bob_qubit);
+
+// Apply quantum transformations
+𓀁(alice_qubit);     // Pauli-X gate
+𓀄(bob_qubit);       // Hadamard gate  
+𓀃(control_qubit);   // Pauli-Z gate
+
+// Quantum measurement
+let alice_result = measure(alice_qubit);
+let bob_result = measure(bob_qubit);
+
+// ═══ Classical Programming Constructs ═══
+for let i = 0; i < 10; i = i + 1 {
+    let fib = fibonacci(i);
+    log("Fibonacci(", i, ") = ", fib);
+}
+
+let counter = 0;
+while counter < 5 {
+    log("Counter value:", counter);
+    counter = counter + 1;
+}
+
+// ═══ Hieroglyphic QUBE Programming ═══
+𓀀(alice_qubit, 42);           // Custom parametric operation
+𓁀(alice_qubit, bob_qubit, control_qubit);  // 3-qubit Toffoli gate
+𓁁(alice_qubit, bob_qubit);    // Quantum Fourier Transform component
+
+// Advanced hieroglyphic functions
+function 𓁍_quantum_processor(qubits) {
+    for qubit in qubits {
+        𓀄(qubit);  // Apply Hadamard to each
+        let result = 𓁄(qubit);  // Measure with hieroglyphic operator
+        if result == 1 {
+            𓀁(qubit);  // Apply correction if needed
+        }
+    }
+    return qubits;
+}
+
+// ═══ Advanced Control Flow ═══
+if alice_result == bob_result {
+    log("Quantum correlation detected!");
+    if alice_result == 1 {
+        log("Both qubits measured |1⟩");
+        𓁉(control_qubit);  // Apply error correction
+    } else {
+        log("Both qubits measured |0⟩");
+    }
+} else {
+    log("No correlation - quantum decoherence detected");
+    // Re-establish entanglement
+    superpose(alice_qubit);
+    superpose(bob_qubit);
+    entangle(alice_qubit, bob_qubit);
+}
+
+// ═══ Complex Expressions ═══
+let complex_calc = (pi * 2.0) + (fibonacci(7) * alice_result);
+let quantum_fidelity = quantum_oracle(alice_qubit) * quantum_oracle(bob_qubit);
+
+// ═══ String and Boolean Operations ═══
+let status = "Quantum system ";
+if is_quantum_ready {
+    status = status + "READY";
+} else {
+    status = status + "NOT READY";
+}
+
+// ═══ Final Output ═══
+log("=== Aeonmi Language Demo Complete ===");
+log("Message:", message);
+log("Pi approximation:", pi);
+log("Quantum ready:", is_quantum_ready);
+log("Status:", status);
+log("Complex calculation:", complex_calc);
+log("Quantum fidelity:", quantum_fidelity);
+log("Alice measurement:", alice_result);
+log("Bob measurement:", bob_result);
+log("🌟 Aeonmi.ai - The future of programming! 🌟");

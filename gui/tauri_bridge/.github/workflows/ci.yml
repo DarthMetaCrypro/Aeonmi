@@ -1,0 +1,63 @@
+name: Tauri Bridge CI
+
+on:
+  push:
+    paths:
+      - 'gui/tauri_bridge/**'
+  pull_request:
+    paths:
+      - 'gui/tauri_bridge/**'
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cache cargo registry, git and target
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ matrix.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ matrix.os }}-cargo-
+      - name: Cache cargo registry on Windows
+        if: matrix.os == 'windows-latest'
+        uses: actions/cache@v4
+        with:
+          path: |
+            %USERPROFILE%\\.cargo\\registry
+            %USERPROFILE%\\.cargo\\git
+            target
+          key: windows-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            windows-cargo-
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      - name: Install system deps (Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update && sudo apt-get install -y libssl-dev pkg-config
+      - name: Install Windows deps (Chocolatey)
+        if: matrix.os == 'windows-latest'
+        run: |
+          choco install -y pkgconfiglite || echo "choco install pkgconfiglite failed"
+          choco install -y openssl.light || echo "choco install openssl.light failed"
+      - name: Build and run tests
+        env:
+          # Use the runner's cores to parallelize builds
+          CARGO_BUILD_JOBS: 4
+          RUSTFLAGS: "-C target-cpu=native"
+        run: |
+          cd gui/tauri_bridge
+          cargo build --jobs $CARGO_BUILD_JOBS --verbose
+          cargo test --jobs $CARGO_BUILD_JOBS --verbose

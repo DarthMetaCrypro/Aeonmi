@@ -1,0 +1,4 @@
+use aeonmi_project::core::lexer::Lexer;use aeonmi_project::core::parser::Parser as AeParser;use aeonmi_project::core::semantic_analyzer::{SemanticAnalyzer, Severity};
+fn diags(src:&str)->Vec<(String,Severity)>{let mut lex=Lexer::from_str(src);let toks=lex.tokenize().unwrap();let mut p=AeParser::new(toks);let ast=p.parse().unwrap();let mut s=SemanticAnalyzer::new();s.analyze_with_spans(&ast).into_iter().map(|d|(d.message,d.severity)).collect()}
+#[test]fn inconsistent_returns_warning(){let src="fn f(){ if 1 { return 1; } let x = 2; }";let ds=diags(src);assert!(ds.iter().any(|(m,sev)| matches!(sev,Severity::Warning)&& m.contains("Not all code paths return")),"expected path warning: {ds:?}");}
+#[test]fn quantum_arity_error(){let src="superpose();";let ds=diags(src);assert!(ds.iter().any(|(m,sev)| matches!(sev,Severity::Error)&& m.contains("Quantum op 'superpose'")),"expected quantum arity error: {ds:?}");}

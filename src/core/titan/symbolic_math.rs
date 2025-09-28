@@ -17,7 +17,7 @@ impl Expr {
             Expr::Constant(value) => *value,
             Expr::Variable(name) => *variables
                 .get(name)
-                .expect(&format!("Variable '{}' not found.", name)),
+                .unwrap_or_else(|| panic!("Variable '{}' not found.", name)),
             Expr::Add(lhs, rhs) => lhs.evaluate(variables) + rhs.evaluate(variables),
             Expr::Sub(lhs, rhs) => lhs.evaluate(variables) - rhs.evaluate(variables),
             Expr::Mul(lhs, rhs) => lhs.evaluate(variables) * rhs.evaluate(variables),

@@ -1,3 +1,4 @@
+#![allow(clippy::needless_range_loop)]
 pub fn add_tensors(
     tensor1: &[Vec<Vec<f64>>],
     tensor2: &[Vec<Vec<f64>>],

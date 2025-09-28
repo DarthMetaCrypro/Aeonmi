@@ -1,0 +1,22 @@
+// String manipulation in Aeonmi
+let firstName = "Aeonmi";
+let lastName = "Developer";
+let fullName = firstName + " " + lastName;
+
+log("Hello, " + fullName + "!");
+
+// Working with numbers and strings
+let year = 2025;
+let message = "Welcome to the year " + year;
+log(message);
+
+// Function that processes strings
+function makeTitle(text) {
+    return "*** " + text + " ***";
+}
+
+log(makeTitle("Aeonmi Programming Language"));
+
+// Boolean to string
+let isActive = true;
+log("System active: " + isActive);

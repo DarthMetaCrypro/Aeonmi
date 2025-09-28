@@ -1,0 +1,28 @@
+[package]
+name = "tauri_bridge"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# async runtime and websocket/HTTP
+tokio = { version = "1.32", features = ["full"] }
+warp = "0.3"
+tokio-tungstenite = "0.18"
+futures = "0.3"
+# PTY support
+portable-pty = "0.9"
+# logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["fmt"] }
+anyhow = "1.0"
+
+[profile.dev]
+opt-level = 0
+
+[profile.release]
+opt-level = 3
+
+[dev-dependencies]
+reqwest = { version = "0.11", features = ["blocking", "rustls-tls"] }
+tungstenite = "0.21"
+url = "2.5"

@@ -46,8 +46,7 @@ pub fn start(config_path: Option<PathBuf>, pretty: bool, skip_sema: bool) -> any
             // Navigation
             "pwd" => println!("{}", cwd.display()),
             "cd" => {
-                let target = parts
-                    .get(0)
+                let target = parts.first()
                     .map(PathBuf::from)
                     .unwrap_or_else(|| dirs_next::home_dir().unwrap_or(cwd.clone()));
                 if let Err(e) = std::env::set_current_dir(&target) {
@@ -57,8 +56,7 @@ pub fn start(config_path: Option<PathBuf>, pretty: bool, skip_sema: bool) -> any
                 }
             }
             "ls" | "dir" => {
-                let path = parts
-                    .get(0)
+                let path = parts.first()
                     .map(PathBuf::from)
                     .unwrap_or_else(|| cwd.clone());
                 match fs::read_dir(&path) {
@@ -79,7 +77,7 @@ pub fn start(config_path: Option<PathBuf>, pretty: bool, skip_sema: bool) -> any
 
             // FS ops
             "mkdir" => {
-                if let Some(p) = parts.get(0) {
+                if let Some(p) = parts.first() {
                     if let Err(e) = fs::create_dir_all(p) {
                         eprintln!("{} {}", "err:".red().bold(), e);
                     }
@@ -88,7 +86,7 @@ pub fn start(config_path: Option<PathBuf>, pretty: bool, skip_sema: bool) -> any
                 }
             }
             "rm" => {
-                if let Some(p) = parts.get(0) {
+                if let Some(p) = parts.first() {
                     let pb = Path::new(p);
                     let res = if pb.is_dir() {
                         fs::remove_dir_all(pb)
@@ -117,7 +115,7 @@ pub fn start(config_path: Option<PathBuf>, pretty: bool, skip_sema: bool) -> any
                 }
             }
             "cat" => {
-                if let Some(p) = parts.get(0) {
+                if let Some(p) = parts.first() {
                     match fs::read_to_string(p) {
                         Ok(s) => print!("{s}"),
                         Err(e) => eprintln!("{} {}", "err:".red().bold(), e),
@@ -210,9 +208,44 @@ pub fn start(config_path: Option<PathBuf>, pretty: bool, skip_sema: bool) -> any
             }
 
             "run" => {
-                // run <file.ai> [--out FILE]
+                // run <file.ai> [--native] [--out FILE]
                 if parts.is_empty() {
-                    usage("run <file.ai> [--out FILE]");
+                    usage("run <file.ai> [--native] [--out FILE]");
+                    continue;
+                }
+                let input = PathBuf::from(&parts[0]);
+                let mut out: Option<PathBuf> = None;
+                let mut native = false;
+                let mut j = 1;
+                while j < parts.len() {
+                    match parts[j].as_str() {
+                        "--out" if j + 1 < parts.len() => {
+                            out = Some(PathBuf::from(&parts[j + 1]));
+                            j += 2;
+                        }
+                        "--native" => {
+                            native = true;
+                            j += 1;
+                        }
+                        _ => {
+                            j += 1;
+                        }
+                    }
+                }
+                let res = if native {
+                    commands::run::run_native(&input, pretty, skip_sema)
+                } else {
+                    commands::run::main_with_opts(input, out, pretty, skip_sema)
+                };
+                if let Err(e) = res {
+                    eprintln!("{} {}", "err:".red().bold(), e);
+                }
+            }
+
+            "native-run" => {
+                // native-run <file.ai> [--out FILE]
+                if parts.is_empty() {
+                    usage("native-run <file.ai> [--out FILE]");
                     continue;
                 }
                 let input = PathBuf::from(&parts[0]);
@@ -224,13 +257,151 @@ pub fn start(config_path: Option<PathBuf>, pretty: bool, skip_sema: bool) -> any
                             out = Some(PathBuf::from(&parts[j + 1]));
                             j += 2;
                         }
-                        _ => {
-                            j += 1;
-                        }
+                        _ => j += 1,
                     }
                 }
-                if let Err(e) = commands::run::main_with_opts(input, out, pretty, skip_sema) {
+                // Temporarily force native interpreter
+                let prev = std::env::var("AEONMI_NATIVE").ok();
+                std::env::set_var("AEONMI_NATIVE", "1");
+                let res = commands::run::main_with_opts(input, out, pretty, skip_sema);
+                if let Some(v) = prev { std::env::set_var("AEONMI_NATIVE", v); } else { std::env::remove_var("AEONMI_NATIVE"); }
+                if let Err(e) = res {
                     eprintln!("{} {}", "err:".red().bold(), e);
+                }
+            }
+
+            // Quantum-specific commands
+            "qsim" => {
+                #[cfg(feature = "quantum")]
+                {
+                    // qsim <file.ai> [--shots NUM] [--backend titan|qiskit]
+                    if parts.is_empty() {
+                        usage("qsim <file.ai> [--shots NUM] [--backend titan|qiskit]");
+                        continue;
+                    }
+                    let input = PathBuf::from(&parts[0]);
+                    let mut shots = None;
+                    let mut backend = "titan";
+                    let mut j = 1;
+                    while j < parts.len() {
+                        match parts[j].as_str() {
+                            "--shots" if j + 1 < parts.len() => {
+                                if let Ok(s) = parts[j + 1].parse::<usize>() {
+                                    shots = Some(s);
+                                }
+                                j += 2;
+                            }
+                            "--backend" if j + 1 < parts.len() => {
+                                backend = &parts[j + 1];
+                                j += 2;
+                            }
+                            _ => {
+                                j += 1;
+                            }
+                        }
+                    }
+                    println!("{} Running quantum simulation on {} with {} backend...",
+                        "⟨Ψ⟩".truecolor(0, 255, 180),
+                        input.display(),
+                        backend.truecolor(255, 180, 0)
+                    );
+                    if let Err(e) = commands::quantum::main(input, shots, backend) {
+                        eprintln!("{} {}", "err:".red().bold(), e);
+                    }
+                }
+                #[cfg(not(feature = "quantum"))]
+                {
+                    eprintln!("{} quantum support not built; recompile with --features quantum to use 'qsim'", "warn:".yellow().bold());
+                }
+            }
+
+            "qstate" => {
+                // qstate - Display current quantum system state
+                println!("{}", "=== Quantum State Inspector ===".truecolor(0, 255, 180).bold());
+                println!("Available quantum backends:");
+                println!("  • {} - Native Titan quantum simulator", "titan".truecolor(255, 180, 0));
+                #[cfg(feature = "qiskit")]
+                println!("  • {} - Qiskit Aer backend", "qiskit".truecolor(100, 255, 100));
+                println!("  • {} - QUBE symbolic processor", "qube".truecolor(255, 100, 255));
+            }
+
+            "qgates" => {
+                // qgates - Show available quantum gates
+                println!("{}", "=== Quantum Gate Library ===".truecolor(0, 255, 180).bold());
+                println!("Single-qubit gates:");
+                println!("  • {} - Pauli-X (bit flip)", "𓀁".truecolor(255, 180, 0));
+                println!("  • {} - Pauli-Y", "𓀂".truecolor(255, 180, 0));
+                println!("  • {} - Pauli-Z (phase flip)", "𓀃".truecolor(255, 180, 0));
+                println!("  • {} - Hadamard (superposition)", "𓀄".truecolor(255, 180, 0));
+                println!("  • {} - S gate (phase)", "𓀅".truecolor(255, 180, 0));
+                println!("  • {} - T gate", "𓀆".truecolor(255, 180, 0));
+                println!("\nTwo-qubit gates:");
+                println!("  • {} - CNOT (controlled-X)", "entangle()".truecolor(100, 255, 100));
+                println!("  • {} - CZ (controlled-Z)", "𓀇".truecolor(255, 180, 0));
+                println!("\nBuilt-in operations:");
+                println!("  • {} - Create superposition", "superpose()".truecolor(100, 255, 100));
+                println!("  • {} - Quantum measurement", "measure()".truecolor(100, 255, 100));
+            }
+
+            "qexample" => {
+                // qexample [teleport|bell|error_correction|grover|qube]
+                let default = String::from("list");
+                let sel: &str = parts.first().map(|s| s.as_str()).unwrap_or(default.as_str());
+                match sel {
+                    "list" => {
+                        println!("{}", "=== Quantum Example Showcase ===".truecolor(0, 255, 180).bold());
+                        println!("Available examples:");
+                        println!("  • {} - Quantum teleportation protocol", "teleport".truecolor(255, 180, 0));
+                        println!("  • {} - Bell state preparation", "bell".truecolor(255, 180, 0));
+                        println!("  • {} - 3-qubit error correction", "error_correction".truecolor(255, 180, 0));
+                        println!("  • {} - Grover's search algorithm", "grover".truecolor(255, 180, 0));
+                        println!("  • {} - QUBE hieroglyphic programming", "qube".truecolor(255, 100, 255));
+                        println!("\nUsage: qexample <name>");
+                    }
+                    #[cfg(feature = "quantum")]
+                    "teleport" => {
+                        if let Err(e) = commands::run::main_with_opts(
+                            PathBuf::from("examples/quantum_teleportation.ai"), 
+                            None, pretty, skip_sema
+                        ) {
+                            eprintln!("{} {}", "err:".red().bold(), e);
+                        }
+                    }
+                    #[cfg(feature = "quantum")]
+                    "error_correction" => {
+                        if let Err(e) = commands::run::main_with_opts(
+                            PathBuf::from("examples/quantum_error_correction.ai"), 
+                            None, pretty, skip_sema
+                        ) {
+                            eprintln!("{} {}", "err:".red().bold(), e);
+                        }
+                    }
+                    #[cfg(feature = "quantum")]
+                    "grover" => {
+                        if let Err(e) = commands::run::main_with_opts(
+                            PathBuf::from("examples/grover_search.ai"), 
+                            None, pretty, skip_sema
+                        ) {
+                            eprintln!("{} {}", "err:".red().bold(), e);
+                        }
+                    }
+                    #[cfg(feature = "quantum")]
+                    "qube" => {
+                        if let Err(e) = commands::run::main_with_opts(
+                            PathBuf::from("examples/qube_hieroglyphic.ai"), 
+                            None, pretty, skip_sema
+                        ) {
+                            eprintln!("{} {}", "err:".red().bold(), e);
+                        }
+                    }
+                    #[cfg(not(feature = "quantum"))]
+                    "teleport" | "error_correction" | "grover" => {
+                        eprintln!("{} quantum feature not enabled; recompile with --features quantum", "warn:".yellow().bold());
+                    }
+                    other => {
+                        println!("{} Unknown example: {other}", "err:".red().bold());
+                        println!("Use 'qexample list' to see available examples");
+                    }
                 }
             }
 
@@ -244,13 +415,11 @@ pub fn start(config_path: Option<PathBuf>, pretty: bool, skip_sema: bool) -> any
 
 fn banner() {
     println!(
-        "\n{}  {}\n{}  {}\n",
+        "\n{}  \n{}  \n",
         "╔══════════════════════════════════════════════════╗".truecolor(225, 0, 180),
-        "",
         "║                A e o n m i   S h a r d          ║"
             .truecolor(255, 240, 0)
             .bold(),
-        "",
     );
     println!(
         "{}  {}",
@@ -262,28 +431,17 @@ fn banner() {
 fn print_help() {
     println!(
         "{}\n\
-         {}\n  {}\n  {}\n  {}\n  {}\n  {}\n  {}\n\
-         {}\n  {}\n  {}\n  {}\n  {}\n\
-         {}\n  {}\n  {}\n\
-         {}\n  {}\n",
-        "Aeonmi Shard — commands".bold(),
+         {}\n  pwd                 # print working dir\n  cd [dir]            # change directory\n  ls [dir]            # list directory\n  mkdir <path>        # make directory\n  mv <src> <dst>      # move/rename\n  cp <src> <dst>      # copy file/dir\n\
+         {}\n  cat <file>          # show file\n  rm <path>           # remove file/dir\n  edit [--tui] [FILE] # open editor (TUI with --tui)\n  exit                # quit shell\n\
+         {}\n  compile <file.ai> [--emit js|ai] [--out FILE] [--no-sema]\n  run <file.ai> [--native] [--out FILE] # run JS path or native if --native given\n  native-run <file.ai> [--out FILE] # legacy alias for native VM execution\n\
+         {}\n  qsim <file.ai> [--shots NUM] [--backend titan|qiskit] # quantum simulation\n  qstate              # display quantum system info\n  qgates              # show available quantum gates\n  qexample [name]     # run quantum examples\n\
+         {}\n  help                # show this help\n",
+        "Aeonmi Shard — Quantum Programming Shell".bold().truecolor(0, 255, 180),
         "Navigation:".truecolor(130, 0, 200),
-        "pwd                 # print working dir",
-        "cd [dir]            # change directory",
-        "ls [dir]            # list directory",
-        "mkdir <path>        # make directory",
-        "mv <src> <dst>      # move/rename",
-        "cp <src> <dst>      # copy file/dir",
         "Files:".truecolor(130, 0, 200),
-        "cat <file>          # show file",
-        "rm <path>           # remove file/dir",
-        "edit [--tui] [FILE] # open editor (TUI with --tui)",
-        "exit                # quit shell",
         "Build:".truecolor(130, 0, 200),
-        "compile <file.ai> [--emit js|ai] [--out FILE] [--no-sema]",
-        "run <file.ai> [--out FILE]     # compile to JS and try Node",
+        "Quantum:".truecolor(255, 180, 0),
         "Help:".truecolor(130, 0, 200),
-        "help                # show this help",
     );
 }
 

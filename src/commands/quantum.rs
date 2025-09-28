@@ -14,9 +14,14 @@ use crate::core::titan::{
 
 use nalgebra::DMatrix;
 use num_complex::Complex64 as C64;
+use rand::Rng;
 
 #[cfg(feature = "qiskit")]
 use crate::core::titan::qiskit_bridge;
+
+pub fn main(file: PathBuf, shots: Option<usize>, backend: &str) -> Result<()> {
+    quantum_run(file, backend, shots)
+}
 
 pub fn quantum_run(file: PathBuf, backend: &str, shots: Option<usize>) -> Result<()> {
     let be = backend.to_ascii_lowercase();
@@ -159,7 +164,6 @@ fn run_aer(file: PathBuf, shots: Option<usize>) -> Result<()> {
                 let mut c00 = 0usize;
                 let mut c11 = 0usize;
                 let mut rng = rand::thread_rng();
-                use rand::Rng;
                 for _ in 0..nshots {
                     let r: f64 = rng.gen();
                     if r < p00 {
@@ -223,7 +227,6 @@ fn sample_1q(psi: &QState, shots: usize) -> (usize, usize) {
     let mut c0 = 0usize;
     let mut c1 = 0usize;
     let mut rng = rand::thread_rng();
-    use rand::Rng;
     for _ in 0..shots {
         let r: f64 = rng.gen();
         if r < p0 {

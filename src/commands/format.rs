@@ -1,9 +1,8 @@
-//! src/commands/format.rs
 //! Batch formatter for .ai files with --check mode.
 
+use anyhow::Result;
 use std::fs;
 use std::path::PathBuf;
-use anyhow::Result;
 
 use crate::core::formatter::format_ai;
 use crate::io::atomic::atomic_write;
@@ -22,12 +21,10 @@ pub fn main(paths: Vec<PathBuf>, check: bool) -> Result<i32> {
                 println!("{}", p.display());
                 changed += 1;
             }
-        } else {
-            if normalized(&orig) != normalized(&formatted) {
-                atomic_write(&p, formatted.as_bytes())?;
-                println!("formatted {}", p.display());
-                changed += 1;
-            }
+        } else if normalized(&orig) != normalized(&formatted) {
+            atomic_write(&p, formatted.as_bytes())?;
+            println!("formatted {}", p.display());
+            changed += 1;
         }
     }
     Ok(if changed == 0 { 0 } else { 1 })
@@ -35,6 +32,8 @@ pub fn main(paths: Vec<PathBuf>, check: bool) -> Result<i32> {
 
 fn normalized(s: &str) -> String {
     let mut t = s.replace("\r\n", "\n").replace('\r', "\n");
-    if t.ends_with('\n') { t.pop(); }
+    if t.ends_with('\n') {
+        t.pop();
+    }
     t
 }

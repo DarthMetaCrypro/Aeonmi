@@ -24,6 +24,12 @@ use crate::core::titan; // Titan math/quantum library entry point
 /// Represents the Aeonmi/QUBE/Titan compiler
 pub struct Compiler;
 
+impl Default for Compiler {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Compiler {
     pub fn new() -> Self {
         Compiler
@@ -49,7 +55,7 @@ impl Compiler {
         println!("{summary}");
 
         // 2) Lexing
-        let mut lexer = Lexer::new(code);
+        let mut lexer = Lexer::from_str(code);
         let tokens = lexer
             .tokenize()
             .map_err(|e| CoreError::general_error(&format!("Lexing error: {}", e)))?;
@@ -69,10 +75,15 @@ impl Compiler {
         // 4) Semantic analysis (optional)
         if run_semantic {
             let mut analyzer = SemanticAnalyzer::new();
-            analyzer
-                .analyze(&ast)
-                .map_err(|e| CoreError::general_error(&format!("Semantic analysis error: {}", e)))?;
-            println!("Semantic Analyzer: No semantic errors found.");
+            match analyzer.analyze(&ast) {
+                Ok(()) => println!("Semantic Analyzer: No semantic errors found."),
+                Err(e) => {
+                    println!("Semantic Analyzer errors: {}", e);
+                    return Err(CoreError::general_error(&format!(
+                        "Semantic analysis error: {}", e
+                    )));
+                }
+            }
         } else {
             println!("Semantic Analyzer: skipped by flag.");
         }
@@ -112,7 +123,10 @@ impl Compiler {
         file.write_all(output_code.as_bytes())
             .map_err(|e| CoreError::io_error(&format!("Failed to write to output file: {}", e)))?;
 
-        println!("Compilation successful. Output written to '{}'.", output_file);
+        println!(
+            "Compilation successful. Output written to '{}'.",
+            output_file
+        );
         Ok(())
     }
 
@@ -135,10 +149,11 @@ impl Compiler {
 /// Build a minimal IR `Module` from a `.qube` file so `emit --format ai` works.
 /// This does NOT parse yet; it just creates an IR that prints a stub line.
 /// Replace with real AST→IR lowering when ready.
+#[allow(dead_code)]
 pub fn compile_file_to_ir(path: &Path) -> Result<Module, String> {
     // Ensure the file exists/readable (so CLI errors are still real)
-    let _src = fs::read_to_string(path)
-        .map_err(|e| format!("read {} failed: {e}", path.display()))?;
+    let _src =
+        fs::read_to_string(path).map_err(|e| format!("read {} failed: {e}", path.display()))?;
 
     let name = module_name_from_path(path);
 
@@ -163,6 +178,7 @@ pub fn compile_file_to_ir(path: &Path) -> Result<Module, String> {
     })
 }
 
+#[allow(dead_code)]
 fn module_name_from_path(path: &Path) -> String {
     path.file_stem()
         .and_then(|s| s.to_str())
@@ -174,6 +190,7 @@ fn module_name_from_path(path: &Path) -> String {
 
 /// Compile the given `.qube` to JS and run it with Node.
 /// Matches existing console messages used by tests. Node errors are non-fatal.
+#[allow(dead_code)]
 pub fn compile_and_run_js(input: &PathBuf) -> Result<(), String> {
     let src = fs::read_to_string(input)
         .map_err(|e| format!("failed to read {}: {e}", input.display()))?;
@@ -202,6 +219,7 @@ pub fn compile_and_run_js(input: &PathBuf) -> Result<(), String> {
 }
 
 /// Compile the given `.qube` to JS and write it to `out` (or default name).
+#[allow(dead_code)]
 pub fn compile_and_write_js(input: &PathBuf, out: Option<&PathBuf>) -> Result<(), String> {
     let src = fs::read_to_string(input)
         .map_err(|e| format!("failed to read {}: {e}", input.display()))?;

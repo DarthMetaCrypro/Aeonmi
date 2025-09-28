@@ -1,0 +1,35 @@
+// Control flow examples in Aeonmi
+let count = 3;
+
+// While loop
+log("Countdown:");
+while (count > 0) {
+    log("T-minus " + count);
+    count = count - 1;
+}
+log("Blast off!");
+
+// If-else chain
+let score = 85;
+
+if (score >= 90) {
+    log("Grade: A");
+} else if (score >= 80) {
+    log("Grade: B");
+} else if (score >= 70) {
+    log("Grade: C");
+} else {
+    log("Grade: F");
+}
+
+// Function with return
+function factorial(n) {
+    if (n <= 1) {
+        return 1;
+    } else {
+        return n * factorial(n - 1);
+    }
+}
+
+let result = factorial(5);
+log("5! = " + result);

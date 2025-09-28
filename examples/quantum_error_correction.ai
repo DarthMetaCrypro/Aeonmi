@@ -1,0 +1,71 @@
+// Advanced Quantum Error Correction using Aeonmi
+// Implements 3-qubit bit flip code
+
+// Physical qubits
+qubit data_qubit;
+qubit ancilla1;
+qubit ancilla2;
+
+// Encode logical qubit (triple redundancy)
+function encode_logical_qubit(logical_state) {
+    // Copy logical state to all three qubits
+    if logical_state == 1 {
+        𓀁(data_qubit);   // X gate on data qubit
+        𓀁(ancilla1);     // X gate on ancilla1  
+        𓀁(ancilla2);     // X gate on ancilla2
+    }
+    
+    // Create superposition encoding
+    superpose(data_qubit);
+    superpose(ancilla1); 
+    superpose(ancilla2);
+    
+    // Entangle for error correction
+    entangle(data_qubit, ancilla1);
+    entangle(ancilla1, ancilla2);
+}
+
+// Error detection and correction
+function detect_and_correct() {
+    // Syndrome measurement
+    let syndrome1 = measure(data_qubit ⊕ ancilla1);
+    let syndrome2 = measure(ancilla1 ⊕ ancilla2);
+    
+    // Error correction based on syndrome
+    if syndrome1 == 1 && syndrome2 == 0 {
+        log("Error detected on data_qubit, correcting...");
+        𓀁(data_qubit);  // Apply correction
+    } else if syndrome1 == 1 && syndrome2 == 1 {
+        log("Error detected on ancilla1, correcting...");
+        𓀁(ancilla1);
+    } else if syndrome1 == 0 && syndrome2 == 1 {
+        log("Error detected on ancilla2, correcting...");
+        𓀁(ancilla2);
+    } else {
+        log("No error detected");
+    }
+}
+
+// Simulate bit flip error
+function introduce_error() {
+    // Randomly flip one of the qubits
+    let error_target = random_int(3);
+    if error_target == 0 {
+        𓀁(data_qubit);
+        log("Introduced error on data_qubit");
+    } else if error_target == 1 {
+        𓀁(ancilla1);
+        log("Introduced error on ancilla1");
+    } else {
+        𓀁(ancilla2);
+        log("Introduced error on ancilla2");
+    }
+}
+
+// Main error correction protocol
+encode_logical_qubit(1);
+introduce_error();
+detect_and_correct();
+
+let final_result = measure(data_qubit);
+log("Final corrected result:", final_result);

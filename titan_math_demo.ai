@@ -1,0 +1,25 @@
+// titan_math_demo.ai
+// Demonstrates Titan math and quantum features in Aeonmi language
+
+// Scalar math
+let a = 3;
+let b = 4;
+let c = titan::algebra::sqrt(a * a + b * b);
+log("Hypotenuse:", c);
+
+// Matrix operations
+let m1 = titan::linear_algebra::matrix([[1, 2], [3, 4]]);
+let m2 = titan::linear_algebra::matrix([[0, 1], [1, 0]]);
+let m3 = titan::linear_algebra::matmul(m1, m2);
+log("Matrix product:", m3);
+
+// Quantum state
+let q = titan::quantum::qubit(0);
+let q_h = titan::quantum::hadamard(q);
+let measured = titan::quantum::measure(q_h);
+log("Measured quantum state:", measured);
+
+// AI symbolic core demo
+let expr = qube::symbolic("x^2 + 2x + 1");
+let deriv = qube::diff(expr, "x");
+log("Symbolic derivative:", deriv);

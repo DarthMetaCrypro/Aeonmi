@@ -1,6 +1,8 @@
 #![cfg_attr(test, allow(dead_code, unused_variables))]
+
 use std::fs;
 use std::io;
+use std::panic::{self, AssertUnwindSafe};
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
@@ -8,12 +10,11 @@ use anyhow::Result;
 use crossterm::{
     event::{
         self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyEvent, KeyEventKind,
-        KeyModifiers,
+        KeyModifiers, MouseButton, MouseEventKind,
     },
     execute,
     terminal::{self, EnterAlternateScreen, LeaveAlternateScreen, SetTitle},
 };
-
 use ratatui::{
     backend::CrosstermBackend,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
@@ -24,18 +25,20 @@ use ratatui::{
 };
 
 use crate::cli::EmitKind;
+use crate::commands::compile::compile_pipeline_soft; // compile_pipeline unused in TUI (soft variant used)
 use crate::core::qpoly::QPolyMap;
-use crate::commands::compile::compile_pipeline;
 
-/// Neon palette (magenta/purple + blinding yellow)
+// ---------- Palette / Theme ----------
 fn neon() -> (Color, Color, Color, Color) {
-    let magenta = Color::Rgb(225, 0, 180);
-    let purple = Color::Rgb(130, 0, 200);
-    let yellow = Color::Rgb(255, 240, 0);
-    let dim = Color::Rgb(190, 190, 200);
-    (magenta, purple, yellow, dim)
+    (
+        Color::Rgb(225, 0, 180),
+        Color::Rgb(130, 0, 200),
+        Color::Rgb(255, 240, 0),
+        Color::Rgb(190, 190, 200),
+    )
 }
 
+// ---------- Basic Types ----------
 #[derive(Copy, Clone)]
 enum EmitMode {
     Js,
@@ -54,12 +57,37 @@ impl EmitMode {
             EmitMode::Ai => "AI",
         }
     }
+    #[allow(dead_code)]
     fn to_emit_kind(self) -> EmitKind {
         match self {
             EmitMode::Js => EmitKind::Js,
             EmitMode::Ai => EmitKind::Ai,
         }
     }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq)]
+enum EditorMode {
+    Append,
+    Insert,
+}
+
+#[derive(Copy, Clone, Debug)]
+enum ButtonAction {
+    Save,
+    Compile,
+    Run,
+    ToggleEmit,
+    ToggleMode,
+    Search,
+    ToggleMouse,
+    Quit,
+}
+
+struct ButtonSpec {
+    area: Rect,
+    label: String,
+    action: ButtonAction,
 }
 
 struct App {
@@ -74,8 +102,26 @@ struct App {
     emit_mode: EmitMode,
     show_key_debug: bool,
     last_key_debug: String,
+    // mouse is always active now; field retained for compatibility but unused
+    mouse_capture: bool,
+    cursor_row: usize,
+    cursor_col: usize,
+    scroll: usize,
+    mode: EditorMode,
+    history: Vec<String>,
+    history_index: usize,
+    last_snapshot_at: Instant,
+    chars_since_snapshot: usize,
+    paste_active: bool,
+    last_key_time: Instant,
+    search_active: bool,
+    search_query: String,
+    last_match_row: Option<usize>,
+    search_matches: Vec<usize>,
+    search_index: usize,
 }
 
+// ---------- App Impl ----------
 impl App {
     fn new(filepath: PathBuf, qpoly: QPolyMap) -> Self {
         let buffer = if filepath.exists() {
@@ -83,26 +129,121 @@ impl App {
         } else {
             String::new()
         };
+        let persisted_search = fs::read_to_string(".aeonmi_last_search").ok().unwrap_or_default();
         Self {
             filepath,
             buffer,
             input: String::new(),
             dirty: false,
-            status: String::from(
-                "⏎ append • Ctrl+S save • F4 emit=JS/AI • F5 compile • F6 run(JS) • Esc/Ctrl+Q quit • F1 key-debug",
-            ),
+            status: "⏎ append • Ctrl+S save • F4 emit=JS/AI • F5 compile • F6 run(JS) • F9 toggle-mouse • Esc/Ctrl+Q quit • F1 key-debug".into(),
             last_status_at: Instant::now(),
             diagnostics: vec![],
             qpoly,
             emit_mode: EmitMode::Js,
             show_key_debug: false,
             last_key_debug: String::new(),
+            mouse_capture: true,
+            cursor_row: 0,
+            cursor_col: 0,
+            scroll: 0,
+            mode: EditorMode::Append,
+            history: Vec::new(),
+            history_index: 0,
+            last_snapshot_at: Instant::now(),
+            chars_since_snapshot: 0,
+            paste_active: false,
+            last_key_time: Instant::now(),
+            search_active: false,
+            search_query: persisted_search.trim().to_string(),
+            last_match_row: None,
+            search_matches: Vec::new(),
+            search_index: 0,
         }
     }
 
     fn set_status(&mut self, s: impl Into<String>) {
         self.status = s.into();
         self.last_status_at = Instant::now();
+    }
+
+    fn snapshot(&mut self) {
+        if self.history_index < self.history.len() {
+            self.history.truncate(self.history_index);
+        }
+        self.history.push(self.buffer.clone());
+        self.history_index = self.history.len();
+        if self.history.len() > 200 {
+            let drop = self.history.len() - 200;
+            self.history.drain(0..drop);
+            self.history_index = self.history.len();
+        }
+        self.last_snapshot_at = Instant::now();
+        self.chars_since_snapshot = 0;
+    }
+
+    fn undo(&mut self) {
+        if self.history_index == 0 {
+            return;
+        }
+        self.history_index -= 1;
+        if let Some(s) = self.history.get(self.history_index) {
+            self.buffer = s.clone();
+            self.set_status("Undo");
+            self.dirty = true;
+        }
+    }
+
+    fn redo(&mut self) {
+        if self.history_index >= self.history.len() {
+            return;
+        }
+        self.history_index += 1;
+        if self.history_index > 0 {
+            if let Some(s) = self.history.get(self.history_index - 1) {
+                self.buffer = s.clone();
+                self.set_status("Redo");
+                self.dirty = true;
+            }
+        }
+    }
+
+    fn find_next(&mut self) {
+        if self.search_query.is_empty() { return; }
+        if self.search_matches.is_empty() { self.rebuild_search_matches(); }
+        if self.search_matches.is_empty() { self.set_status("No match"); return; }
+        self.search_index = (self.search_index + 1) % self.search_matches.len();
+        let r = self.search_matches[self.search_index];
+        self.last_match_row = Some(r);
+        self.cursor_row = r;
+        self.cursor_col = 0;
+        self.set_status(format!("Search: {}/{}", self.search_index + 1, self.search_matches.len()));
+    }
+
+    fn find_prev(&mut self) {
+        if self.search_query.is_empty() { return; }
+        if self.search_matches.is_empty() { self.rebuild_search_matches(); }
+        if self.search_matches.is_empty() { self.set_status("No match"); return; }
+        if self.search_index == 0 { self.search_index = self.search_matches.len()-1; } else { self.search_index -= 1; }
+        let r = self.search_matches[self.search_index];
+        self.last_match_row = Some(r);
+        self.cursor_row = r;
+        self.cursor_col = 0;
+        self.set_status(format!("Search: {}/{}", self.search_index + 1, self.search_matches.len()));
+    }
+
+    fn rebuild_search_matches(&mut self) {
+        self.search_matches.clear();
+        self.search_index = 0;
+        if self.search_query.is_empty() { return; }
+        let q = self.search_query.to_lowercase();
+        for (i, l) in self.buffer.lines().enumerate() {
+            if l.to_lowercase().contains(&q) { self.search_matches.push(i); }
+        }
+        if !self.search_matches.is_empty() {
+            self.last_match_row = Some(self.search_matches[0]);
+            self.cursor_row = self.search_matches[0];
+            self.cursor_col = 0;
+        }
     }
 
     fn add_line(&mut self) {
@@ -114,6 +255,11 @@ impl App {
         self.input.clear();
         self.dirty = true;
         self.set_status("Line added.");
+        let lc = self.buffer.lines().count();
+        if lc > 0 {
+            self.cursor_row = lc - 1;
+        }
+        self.cursor_col = self.buffer.lines().last().map(|l| l.len()).unwrap_or(0);
     }
 
     fn save(&mut self) -> Result<()> {
@@ -133,7 +279,7 @@ impl App {
         match self.emit_mode {
             EmitMode::Ai => {
                 let out = PathBuf::from("output.ai");
-                match compile_pipeline(
+                match compile_pipeline_soft(
                     Some(self.filepath.clone()),
                     EmitKind::Ai,
                     out.clone(),
@@ -141,7 +287,7 @@ impl App {
                     false,
                     pretty,
                     skip_sema,
-                    /* debug_titan */ false,
+                    false,
                 ) {
                     Ok(()) => self.set_status(format!("Wrote → {}", out.display())),
                     Err(e) => self.set_status(format!("Emit .ai error: {e}")),
@@ -149,7 +295,7 @@ impl App {
             }
             EmitMode::Js => {
                 let out = PathBuf::from("output.js");
-                match compile_pipeline(
+                match compile_pipeline_soft(
                     Some(self.filepath.clone()),
                     EmitKind::Js,
                     out.clone(),
@@ -157,7 +303,7 @@ impl App {
                     false,
                     pretty,
                     skip_sema,
-                    /* debug_titan */ false,
+                    false,
                 ) {
                     Ok(()) => self.set_status(format!("Compiled → {}", out.display())),
                     Err(e) => self.set_status(format!("Compile error: {e}")),
@@ -178,7 +324,7 @@ impl App {
             }
         }
         let out = PathBuf::from("aeonmi.run.js");
-        match compile_pipeline(
+    match compile_pipeline_soft(
             Some(self.filepath.clone()),
             EmitKind::Js,
             out.clone(),
@@ -186,7 +332,7 @@ impl App {
             false,
             pretty,
             skip_sema,
-            /* debug_titan */ false,
+            false,
         ) {
             Ok(()) => match std::process::Command::new("node").arg(&out).status() {
                 Ok(s) if !s.success() => self.set_status(format!("node exited with {s}")),
@@ -198,9 +344,9 @@ impl App {
     }
 }
 
-/// Cheatsheet: mirror a few common defaults
-fn cheatsheet_from_map(_map: &QPolyMap) -> Vec<(String, String)> {
-    let defaults = vec![
+// ---------- Cheatsheet ----------
+fn cheatsheet_from_map(_m: &QPolyMap) -> Vec<(String, String)> {
+    [
         ("->", "→"),
         ("<-", "←"),
         ("<=", "≤"),
@@ -212,13 +358,13 @@ fn cheatsheet_from_map(_map: &QPolyMap) -> Vec<(String, String)> {
         (":=", "≔"),
         ("|0>", "∣0⟩"),
         ("|1>", "∣1⟩"),
-    ];
-    defaults
-        .into_iter()
-        .map(|(a, b)| (a.to_string(), b.to_string()))
-        .collect()
+    ]
+    .into_iter()
+    .map(|(a, b)| (a.to_string(), b.to_string()))
+    .collect()
 }
 
+// ---------- Entry Point ----------
 pub fn run_editor_tui(
     file: Option<PathBuf>,
     config_path: Option<PathBuf>,
@@ -226,8 +372,6 @@ pub fn run_editor_tui(
     skip_sema: bool,
 ) -> Result<()> {
     let filepath = file.unwrap_or_else(|| PathBuf::from("untitled.ai"));
-
-    // Load QPoly map: explicit --config > default user path > built-in
     let map = if let Some(p) = config_path {
         if p.exists() {
             QPolyMap::from_toml_file(&p).unwrap_or_else(|e| {
@@ -242,33 +386,65 @@ pub fn run_editor_tui(
         QPolyMap::from_user_default_or_builtin()
     };
 
-    // Terminal setup
+    // --- Robust terminal setup with RAII guard ---
+    struct TerminalGuard;
+    impl Drop for TerminalGuard {
+        fn drop(&mut self) {
+            let _ = terminal::disable_raw_mode();
+            let mut out = io::stdout();
+            // Best effort: leave alt screen & disable mouse capture.
+            let _ = execute!(out, LeaveAlternateScreen, DisableMouseCapture, SetTitle("Aeonmi"));
+        }
+    }
     terminal::enable_raw_mode()?;
     let mut stdout = io::stdout();
-    execute!(
-        stdout,
-        EnterAlternateScreen,
-        EnableMouseCapture,
-        SetTitle("Aeonmi Shard")
-    )?;
+    execute!(stdout, EnterAlternateScreen, EnableMouseCapture, SetTitle("Aeonmi Shard"))?;
+    let _guard = TerminalGuard; // ensures restoration even on panic
+    // Install a panic hook that also restores terminal (belt & suspenders)
+    let prev_hook = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |info| {
+        let _ = terminal::disable_raw_mode();
+        let mut out = io::stdout();
+        let _ = execute!(out, LeaveAlternateScreen, DisableMouseCapture, SetTitle("Aeonmi (panic)"));
+        eprintln!("\n(editor panic) {}", info);
+        prev_hook(info);
+    }));
+
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
-    let res = run_app(&mut terminal, App::new(filepath, map), pretty, skip_sema);
+    let app = App::new(filepath, map);
+    let res = panic::catch_unwind(AssertUnwindSafe(|| run_app(&mut terminal, app, pretty, skip_sema)));
+    // Explicit show cursor (guard will handle rest)
+    let _ = terminal.show_cursor();
+    // Restore original panic hook (avoid affecting rest of CLI session)
+    let _ = std::panic::take_hook(); // drop our hook
+    // NOTE: We do not reinstall prev_hook; it's already invoked on panic; for normal path we stop intercepting.
 
-    // Restore
-    terminal::disable_raw_mode()?;
-    execute!(
-        terminal.backend_mut(),
-        LeaveAlternateScreen,
-        DisableMouseCapture,
-        SetTitle("Aeonmi")
-    )?;
-    terminal.show_cursor()?;
-    res
+    match res {
+        Ok(inner) => inner,
+        Err(panic_payload) => {
+            let msg = if let Some(s) = panic_payload.downcast_ref::<&str>() {
+                (*s).to_string()
+            } else if let Some(s) = panic_payload.downcast_ref::<String>() {
+                s.clone()
+            } else {
+                "<non-string panic>".into()
+            };
+            let _ = std::fs::write(
+                "tui_crash.log",
+                format!(
+                    "Editor panic captured at {:?}:\n{}\n",
+                    std::time::SystemTime::now(),
+                    msg
+                ),
+            );
+            anyhow::bail!("Editor crashed (panic captured). See tui_crash.log for details.")
+        }
+    }
 }
 
-// React to Press; allow Repeat for Enter/Backspace/Tab (Windows friendliness)
+// ---------- Event Loop ----------
 fn run_app(
     terminal: &mut Terminal<CrosstermBackend<std::io::Stdout>>,
     mut app: App,
@@ -276,7 +452,8 @@ fn run_app(
     skip_sema: bool,
 ) -> Result<()> {
     let tick_rate = Duration::from_millis(100);
-    loop {
+
+    'outer: loop {
         terminal.draw(|f| ui(f, &app))?;
 
         if event::poll(tick_rate)? {
@@ -287,13 +464,9 @@ fn run_app(
                     kind,
                     ..
                 }) => {
-                    let accept = match kind {
-                        KeyEventKind::Press => true,
-                        KeyEventKind::Repeat => {
-                            matches!(code, KeyCode::Enter | KeyCode::Backspace | KeyCode::Tab)
-                        }
-                        _ => false,
-                    };
+                    let accept = matches!(kind, KeyEventKind::Press)
+                        || (matches!(kind, KeyEventKind::Repeat)
+                            && matches!(code, KeyCode::Enter | KeyCode::Backspace | KeyCode::Tab));
                     if !accept {
                         continue;
                     }
@@ -313,22 +486,60 @@ fn run_app(
                                 "Key debug OFF"
                             });
                         }
+                        (KeyCode::F(2), _) => {
+                            app.mode = match app.mode {
+                                EditorMode::Append => EditorMode::Insert,
+                                EditorMode::Insert => EditorMode::Append,
+                            };
+                            app.set_status(match app.mode {
+                                EditorMode::Append => "Mode: Append (Enter appends line)",
+                                EditorMode::Insert => "Mode: Insert (editing buffer)",
+                            });
+                        }
                         (KeyCode::F(4), _) => {
                             app.emit_mode = app.emit_mode.toggle();
                             app.set_status(format!("Emit → {}", app.emit_mode.label()));
                         }
+                        // F9 previously toggled mouse capture; now always on.
+                        (KeyCode::F(9), _) => {
+                            app.set_status("Mouse always enabled — no toggle");
+                        }
                         (KeyCode::F(5), _) => app.compile(pretty, skip_sema),
                         (KeyCode::F(6), _) => app.run(pretty, skip_sema),
-
-                        (KeyCode::Esc, _)
-                        | (KeyCode::Char('c'), KeyModifiers::CONTROL)
-                        | (KeyCode::Char('q'), KeyModifiers::CONTROL) => {
-                            // Quit: if dirty, warn once then allow quit on next press
+                        (KeyCode::F(3), _) => {
+                            if app.search_active {
+                                app.find_next();
+                            }
+                        }
+                        (KeyCode::Char('n'), KeyModifiers::NONE) => {
+                            if app.search_active { app.find_next(); }
+                        }
+                        (KeyCode::Char('N'), KeyModifiers::SHIFT) => {
+                            if app.search_active { app.find_prev(); }
+                        }
+                        (KeyCode::Esc, _) => {
+                            if app.search_active {
+                                app.search_active = false;
+                                app.search_matches.clear();
+                                app.set_status("Search canceled");
+                                let _ = fs::write(".aeonmi_last_search", &app.search_query);
+                                continue;
+                            }
                             if app.dirty {
                                 app.set_status(
                                     "Unsaved changes — Ctrl+S to save, Esc again to quit.",
                                 );
-                                app.dirty = false;
+                                app.dirty = false; // one-shot warning
+                                continue;
+                            }
+                            break;
+                        }
+                        (KeyCode::Char('c'), KeyModifiers::CONTROL)
+                        | (KeyCode::Char('q'), KeyModifiers::CONTROL) => {
+                            if app.search_active {
+                                app.search_active = false;
+                                app.set_status("Search canceled");
+                                let _ = fs::write(".aeonmi_last_search", &app.search_query);
                                 continue;
                             }
                             break;
@@ -338,27 +549,375 @@ fn run_app(
                                 app.set_status(format!("Save failed: {e}"));
                             }
                         }
-
+                        (KeyCode::Char('f'), KeyModifiers::CONTROL) => {
+                            app.search_active = true;
+                            app.search_query.clear();
+                            app.search_matches.clear();
+                            app.set_status("Search: (type) Enter/ n next, Shift+N prev, Esc cancel");
+                            let _ = fs::write(".aeonmi_last_search", "");
+                        }
+                        (KeyCode::Char('z'), KeyModifiers::CONTROL) => app.undo(),
+                        (KeyCode::Char('y'), KeyModifiers::CONTROL) => app.redo(),
                         (KeyCode::Backspace, _) => {
-                            app.input.pop();
+                            if app.search_active {
+                                app.search_query.pop();
+                                app.search_matches.clear();
+                                if app.search_query.is_empty() { app.set_status("Search: (empty)"); } else { app.set_status(format!("Search: {}", app.search_query)); }
+                                let _ = fs::write(".aeonmi_last_search", &app.search_query);
+                                continue;
+                            }
+                            match app.mode {
+                                EditorMode::Append => {
+                                    app.input.pop();
+                                }
+                                EditorMode::Insert => {
+                                    let mut lines: Vec<String> =
+                                        app.buffer.lines().map(|s| s.to_string()).collect();
+                                    if app.cursor_row < lines.len() {
+                                        if app.cursor_col > 0 {
+                                            let line = &mut lines[app.cursor_row];
+                                            let mut new_idx = app.cursor_col - 1;
+                                            while new_idx > 0 && !line.is_char_boundary(new_idx) { new_idx -= 1; }
+                                            line.replace_range(new_idx..app.cursor_col, "");
+                                            app.cursor_col = new_idx;
+                                            app.dirty = true;
+                                        } else if app.cursor_row > 0 {
+                                            let prev_len = lines[app.cursor_row - 1].len();
+                                            let current = lines.remove(app.cursor_row);
+                                            lines[app.cursor_row - 1].push_str(&current);
+                                            app.cursor_row -= 1;
+                                            app.cursor_col = prev_len;
+                                            app.dirty = true;
+                                        }
+                                        app.buffer = lines.join("\n");
+                                    }
+                                }
+                            }
                         }
                         (KeyCode::Enter, _) => {
-                            app.add_line();
+                            if app.search_active {
+                                app.find_next();
+                                continue;
+                            }
+                            match app.mode {
+                                EditorMode::Append => app.add_line(),
+                                EditorMode::Insert => {
+                                    let mut lines: Vec<String> =
+                                        app.buffer.lines().map(|s| s.to_string()).collect();
+                                    if lines.is_empty() {
+                                        lines.push(String::new());
+                                    }
+                                    if app.cursor_row >= lines.len() {
+                                        app.cursor_row = lines.len() - 1;
+                                    }
+                                    let (left, right) = if app.cursor_row < lines.len() {
+                                        let line = &lines[app.cursor_row];
+                                        let mut split_idx = app.cursor_col.min(line.len());
+                                        while split_idx > 0 && split_idx < line.len() && !line.is_char_boundary(split_idx) { split_idx -= 1; }
+                                        let (l, r) = line.split_at(split_idx);
+                                        (l.to_string(), r.to_string())
+                                    } else {
+                                        (String::new(), String::new())
+                                    };
+                                    lines[app.cursor_row] = left;
+                                    lines.insert(app.cursor_row + 1, right);
+                                    app.cursor_row += 1;
+                                    app.cursor_col = 0;
+                                    app.buffer = lines.join("\n");
+                                    app.dirty = true;
+                                }
+                            }
                         }
-                        (KeyCode::Tab, _) => {
-                            app.input.push_str("    ");
-                        }
-
-                        // Accept characters with NONE/SHIFT/ALT (Windows sometimes sets these)
+                        (KeyCode::Tab, _) => match app.mode {
+                            EditorMode::Append => app.input.push_str("    "),
+                            EditorMode::Insert => {
+                                let mut lines: Vec<String> =
+                                    app.buffer.lines().map(|s| s.to_string()).collect();
+                                if app.cursor_row < lines.len() {
+                                    lines[app.cursor_row].insert_str(app.cursor_col, "    ");
+                                    app.cursor_col += 4;
+                                    app.buffer = lines.join("\n");
+                                    app.dirty = true;
+                                }
+                            }
+                        },
                         (KeyCode::Char(ch), m)
                             if m.is_empty()
                                 || m.contains(KeyModifiers::SHIFT)
                                 || m.contains(KeyModifiers::ALT) =>
                         {
-                            app.input.push(ch);
+                            if app.search_active {
+                                app.search_query.push(ch);
+                                app.search_matches.clear();
+                                app.set_status(format!("Search: {}", app.search_query));
+                                let _ = fs::write(".aeonmi_last_search", &app.search_query);
+                                continue;
+                            }
+                            let now = Instant::now();
+                            let since_last = now.saturating_duration_since(app.last_key_time);
+                            app.last_key_time = now;
+                            if since_last < Duration::from_millis(5) {
+                                app.paste_active = true;
+                            }
+                            if since_last > Duration::from_millis(40) {
+                                app.paste_active = false;
+                            }
+                            app.chars_since_snapshot += 1;
+                            let need_snapshot = !app.paste_active
+                                && (now.saturating_duration_since(app.last_snapshot_at)
+                                    > Duration::from_millis(300)
+                                    || app.chars_since_snapshot > 80);
+                            if need_snapshot {
+                                app.snapshot();
+                            }
+                            if app.paste_active && app.chars_since_snapshot == 1 {
+                                app.snapshot();
+                            }
+                            match app.mode {
+                                EditorMode::Append => app.input.push(ch),
+                                EditorMode::Insert => {
+                                    let mut lines: Vec<String> = app
+                                        .buffer
+                                        .lines()
+                                        .map(|s| s.to_string())
+                                        .collect();
+                                    if lines.is_empty() {
+                                        lines.push(String::new());
+                                    }
+                                    if app.cursor_row >= lines.len() {
+                                        app.cursor_row = lines.len() - 1;
+                                    }
+                                    if app.cursor_row < lines.len() {
+                                        lines[app.cursor_row].insert(app.cursor_col, ch);
+                                        app.cursor_col += ch.len_utf8();
+                                        app.buffer = lines.join("\n");
+                                        app.dirty = true;
+                                    }
+                                }
+                            }
+                            if app.paste_active && app.chars_since_snapshot > 2000 {
+                                app.snapshot();
+                                app.paste_active = false;
+                            }
+                        }
+                        (KeyCode::Up, _) => {
+                            if app.cursor_row > 0 {
+                                app.cursor_row -= 1;
+                            }
+                            if app.cursor_row < app.scroll {
+                                app.scroll = app.cursor_row;
+                            }
+                            let line_len = app
+                                .buffer
+                                .lines()
+                                .nth(app.cursor_row)
+                                .map(|l| l.len())
+                                .unwrap_or(0);
+                            if app.cursor_col > line_len {
+                                app.cursor_col = line_len;
+                            }
+                        }
+                        (KeyCode::Down, _) => {
+                            let line_count = app.buffer.lines().count();
+                            if app.cursor_row + 1 < line_count {
+                                app.cursor_row += 1;
+                            }
+                            let view_height =
+                                (terminal.size()?.height as usize).saturating_sub(8);
+                            if app.cursor_row >= app.scroll + view_height {
+                                app.scroll = app
+                                    .cursor_row
+                                    .saturating_sub(view_height)
+                                    .min(app.cursor_row);
+                            }
+                            let line_len = app
+                                .buffer
+                                .lines()
+                                .nth(app.cursor_row)
+                                .map(|l| l.len())
+                                .unwrap_or(0);
+                            if app.cursor_col > line_len {
+                                app.cursor_col = line_len;
+                            }
+                        }
+                        (KeyCode::Left, _) => {
+                            if app.cursor_col > 0 {
+                                let line = app.buffer.lines().nth(app.cursor_row).unwrap_or("");
+                                let mut new_idx = app.cursor_col - 1;
+                                while new_idx > 0 && !line.is_char_boundary(new_idx) { new_idx -= 1; }
+                                app.cursor_col = new_idx;
+                            } else if app.cursor_row > 0 {
+                                app.cursor_row -= 1;
+                                let prev_line = app.buffer.lines().nth(app.cursor_row).unwrap_or("");
+                                app.cursor_col = prev_line.len();
+                            }
+                        }
+                        (KeyCode::Right, _) => {
+                            if let Some(line) = app.buffer.lines().nth(app.cursor_row) {
+                                if app.cursor_col < line.len() {
+                                    let mut new_idx = app.cursor_col + 1;
+                                    while new_idx < line.len() && !line.is_char_boundary(new_idx) { new_idx += 1; }
+                                    app.cursor_col = new_idx;
+                                } else {
+                                    let line_count = app.buffer.lines().count();
+                                    if app.cursor_row + 1 < line_count {
+                                        app.cursor_row += 1;
+                                        app.cursor_col = 0;
+                                    }
+                                }
+                            }
                         }
                         _ => {}
                     }
+                }
+        Event::Mouse(me) => {
+            if app.show_key_debug { app.set_status(format!("mouse: {:?}", me)); }
+            let crossterm::event::MouseEvent { kind, column, row, .. } = me; // destructure
+            // Compute regions to allow click navigation in buffer area.
+                            if row == 1 {
+                                let size = terminal.size()?;
+                                let area = Rect {
+                                    x: 0,
+                                    y: 1,
+                                    width: size.width,
+                                    height: 1,
+                                };
+                                let specs = compute_button_specs(area, &app);
+                                for spec in specs {
+                                    if column >= spec.area.x
+                                        && column < spec.area.x + spec.area.width
+                                    {
+                                        match spec.action {
+                                            ButtonAction::Save => {
+                                                if let Err(e) = app.save() {
+                                                    app.set_status(format!(
+                                                        "Save failed: {e}"
+                                                    ));
+                                                }
+                                            }
+                                            ButtonAction::Compile =>
+                                                app.compile(pretty, skip_sema),
+                                            ButtonAction::Run =>
+                                                app.run(pretty, skip_sema),
+                                            ButtonAction::ToggleEmit => {
+                                                app.emit_mode = app.emit_mode.toggle();
+                                                app.set_status(format!(
+                                                    "Emit → {}",
+                                                    app.emit_mode.label()
+                                                ));
+                                            }
+                                            ButtonAction::ToggleMode => {
+                                                app.mode = match app.mode {
+                                                    EditorMode::Append =>
+                                                        EditorMode::Insert,
+                                                    EditorMode::Insert =>
+                                                        EditorMode::Append,
+                                                };
+                                                app.set_status(match app.mode {
+                                                    EditorMode::Append =>
+                                                        "Mode: Append",
+                                                    EditorMode::Insert =>
+                                                        "Mode: Insert",
+                                                });
+                                            }
+                                            ButtonAction::Search => {
+                                                app.search_active = true;
+                                                app.search_query.clear();
+                                                app.set_status(
+                                                    "Search: type query, Enter=next, Esc=cancel",
+                                                );
+                                            }
+                                            ButtonAction::ToggleMouse => {
+                                                app.mouse_capture = !app.mouse_capture;
+                                                if app.mouse_capture {
+                                                    let _ = execute!(
+                                                        std::io::stdout(),
+                                                        EnableMouseCapture
+                                                    );
+                                                    app.set_status(
+                                                        "Mouse capture ON",
+                                                    );
+                                                } else {
+                                                    let _ = execute!(
+                                                        std::io::stdout(),
+                                                        DisableMouseCapture
+                                                    );
+                                                    app.set_status(
+                                                        "Mouse capture OFF",
+                                                    );
+                                                }
+                                            }
+                                            ButtonAction::Quit => {
+                                                if app.dirty {
+                                                    app.set_status(
+                                                        "Unsaved changes — Ctrl+S to save, click Quit again",
+                                                    );
+                                                    app.dirty = false;
+                                                } else {
+                                                    break 'outer;
+                                                }
+                                            }
+                                        }
+                                        break;
+                                    }
+                                }
+                            } else {
+                                // Click elsewhere: if inside buffer text area, move cursor.
+                                let size = terminal.size()?;
+                                // Recompute layout similar to ui().
+                                let rows_layout = Layout::default()
+                                    .direction(Direction::Vertical)
+                                    .constraints([
+                                        Constraint::Length(1),
+                                        Constraint::Length(1),
+                                        Constraint::Min(5),
+                                        Constraint::Length(1),
+                                        Constraint::Length(3),
+                                    ].as_ref())
+                                    .split(size);
+                                let main_split = Layout::default()
+                                    .direction(Direction::Horizontal)
+                                    .constraints([Constraint::Percentage(68), Constraint::Percentage(32)].as_ref())
+                                    .split(rows_layout[2]);
+                                let left_split = Layout::default()
+                                    .direction(Direction::Vertical)
+                                    .constraints([Constraint::Min(5), Constraint::Length(5)].as_ref())
+                                    .split(main_split[0]);
+                                let buf_area = left_split[0];
+                                if row >= buf_area.y && row < buf_area.y + buf_area.height {
+                                    // Inside buffer block (including borders). Adjust for border offset 1.
+                                    let click_line = (row - buf_area.y).saturating_sub(1) as usize + app.scroll;
+                                    if click_line < app.buffer.lines().count() {
+                                        app.cursor_row = click_line;
+                                        let line_str = app.buffer.lines().nth(app.cursor_row).unwrap_or("");
+                                        // Determine desired column based on displayed x (account for left border)
+                                        if column >= buf_area.x + 1 { // inside after left border
+                                            let rel_x = (column - buf_area.x - 1) as usize; // character cells
+                                            // Walk chars to compute byte offset matching rel_x (monospace assumption, width=1)
+                                            let mut byte_idx = 0;
+                                            let mut cells = 0;
+                                            for ch in line_str.chars() {
+                                                let w = 1; // future: unicode-width crate
+                                                if cells + w > rel_x { break; }
+                                                cells += w;
+                                                byte_idx += ch.len_utf8();
+                                            }
+                                            app.cursor_col = byte_idx.min(line_str.len());
+                                        } else {
+                                            app.cursor_col = 0;
+                                        }
+                                    } else {
+                                        // Clicked below last line: move to end
+                                        if let Some(last) = app.buffer.lines().last() {
+                                            app.cursor_row = app.buffer.lines().count().saturating_sub(1);
+                                            app.cursor_col = last.len();
+                                        }
+                                    }
+                                }
+                                if matches!(kind, MouseEventKind::Down(MouseButton::Left)) {
+                                    app.set_status(format!("Cursor → {}:{}", app.cursor_row+1, app.cursor_col));
+                                }
+                            }
                 }
                 Event::Resize(_, _) => {}
                 _ => {}
@@ -368,19 +927,26 @@ fn run_app(
     Ok(())
 }
 
-// ratatui::Frame is Frame<'a> (non-generic over backend)
+// ---------- Rendering ----------
 fn ui(f: &mut ratatui::Frame<'_>, app: &App) {
     let (accent, accent_alt, yellow, dim) = neon();
+    let _unused = (accent_alt, dim); // silence unused for now
 
-    // vertical: [header, main, input]
     let rows = Layout::default()
         .direction(Direction::Vertical)
         .constraints(
-            [Constraint::Length(3), Constraint::Min(3), Constraint::Length(3)].as_ref(),
+            [
+                Constraint::Length(1), // header
+                Constraint::Length(1), // buttons
+                Constraint::Min(5),    // main
+                Constraint::Length(1), // status
+                Constraint::Length(3), // input
+            ]
+            .as_ref(),
         )
         .split(f.size());
 
-    // Header (centered)
+    // Header
     let header = Paragraph::new(Line::from(vec![
         Span::styled(
             " A E O N M I   S H A R D ",
@@ -398,43 +964,167 @@ fn ui(f: &mut ratatui::Frame<'_>, app: &App) {
     .alignment(Alignment::Center);
     f.render_widget(header, rows[0]);
 
-    // Main split: [buffer+diagnostics | cheatsheet]
+    // Buttons row
+    draw_buttons_row(f, rows[1], app);
+
+    // Main split
     let main_split = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([Constraint::Percentage(68), Constraint::Percentage(32)].as_ref())
-        .split(rows[1]);
-
+        .split(rows[2]);
     let left_split = Layout::default()
         .direction(Direction::Vertical)
         .constraints([Constraint::Min(5), Constraint::Length(5)].as_ref())
         .split(main_split[0]);
 
-    // Buffer
+    // Buffer block
     let buf_block = Block::default().borders(Borders::ALL).title(Span::styled(
         format!(
             " Buffer — {}{}",
             app.filepath.display(),
             if app.dirty { " *" } else { "" }
         ),
-        Style::default()
-            .fg(accent)
-            .add_modifier(Modifier::BOLD),
+        Style::default().fg(accent).add_modifier(Modifier::BOLD),
     ));
-    let buf_text = Text::from(app.buffer.as_str());
-    let buf_par = Paragraph::new(buf_text).block(buf_block).wrap(Wrap { trim: false });
+
+    let lines: Vec<&str> = app.buffer.lines().collect();
+    let height = left_split[0].height.saturating_sub(2) as usize; // minus borders
+    let start = app.scroll.min(lines.len());
+    let end = (start + height).min(lines.len());
+    let mut rendered = String::new();
+    for (i, l) in lines[start..end].iter().enumerate() {
+        if i > 0 {
+            rendered.push('\n');
+        }
+        rendered.push_str(l);
+    }
+
+    let highlight = |line: &str, query: Option<&str>| -> Line {
+        use ratatui::text::Span;
+        let mut spans: Vec<Span> = Vec::new();
+        let lower_q = query.map(|q| q.to_lowercase());
+        let keywords = [
+            "function", "let", "if", "else", "while", "for", "return", "log", "superpose",
+            "entangle", "measure", "qubit",
+        ];
+        let mut i = 0; // byte index, always maintained at a char boundary
+        while i < line.len() {
+            // safe because i is always at a boundary
+            let rest = &line[i..];
+            if rest.starts_with('"') {
+                if let Some(rel_end) = rest[1..].find('"') { // closing quote
+                    let end = i + 1 + rel_end; // position of closing quote
+                    let token = &line[i..=end];
+                    spans.push(Span::styled(
+                        token.to_string(),
+                        Style::default().fg(Color::Rgb(255, 240, 0)),
+                    ));
+                    i = end + 1; // move past closing quote
+                    continue;
+                } else {
+                    // Unterminated string: highlight rest and finish
+                    spans.push(Span::styled(
+                        rest.to_string(),
+                        Style::default().fg(Color::Rgb(255, 240, 0)),
+                    ));
+                    break;
+                }
+            }
+            // Whitespace passthrough
+            if let Some(ch) = rest.chars().next() {
+                if ch.is_whitespace() {
+                    spans.push(Span::raw(ch.to_string()));
+                    i += ch.len_utf8();
+                    continue;
+                }
+            } else {
+                break;
+            }
+            // Consume non-whitespace token
+            let mut end = i; // exclusive end
+            for (off, ch) in line[i..].char_indices() {
+                if ch.is_whitespace() { break; }
+                end = i + off + ch.len_utf8();
+            }
+            if end <= i { break; }
+            let token = &line[i..end];
+            let lower = token.to_lowercase();
+            if keywords.contains(&lower.as_str()) {
+                spans.push(Span::styled(
+                    token.to_string(),
+                    Style::default().fg(Color::Rgb(130, 0, 200)).add_modifier(Modifier::BOLD),
+                ));
+            } else if token.chars().all(|c| c.is_ascii_digit() || c == '.') && token.chars().any(|c| c.is_ascii_digit()) {
+                spans.push(Span::styled(
+                    token.to_string(),
+                    Style::default().fg(Color::Rgb(0, 255, 180)),
+                ));
+            } else if let Some(q) = &lower_q {
+                if !q.is_empty() && lower.contains(q) {
+                    spans.push(Span::styled(
+                        token.to_string(),
+                        Style::default().bg(Color::Rgb(255, 240, 0)).fg(Color::Black),
+                    ));
+                } else {
+                    spans.push(Span::raw(token.to_string()));
+                }
+            } else {
+                spans.push(Span::raw(token.to_string()));
+            }
+            i = end; // already exclusive end (next token starts here)
+        }
+        Line::from(spans)
+    };
+
+    let mut lines_styled: Vec<Line> = Vec::new();
+    for l in rendered.lines() {
+        lines_styled.push(highlight(
+            l,
+            if app.search_active && !app.search_query.is_empty() {
+                Some(app.search_query.as_str())
+            } else {
+                None
+            },
+        ));
+    }
+    if matches!(app.mode, EditorMode::Append)
+        && !app.input.is_empty()
+        && end == lines.len()
+    {
+        lines_styled.push(Line::from(vec![Span::styled(
+            format!("> {}", app.input),
+            Style::default()
+                .fg(Color::Rgb(90, 90, 90))
+                .add_modifier(Modifier::ITALIC),
+        )]));
+    }
+    let buf_par = Paragraph::new(Text::from(lines_styled))
+        .block(buf_block)
+        .wrap(Wrap { trim: false });
     f.render_widget(buf_par, left_split[0]);
+
+    if matches!(app.mode, EditorMode::Insert) {
+        let cursor_screen_row = app.cursor_row.saturating_sub(start);
+        if cursor_screen_row < height {
+            let cursor_x =
+                (app.cursor_col.min(lines.get(app.cursor_row).map(|l| l.len()).unwrap_or(0)) + 1)
+                    as u16; // +1 for left border
+            let cursor_y = (left_split[0].y + 1 + cursor_screen_row as u16) as u16; // +1 for top
+            f.set_cursor(left_split[0].x + cursor_x, cursor_y);
+        }
+    }
 
     // Diagnostics
     let diags_title = Span::styled(
         " Diagnostics ",
         Style::default()
-            .fg(accent_alt)
+            .fg(Color::Rgb(130, 0, 200))
             .add_modifier(Modifier::BOLD),
     );
     let diags_items: Vec<ListItem> = if app.diagnostics.is_empty() {
         vec![ListItem::new(Span::styled(
             "no issues",
-            Style::default().fg(dim),
+            Style::default().fg(Color::Rgb(190, 190, 200)),
         ))]
     } else {
         app.diagnostics
@@ -442,51 +1132,49 @@ fn ui(f: &mut ratatui::Frame<'_>, app: &App) {
             .map(|d| ListItem::new(d.as_str()))
             .collect()
     };
-    let diags =
-        List::new(diags_items).block(Block::default().borders(Borders::ALL).title(diags_title));
+    let diags = List::new(diags_items)
+        .block(Block::default().borders(Borders::ALL).title(diags_title));
     f.render_widget(diags, left_split[1]);
 
     // Cheatsheet
     let cheats_block = Block::default().borders(Borders::ALL).title(Span::styled(
         " QPoly Cheatsheet ",
         Style::default()
-            .fg(yellow)
+            .fg(Color::Rgb(255, 240, 0))
             .add_modifier(Modifier::BOLD),
     ));
     let cheat_pairs = cheatsheet_from_map(&app.qpoly);
-    let mut lines: Vec<Line> = Vec::new();
+    let mut lines_vec: Vec<Line> = Vec::new();
     for (chord, glyph) in cheat_pairs {
-        lines.push(Line::from(vec![
+        lines_vec.push(Line::from(vec![
             Span::styled(
                 format!("{:<6}", chord),
                 Style::default()
-                    .fg(yellow)
+                    .fg(Color::Rgb(255, 240, 0))
                     .add_modifier(Modifier::BOLD),
             ),
             Span::raw(" → "),
-            Span::styled(glyph, Style::default().fg(accent)),
+            Span::styled(glyph, Style::default().fg(Color::Rgb(225, 0, 180))),
         ]));
     }
-    let cheats = Paragraph::new(Text::from(lines)).block(cheats_block);
+    let cheats = Paragraph::new(Text::from(lines_vec)).block(cheats_block);
     f.render_widget(cheats, main_split[1]);
 
-    // Input/status row
-    draw_input_and_status(f, rows[2], &app.input, &app.status, accent, yellow);
+    draw_status_and_input(f, rows[3], rows[4], app, accent, yellow);
 }
 
-fn draw_input_and_status(
+fn draw_status_and_input(
     f: &mut ratatui::Frame<'_>,
-    area: Rect,
-    input: &str,
-    status: &str,
+    status_area: Rect,
+    input_area: Rect,
+    app: &App,
     accent: Color,
     yellow: Color,
 ) {
-    let rows = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([Constraint::Length(1), Constraint::Length(2)].as_ref())
-        .split(area);
-
+    let mode_label = match app.mode {
+        EditorMode::Append => "APPEND",
+        EditorMode::Insert => "INSERT",
+    };
     let status_line = Paragraph::new(Line::from(vec![
         Span::styled(
             " Aeonmi ",
@@ -496,13 +1184,92 @@ fn draw_input_and_status(
                 .add_modifier(Modifier::BOLD),
         ),
         Span::raw(" "),
-        Span::styled(status, Style::default().fg(yellow)),
+        Span::styled(
+            if app.search_active {
+                let count = app.search_matches.len();
+                let idx = if count>0 { app.search_index+1 } else { 0 };
+                format!("{} | /{} [{} / {}] {}", mode_label, app.search_query, idx, count, app.status)
+            } else {
+                format!("{} | {}", mode_label, app.status)
+            },
+            Style::default().fg(yellow),
+        ),
     ]));
-    f.render_widget(status_line, rows[0]);
+    f.render_widget(status_line, status_area);
 
-    let input_block = Block::default()
-        .borders(Borders::ALL)
-        .title(" Input (Enter to append) ");
-    let input_par = Paragraph::new(input.to_string()).block(input_block);
-    f.render_widget(input_par, rows[1]);
+    let title = match app.mode {
+        EditorMode::Append => " Input (Enter appends line) ",
+        EditorMode::Insert => " Input (Insert mode shows buffer edits) ",
+    };
+    let input_block = Block::default().borders(Borders::ALL).title(title);
+    let input_par = Paragraph::new(app.input.clone())
+        .block(input_block)
+        .wrap(Wrap { trim: false });
+    f.render_widget(input_par, input_area);
+}
+
+fn draw_buttons_row(f: &mut ratatui::Frame<'_>, area: Rect, app: &App) {
+    for b in compute_button_specs(area, app) {
+        let (fg, bg) = match b.action {
+            ButtonAction::Save => (Color::Black, Color::Rgb(0, 255, 180)),
+            ButtonAction::Compile => (Color::Black, Color::Rgb(255, 240, 0)),
+            ButtonAction::Run => (Color::Black, Color::Rgb(0, 200, 255)),
+            ButtonAction::ToggleEmit => (Color::Black, Color::Rgb(225, 0, 180)),
+            ButtonAction::ToggleMode => (Color::Black, Color::Rgb(130, 0, 200)),
+            ButtonAction::Search => (Color::Black, Color::Rgb(255, 170, 0)),
+            ButtonAction::ToggleMouse => (Color::Black, Color::Rgb(90, 90, 90)),
+            ButtonAction::Quit => (Color::White, Color::Red),
+        };
+        let para = Paragraph::new(Line::from(vec![Span::styled(
+            format!(" {} ", b.label),
+            Style::default().fg(fg).bg(bg).add_modifier(Modifier::BOLD),
+        )]));
+        f.render_widget(para, b.area);
+    }
+}
+
+fn compute_button_specs(area: Rect, app: &App) -> Vec<ButtonSpec> {
+    let labels = vec![
+        (ButtonAction::Save, "Save".to_string()),
+        (ButtonAction::Compile, "Compile".to_string()),
+        (ButtonAction::Run, "Run".to_string()),
+        (ButtonAction::ToggleEmit, format!("Emit:{}", app.emit_mode.label())),
+        (
+            ButtonAction::ToggleMode,
+            match app.mode {
+                EditorMode::Append => "Mode:Append".to_string(),
+                EditorMode::Insert => "Mode:Insert".to_string(),
+            },
+        ),
+        (ButtonAction::Search, "Search".to_string()),
+        (
+            ButtonAction::ToggleMouse,
+            format!("Mouse:{}", if app.mouse_capture { "On" } else { "Off" }),
+        ),
+        (ButtonAction::Quit, "Quit".to_string()),
+    ];
+    let mut specs = Vec::new();
+    let mut x = area.x;
+    for (action, label) in labels {
+        let w = (label.len() as u16) + 2; // padding
+        if x + w > area.x + area.width {
+            break;
+        }
+        let rect = Rect {
+            x,
+            y: area.y,
+            width: w,
+            height: 1,
+        };
+        specs.push(ButtonSpec {
+            area: rect,
+            label,
+            action,
+        });
+        x = x.saturating_add(w);
+        if x + 1 < area.x + area.width {
+            x += 1;
+        }
+    }
+    specs
 }

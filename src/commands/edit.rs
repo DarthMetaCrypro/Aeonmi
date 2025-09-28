@@ -6,10 +6,10 @@ use std::sync::{
     Arc,
 };
 
-use crate::cli::EmitKind;
-use crate::core::qpoly::QPolyMap;
-use crate::config::{default_config_path, ensure_parent_dir}; // <- config helpers
 use super::compile::compile_pipeline;
+use crate::cli::EmitKind;
+use crate::config::{default_config_path, ensure_parent_dir}; // <- config helpers
+use crate::core::qpoly::QPolyMap;
 
 // TUI entry (when --tui)
 use crate::tui::editor::run_editor_tui;
@@ -23,7 +23,12 @@ pub fn main(
 ) -> anyhow::Result<()> {
     if use_tui {
         // TUI wants: file, config_path, pretty, skip_sema
-        return run_editor_tui(file, config_path, /*pretty*/ true, /*skip_sema*/ false);
+        return run_editor_tui(
+            file,
+            config_path,
+            /*pretty*/ true,
+            /*skip_sema*/ false,
+        );
     }
 
     // -------- legacy line editor below --------

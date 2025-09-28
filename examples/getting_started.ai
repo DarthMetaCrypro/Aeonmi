@@ -1,0 +1,44 @@
+// Aeonmi getting started demo
+// Shows variables, function, recursion, loop, if/else, logical ops, and math.
+
+// Simple constant (will be folded)
+let ANSWER = 40 + 2;
+
+// Factorial with intentional small recursion depth
+fn fact(n) {
+  if (n == 0) { return 1; }
+  return n * fact(n - 1);
+}
+
+// Demonstrate loop + accumulation + short-circuit logic
+fn sum_to(limit) {
+  let acc = 0;
+  let i = 0;
+  while (i <= limit && limit < 1000) {
+    acc = acc + i;
+    i = i + 1;
+  }
+  return acc;
+}
+
+// Show associative folding chain (compiler should fold this)
+let FOLDED = 1 + 2 + 3 + 4 + 5; // expect 15 after folding
+
+// Mixed string + number folding example
+let MSG = "Total=" + 10 + 5; // expect concatenated compile-time if supported
+
+fn main() {
+  let n = 5;
+  let f = fact(n);
+  let s = sum_to(n);
+  if (f > 0) {
+    print("fact(" + n + ") = " + f);
+  }
+  print("sum_to(" + n + ") = " + s);
+  print("ANSWER=" + ANSWER);
+  print("FOLDED=" + FOLDED);
+  print(MSG);
+  return f + s + ANSWER + FOLDED;
+}
+
+return main();

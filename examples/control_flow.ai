@@ -15,7 +15,7 @@ while (i < 3) {
   i = i + 1;
 }
 
-// for  (note: init is a full statement; keep the semicolon)
+// for (note: init is a full statement; keep the semicolon)
 for (let j = 0; j < 3; j = j + 1) {
   log(j);
 }

@@ -1,0 +1,16 @@
+## Enforce consistent line endings and prepare for potential LFS
+* text=auto eol=lf
+
+# Binary (never auto-normalize)
+*.png binary
+*.ico binary
+*.exe binary
+*.pdb binary
+*.dll binary
+*.wasm binary
+
+# Git LFS (activated for debug symbol / metadata artifacts). Ensure collaborators run:
+#   git lfs install
+#   git pull --force
+*.pdb filter=lfs diff=lfs merge=lfs -text
+*.rmeta filter=lfs diff=lfs merge=lfs -text

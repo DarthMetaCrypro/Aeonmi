@@ -1,8 +1,4 @@
-use aeonmi_project::core::{
-    ir::*,
-    vm::Interpreter,
-    ai_emitter::emit_ai,
-};
+use aeonmi_project::core::{ai_emitter::emit_ai, ir::*, vm::Interpreter};
 
 #[test]
 fn smoke_emits_and_runs() {
@@ -42,7 +38,10 @@ fn smoke_emits_and_runs() {
     let out = emit_ai(&m);
     assert!(out.contains("const PI = 3"), "emitter output missing const");
     assert!(out.contains("let x = 2"), "emitter output missing let");
-    assert!(out.contains("print(x * PI)"), "emitter output missing print expr");
+    assert!(
+        out.contains("print(x * PI)"),
+        "emitter output missing print expr"
+    );
 
     // 2) VM runs module without error
     let mut vm = Interpreter::new();

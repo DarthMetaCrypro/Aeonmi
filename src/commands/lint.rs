@@ -23,7 +23,7 @@ pub fn main_with_opts(inputs: Vec<PathBuf>, fix: bool) -> anyhow::Result<()> {
                 problems += 1;
                 if fix {
                     out.pop();
-                    out.push_str(";");
+                    out.push(';');
                     out.push('\n');
                     changed = true;
                 }

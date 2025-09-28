@@ -1,8 +1,4 @@
-use aeonmi_project::core::{
-    ir::*,
-    vm::Interpreter,
-    ai_emitter::emit_ai,
-};
+use aeonmi_project::core::{ai_emitter::emit_ai, ir::*, vm::Interpreter};
 
 fn main() {
     // const LIMIT = 5;
@@ -58,28 +54,24 @@ fn main() {
                                             right: Box::new(Expr::Lit(Lit::Number(0.0))),
                                         },
                                         then_block: Block {
-                                            stmts: vec![
-                                                Stmt::Assign {
-                                                    target: Expr::Ident("acc".into()),
-                                                    value: Expr::Binary {
-                                                        left: Box::new(Expr::Ident("acc".into())),
-                                                        op: BinOp::Add,
-                                                        right: Box::new(Expr::Ident("i".into())),
-                                                    },
+                                            stmts: vec![Stmt::Assign {
+                                                target: Expr::Ident("acc".into()),
+                                                value: Expr::Binary {
+                                                    left: Box::new(Expr::Ident("acc".into())),
+                                                    op: BinOp::Add,
+                                                    right: Box::new(Expr::Ident("i".into())),
                                                 },
-                                            ],
+                                            }],
                                         },
                                         else_block: Some(Block {
-                                            stmts: vec![
-                                                Stmt::Assign {
-                                                    target: Expr::Ident("acc".into()),
-                                                    value: Expr::Binary {
-                                                        left: Box::new(Expr::Ident("acc".into())),
-                                                        op: BinOp::Add,
-                                                        right: Box::new(Expr::Lit(Lit::Number(1.0))),
-                                                    },
+                                            stmts: vec![Stmt::Assign {
+                                                target: Expr::Ident("acc".into()),
+                                                value: Expr::Binary {
+                                                    left: Box::new(Expr::Ident("acc".into())),
+                                                    op: BinOp::Add,
+                                                    right: Box::new(Expr::Lit(Lit::Number(1.0))),
                                                 },
-                                            ],
+                                            }],
                                         }),
                                     },
                                     // i = i + 1;

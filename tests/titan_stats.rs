@@ -6,7 +6,7 @@ use aeonmi_project::core::titan::probability_statistics::{
 fn uniform_len_and_range() {
     let xs = random_sample_uniform(0.0, 1.0, 10_000);
     assert_eq!(xs.len(), 10_000);
-    assert!(xs.iter().all(|&v| v >= 0.0 && v <= 1.0));
+    assert!(xs.iter().all(|&v| (0.0..=1.0).contains(&v)));
 }
 
 #[test]

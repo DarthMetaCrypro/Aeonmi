@@ -19,6 +19,9 @@ jobs:
           - os: windows-latest
             artifact: aeonmi_project-windows-x86_64.exe
             bin_path: target/release/aeonmi_project.exe
+          - os: macos-latest
+            artifact: aeonmi_project-macos-universal
+            bin_path: target/release/aeonmi_project
 
     steps:
       - name: Checkout
@@ -26,6 +29,20 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+      - name: Install sccache
+        if: runner.os != 'Windows'
+        run: |
+          curl -L https://github.com/mozilla/sccache/releases/latest/download/sccache-${{ runner.os == 'macOS' && 'aarch64-apple-darwin' || 'x86_64-unknown-linux-musl' }}.tar.gz -o sccache.tgz || true
+          tar -xzf sccache.tgz 2>/dev/null || true
+          sudo mv sccache*/sccache /usr/local/bin/sccache || true
+      - name: Install sccache (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          choco install -y sccache || echo "sccache install skipped"
+      - name: Configure sccache
+        run: |
+          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+          echo "SCCACHE_CACHE_SIZE=2G" >> $GITHUB_ENV
 
       - name: Cache cargo
         uses: actions/cache@v4
@@ -39,7 +56,7 @@ jobs:
             ${{ runner.os }}-cargo-
 
       - name: Build (release)
-        run: cargo build --release
+        run: cargo build --release --locked
 
       - name: Package artifact
         shell: bash

@@ -1,28 +1,10 @@
-// src/core/code_generator.rs
 //! Aeonmi code generation front-end.
 //! - Default backend: **JS** (keeps legacy tests green)
 //! - Optional backend: **AI** (canonical .ai via AiEmitter)
-//!
-//! Usage:
-//!   let mut gen = CodeGenerator::new();            // JS by default
-//!   let js = gen.generate(&ast)?;
-//!
-//!   let mut gen_ai = CodeGenerator::new_ai();      // AI backend
-//!   let ai = gen_ai.generate(&ast)?;
-//!
-//!   // or:
-//!   let ai2 = gen.generate_with_backend(&ast, Backend::Ai)?;
-
+use crate::core::ai_emitter::AiEmitter;
 use crate::core::ast::ASTNode;
 use crate::core::token::TokenKind;
-
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 42ca0eb (core: lexer/parser/token stabilized; tests passing; remove stray example)
-// Pull in the pretty-printing .ai emitter.
-// This file already exists in your tree: src/core/ai_emitter.rs
-use crate::core::ai_emitter::AiEmitter;
+use std::collections::BTreeSet;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Backend {
@@ -30,58 +12,41 @@ pub enum Backend {
     Ai,
 }
 
-<<<<<<< HEAD
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+enum Helper {
+    Len,
+}
+
 pub struct CodeGenerator {
     indent: usize,
     backend: Backend,
+    helpers: BTreeSet<Helper>,
+}
+
+impl Default for CodeGenerator {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl CodeGenerator {
-    /// New generator with **JS** backend (legacy default).
     pub fn new() -> Self {
         Self {
             indent: 0,
             backend: Backend::Js,
+            helpers: BTreeSet::new(),
         }
-=======
-=======
->>>>>>> 42ca0eb (core: lexer/parser/token stabilized; tests passing; remove stray example)
-pub struct CodeGenerator {
-    indent: usize,
-    backend: Backend,
-}
-
-impl CodeGenerator {
-    /// New generator with **JS** backend (legacy default).
-    pub fn new() -> Self {
-<<<<<<< HEAD
-        Self { indent: 0 }
     }
-    pub fn generate(&mut self, ast: &ASTNode) -> Result<String, String> {
-        Ok(self.emit(ast))
->>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
-=======
-        Self {
-            indent: 0,
-            backend: Backend::Js,
-        }
->>>>>>> 42ca0eb (core: lexer/parser/token stabilized; tests passing; remove stray example)
-    }
-
-    /// New generator with **AI** backend (canonical .ai output).
     pub fn new_ai() -> Self {
         Self {
             indent: 0,
             backend: Backend::Ai,
+            helpers: BTreeSet::new(),
         }
     }
-
-    /// Emit using the generator's configured backend.
     pub fn generate(&mut self, ast: &ASTNode) -> Result<String, String> {
         self.generate_with_backend(ast, self.backend)
     }
-
-    /// Emit using an explicit backend selection.
     pub fn generate_with_backend(
         &mut self,
         ast: &ASTNode,
@@ -90,7 +55,6 @@ impl CodeGenerator {
         match backend {
             Backend::Js => Ok(self.emit_js(ast)),
             Backend::Ai => {
-                // Delegate to the canonical .ai pretty-printer.
                 let mut emitter = AiEmitter::new();
                 emitter
                     .generate(ast)
@@ -98,28 +62,29 @@ impl CodeGenerator {
             }
         }
     }
-
-    // =========================
-    // JS BACKEND (legacy path)
-    // =========================
+    // JS BACKEND
     fn emit_js(&mut self, node: &ASTNode) -> String {
         match node {
             ASTNode::Program(items) => {
-                let mut out = String::new();
+                let saved_helpers = std::mem::take(&mut self.helpers);
+                let mut body = String::new();
                 for item in items {
-<<<<<<< HEAD
-<<<<<<< HEAD
-                    out.push_str(&self.emit_js(item));
-=======
-                    out.push_str(&self.emit(item));
->>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
-=======
-                    out.push_str(&self.emit_js(item));
->>>>>>> 42ca0eb (core: lexer/parser/token stabilized; tests passing; remove stray example)
+                    body.push_str(&self.emit_js(item));
+                    if !body.ends_with('\n') {
+                        body.push('\n');
+                    }
+                }
+
+                let needed_helpers = std::mem::take(&mut self.helpers);
+                let mut out = String::new();
+                if !needed_helpers.is_empty() {
+                    out.push_str(&Self::render_helpers(&needed_helpers));
                     if !out.ends_with('\n') {
                         out.push('\n');
                     }
                 }
+                out.push_str(&body);
+                self.helpers = saved_helpers;
                 out
             }
             ASTNode::Block(items) => {
@@ -128,15 +93,7 @@ impl CodeGenerator {
                 self.indent += 1;
                 for it in items {
                     s.push_str(&self.indent_str());
-<<<<<<< HEAD
-<<<<<<< HEAD
                     s.push_str(&self.emit_js(it));
-=======
-                    s.push_str(&self.emit(it));
->>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
-=======
-                    s.push_str(&self.emit_js(it));
->>>>>>> 42ca0eb (core: lexer/parser/token stabilized; tests passing; remove stray example)
                     if !s.ends_with('\n') {
                         s.push('\n');
                     }
@@ -145,76 +102,44 @@ impl CodeGenerator {
                 s.push_str("}\n");
                 s
             }
-
-            // declarations / statements
-            ASTNode::VariableDecl { name, value } => {
-<<<<<<< HEAD
-<<<<<<< HEAD
+            ASTNode::VariableDecl { name, value, .. } => {
                 format!("let {} = {};\n", name, self.emit_expr_js(value))
-=======
-                format!("let {} = {};\n", name, self.emit_expr(value))
->>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
-=======
-                format!("let {} = {};\n", name, self.emit_expr_js(value))
->>>>>>> 42ca0eb (core: lexer/parser/token stabilized; tests passing; remove stray example)
             }
-            ASTNode::Function { name, params, body } => {
+            ASTNode::Function {
+                name, params, body, ..
+            } => {
                 let mut s = String::new();
-                s.push_str(&format!("function {}({}) ", name, params.join(", ")));
+                s.push_str(&format!(
+                    "function {}({}) ",
+                    name,
+                    params
+                        .iter()
+                        .map(|p| p.name.clone())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                ));
                 let block = ASTNode::Block(body.clone());
                 s.push_str(&self.emit_js(&block));
                 s
             }
             ASTNode::Return(expr) => format!("return {};\n", self.emit_expr_js(expr)),
             ASTNode::Log(expr) => format!("console.log({});\n", self.emit_expr_js(expr)),
-
-<<<<<<< HEAD
-<<<<<<< HEAD
-            // assignments/calls as statements
-            ASTNode::Assignment { name, value } => {
+            ASTNode::Assignment { name, value, .. } => {
                 format!("{} = {};\n", name, self.emit_expr_js(value))
             }
             ASTNode::Call { .. } => format!("{};\n", self.emit_expr_js(node)),
-=======
-            // NEW: emit assignments/calls as statements (no extra parens)
-=======
-            // assignments/calls as statements
->>>>>>> 42ca0eb (core: lexer/parser/token stabilized; tests passing; remove stray example)
-            ASTNode::Assignment { name, value } => {
-                format!("{} = {};\n", name, self.emit_expr_js(value))
-            }
-<<<<<<< HEAD
-            ASTNode::Call { .. } => format!("{};\n", self.emit_expr(node)),
->>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
-=======
-            ASTNode::Call { .. } => format!("{};\n", self.emit_expr_js(node)),
->>>>>>> 42ca0eb (core: lexer/parser/token stabilized; tests passing; remove stray example)
-
             ASTNode::If {
                 condition,
                 then_branch,
                 else_branch,
             } => {
                 let mut s = String::new();
+                // Tests expect exactly one extra pair around the emitted binary expression (which is already parenthesized)
                 s.push_str(&format!("if ({}) ", self.emit_expr_js(condition)));
-<<<<<<< HEAD
-<<<<<<< HEAD
-                s.push_str(&self.wrap_stmt_js(then_branch)); // no trailing \n
-                if let Some(e) = else_branch {
-                    s.push_str(" else ");
-                    s.push_str(&self.wrap_stmt_js(e)); // no trailing \n
-=======
                 s.push_str(&self.wrap_stmt_js(then_branch));
                 if let Some(e) = else_branch {
                     s.push_str(" else ");
                     s.push_str(&self.wrap_stmt_js(e));
->>>>>>> 42ca0eb (core: lexer/parser/token stabilized; tests passing; remove stray example)
-=======
-                s.push_str(&self.wrap_stmt_js(then_branch)); // no trailing \n
-                if let Some(e) = else_branch {
-                    s.push_str(" else ");
-                    s.push_str(&self.wrap_stmt_js(e)); // no trailing \n
->>>>>>> 0503a82 (VM wired to Shard; canonical .ai emitter; CLI/test fixes)
                 }
                 s.push('\n');
                 s
@@ -222,15 +147,7 @@ impl CodeGenerator {
             ASTNode::While { condition, body } => {
                 let mut s = String::new();
                 s.push_str(&format!("while ({}) ", self.emit_expr_js(condition)));
-<<<<<<< HEAD
-<<<<<<< HEAD
-                s.push_str(&self.wrap_stmt_js(body)); // no trailing \n
-=======
                 s.push_str(&self.wrap_stmt_js(body));
->>>>>>> 42ca0eb (core: lexer/parser/token stabilized; tests passing; remove stray example)
-=======
-                s.push_str(&self.wrap_stmt_js(body)); // no trailing \n
->>>>>>> 0503a82 (VM wired to Shard; canonical .ai emitter; CLI/test fixes)
                 s.push('\n');
                 s
             }
@@ -240,62 +157,34 @@ impl CodeGenerator {
                 increment,
                 body,
             } => {
-                // avoid overlapping borrows: compute piecewise
                 let init_s = if let Some(i) = init.as_ref() {
-                    let tmp = self.emit_js(i);
-                    self.strip_trailing(tmp)
+                    Self::strip_trailing(self.emit_js(i))
                 } else {
                     String::new()
                 };
-                let cond_s = condition
-                    .as_ref()
-<<<<<<< HEAD
-<<<<<<< HEAD
-                    .map(|c| self.emit_expr_js(c))
-                    .unwrap_or_default();
-                let inc_s = increment
-                    .as_ref()
-                    .map(|i| self.emit_expr_js(i))
-=======
-                    .map(|c| self.emit_expr(c))
-                    .unwrap_or_default();
-                let inc_s = increment
-                    .as_ref()
-                    .map(|i| self.emit_expr(i))
->>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
-=======
-                    .map(|c| self.emit_expr_js(c))
-                    .unwrap_or_default();
-                let inc_s = increment
-                    .as_ref()
-                    .map(|i| self.emit_expr_js(i))
->>>>>>> 42ca0eb (core: lexer/parser/token stabilized; tests passing; remove stray example)
-                    .unwrap_or_default();
-
+                let cond_s = if let Some(c) = condition.as_ref() {
+                    self.emit_expr_js(c)
+                } else {
+                    String::new()
+                };
+                let incr_s = if let Some(inc) = increment.as_ref() {
+                    Self::strip_trailing(self.emit_js(inc))
+                } else {
+                    String::new()
+                };
                 let mut s = String::new();
-                s.push_str(&format!("for ({}; {}; {}) ", init_s, cond_s, inc_s));
-<<<<<<< HEAD
-<<<<<<< HEAD
-                s.push_str(&self.wrap_stmt_js(body)); // no trailing \n
-=======
+                s.push_str(&format!("for ({}; {}; {}) ", init_s, cond_s, incr_s));
                 s.push_str(&self.wrap_stmt_js(body));
->>>>>>> 42ca0eb (core: lexer/parser/token stabilized; tests passing; remove stray example)
-=======
-                s.push_str(&self.wrap_stmt_js(body)); // no trailing \n
->>>>>>> 0503a82 (VM wired to Shard; canonical .ai emitter; CLI/test fixes)
                 s.push('\n');
                 s
             }
-
-            // Expression statements fallback
             ASTNode::BinaryExpr { .. }
             | ASTNode::UnaryExpr { .. }
             | ASTNode::Identifier(_)
+            | ASTNode::IdentifierSpanned { .. }
             | ASTNode::NumberLiteral(_)
             | ASTNode::StringLiteral(_)
             | ASTNode::BooleanLiteral(_) => format!("{};\n", self.emit_expr_js(node)),
-
-            // Quantum & Hieroglyphic placeholders (JS shims)
             ASTNode::QuantumOp { op, qubits } => {
                 let opname = match op {
                     TokenKind::Superpose => "superpose",
@@ -306,15 +195,7 @@ impl CodeGenerator {
                 };
                 let args = qubits
                     .iter()
-<<<<<<< HEAD
-<<<<<<< HEAD
                     .map(|q| self.emit_expr_js(q))
-=======
-                    .map(|q| self.emit_expr(q))
->>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
-=======
-                    .map(|q| self.emit_expr_js(q))
->>>>>>> 42ca0eb (core: lexer/parser/token stabilized; tests passing; remove stray example)
                     .collect::<Vec<_>>()
                     .join(", ");
                 format!("{}({});\n", opname, args)
@@ -322,27 +203,18 @@ impl CodeGenerator {
             ASTNode::HieroglyphicOp { symbol, args } => {
                 let a = args
                     .iter()
-<<<<<<< HEAD
-<<<<<<< HEAD
                     .map(|e| self.emit_expr_js(e))
-=======
-                    .map(|e| self.emit_expr(e))
->>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
-=======
-                    .map(|e| self.emit_expr_js(e))
->>>>>>> 42ca0eb (core: lexer/parser/token stabilized; tests passing; remove stray example)
                     .collect::<Vec<_>>()
                     .join(", ");
                 format!("__glyph('{}', {});\n", symbol, a)
             }
-
             ASTNode::Error(msg) => format!("/* ERROR NODE: {} */\n", msg),
         }
     }
-
     fn emit_expr_js(&mut self, node: &ASTNode) -> String {
         match node {
             ASTNode::Identifier(s) => s.clone(),
+            ASTNode::IdentifierSpanned { name, .. } => name.clone(),
             ASTNode::NumberLiteral(n) => {
                 if n.fract() == 0.0 {
                     format!("{}", *n as i64)
@@ -350,150 +222,139 @@ impl CodeGenerator {
                     format!("{}", n)
                 }
             }
-            ASTNode::StringLiteral(s) => format!("{:?}", s),
-            ASTNode::BooleanLiteral(b) => b.to_string(),
-
+            ASTNode::StringLiteral(s) => format!("\"{}\"", s),
+            ASTNode::BooleanLiteral(b) => format!("{}", b),
+            ASTNode::BinaryExpr { op, left, right } => {
+                format!(
+                    "({} {} {})",
+                    self.emit_expr_js(left),
+                    self.op_str(op),
+                    self.emit_expr_js(right)
+                )
+            }
             ASTNode::UnaryExpr { op, expr } => {
-<<<<<<< HEAD
-<<<<<<< HEAD
-                format!("({}{})", self.op_str(op), self.emit_expr_js(expr))
+                format!("{}{}", self.op_str(op), self.emit_expr_js(expr))
             }
-            ASTNode::BinaryExpr { op, left, right } => format!(
-                "({} {} {})",
-                self.emit_expr_js(left),
-                self.op_str(op),
-                self.emit_expr_js(right)
-=======
-                format!("({}{})", self.op_str(op), self.emit_expr(expr))
-=======
-                format!("({}{})", self.op_str(op), self.emit_expr_js(expr))
->>>>>>> 42ca0eb (core: lexer/parser/token stabilized; tests passing; remove stray example)
-            }
-            ASTNode::BinaryExpr { op, left, right } => format!(
-                "({} {} {})",
-                self.emit_expr_js(left),
-                self.op_str(op),
-<<<<<<< HEAD
-                self.emit_expr(right)
->>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
-=======
-                self.emit_expr_js(right)
->>>>>>> 42ca0eb (core: lexer/parser/token stabilized; tests passing; remove stray example)
-            ),
-
-            // keep parens when used inside other expressions
-            ASTNode::Assignment { name, value } => {
-<<<<<<< HEAD
-<<<<<<< HEAD
-                format!("({} = {})", name, self.emit_expr_js(value))
-            }
-
             ASTNode::Call { callee, args } => {
-                let c = self.emit_expr_js(callee);
+                let mapped = match &**callee {
+                    ASTNode::Identifier(name) => self.map_helper(name),
+                    ASTNode::IdentifierSpanned { name, .. } => self.map_helper(name),
+                    _ => None,
+                };
+                let c = mapped.unwrap_or_else(|| self.emit_expr_js(callee));
                 let a = args
                     .iter()
-                    .map(|e| self.emit_expr_js(e))
-=======
-                format!("({} = {})", name, self.emit_expr(value))
-=======
-                format!("({} = {})", name, self.emit_expr_js(value))
->>>>>>> 42ca0eb (core: lexer/parser/token stabilized; tests passing; remove stray example)
-            }
-
-            ASTNode::Call { callee, args } => {
-                let c = self.emit_expr_js(callee);
-                let a = args
-                    .iter()
-<<<<<<< HEAD
-                    .map(|e| self.emit_expr(e))
->>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
-=======
-                    .map(|e| self.emit_expr_js(e))
->>>>>>> 42ca0eb (core: lexer/parser/token stabilized; tests passing; remove stray example)
+                    .map(|x| self.emit_expr_js(x))
                     .collect::<Vec<_>>()
                     .join(", ");
                 format!("{}({})", c, a)
             }
-
-            _ => "/* unsupported-expr */".to_string(),
+            ASTNode::Assignment { name, value, .. } => {
+                format!("{} = {}", name, self.emit_expr_js(value))
+            }
+            ASTNode::QuantumOp { op, qubits } => {
+                let opname = match op {
+                    TokenKind::Superpose => "superpose",
+                    TokenKind::Entangle => "entangle",
+                    TokenKind::Measure => "measure",
+                    TokenKind::Dod => "dod",
+                    _ => "qop",
+                };
+                let args = qubits
+                    .iter()
+                    .map(|q| self.emit_expr_js(q))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                format!("{}({})", opname, args)
+            }
+            ASTNode::HieroglyphicOp { symbol, args } => {
+                let a = args
+                    .iter()
+                    .map(|e| self.emit_expr_js(e))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                format!("__glyph('{}', {})", symbol, a)
+            }
+            _ => "/*expr*/".into(),
         }
     }
-
-<<<<<<< HEAD
-<<<<<<< HEAD
+    fn map_helper(&mut self, name: &str) -> Option<String> {
+        match name {
+            "len" => {
+                self.helpers.insert(Helper::Len);
+                Some("__aeonmi_len".to_string())
+            }
+            _ => None,
+        }
+    }
+    fn render_helpers(helpers: &BTreeSet<Helper>) -> String {
+        let mut prelude = String::new();
+        for (idx, helper) in helpers.iter().enumerate() {
+            if idx > 0 {
+                prelude.push('\n');
+            }
+            match helper {
+                Helper::Len => {
+                    prelude.push_str("const __aeonmi_len = (value) => {\n");
+                    prelude.push_str(
+                        "    if (typeof value === \"string\") { return value.length; }\n",
+                    );
+                    prelude.push_str("    if (Array.isArray(value)) { return value.length; }\n");
+                    prelude.push_str(
+                        "    if (value && typeof value === \"object\") { return Object.keys(value).length; }\n",
+                    );
+                    prelude
+                        .push_str("    if (value === null || value === undefined) { return 0; }\n");
+                    prelude.push_str("    throw new Error(\"len: unsupported type\");\n");
+                    prelude.push_str("};\n");
+                }
+            }
+        }
+        prelude
+    }
     /// Returns a JS statement block string **without** a trailing newline.
     fn wrap_stmt_js(&mut self, n: &ASTNode) -> String {
         match n {
             ASTNode::Block(_) => {
-                // Use existing block emission but drop the trailing newline.
                 let mut b = self.emit_js(n);
                 if b.ends_with('\n') {
                     b.pop();
                 }
                 b
             }
-=======
-    fn wrap_stmt_js(&mut self, n: &ASTNode) -> String {
-        match n {
-            ASTNode::Block(_) => self.emit_js(n),
->>>>>>> 42ca0eb (core: lexer/parser/token stabilized; tests passing; remove stray example)
-=======
-    /// Returns a JS statement block string **without** a trailing newline.
-    fn wrap_stmt_js(&mut self, n: &ASTNode) -> String {
-        match n {
-            ASTNode::Block(_) => {
-                // Use existing block emission but drop the trailing newline.
-                let mut b = self.emit_js(n);
-                if b.ends_with('\n') {
-                    b.pop();
-                }
-                b
-            }
->>>>>>> 0503a82 (VM wired to Shard; canonical .ai emitter; CLI/test fixes)
             _ => {
-                // Wrap a single statement in a block, no trailing newline.
                 let mut s = String::new();
                 s.push_str("{\n");
                 self.indent += 1;
                 s.push_str(&self.indent_str());
-<<<<<<< HEAD
-<<<<<<< HEAD
-                s.push_str(&self.emit_js(n)); // inner includes its own newline
-=======
                 s.push_str(&self.emit_js(n));
->>>>>>> 42ca0eb (core: lexer/parser/token stabilized; tests passing; remove stray example)
-=======
-                s.push_str(&self.emit_js(n)); // inner includes its own newline
->>>>>>> 0503a82 (VM wired to Shard; canonical .ai emitter; CLI/test fixes)
                 self.indent -= 1;
                 s.push('}');
                 s
             }
         }
     }
-
     fn op_str(&self, op: &TokenKind) -> &'static str {
-        use TokenKind::*;
         match op {
-            Plus => "+",
-            Minus => "-",
-            Star => "*",
-            Slash => "/",
-            Equals => "=", // used in decls; assignments have their own node
-            DoubleEquals => "==",
-            NotEquals => "!=",
-            LessThan => "<",
-            LessEqual => "<=",
-            GreaterThan => ">",
-            GreaterEqual => ">=",
+            TokenKind::Plus => "+",
+            TokenKind::Minus => "-",
+            TokenKind::Star => "*",
+            TokenKind::Slash => "/",
+            TokenKind::Equals => "=",
+            TokenKind::DoubleEquals => "==",
+            TokenKind::NotEquals => "!=",
+            TokenKind::LessThan => "<",
+            TokenKind::LessEqual => "<=",
+            TokenKind::GreaterThan => ">",
+            TokenKind::GreaterEqual => ">=",
+            // Only match the variants that exist in TokenKind
             _ => "/*op*/",
         }
     }
-
     fn indent_str(&self) -> String {
         "  ".repeat(self.indent)
     }
-    fn strip_trailing(&self, mut s: String) -> String {
+    fn strip_trailing(mut s: String) -> String {
         if s.ends_with('\n') {
             s.pop();
         }
@@ -520,7 +381,6 @@ mod tests {
         assert!(js.contains("let x = 42;"));
         assert!(js.contains("console.log(x);"));
     }
-
     #[test]
     fn gen_assignment_and_call_js() {
         let call = ASTNode::new_call(
@@ -532,20 +392,16 @@ mod tests {
         let js = g.generate(&prog).unwrap();
         assert!(js.contains("x = add(2, 3);"));
     }
-
     #[test]
     fn gen_minimal_ai_backend() {
-        // Smoke-test that the AI backend path is wired (exact formatting is owned by AiEmitter tests)
+        // This test requires a mock or real AiEmitter implementation.
+        // If not available, adjust accordingly.
         let ast = ASTNode::Program(vec![ASTNode::new_variable_decl(
             "x",
             ASTNode::NumberLiteral(1.0),
         )]);
         let mut g = CodeGenerator::new_ai();
         let out = g.generate(&ast).unwrap();
-        // Very loose assertion to avoid coupling to formatting rules:
-        assert!(
-            out.contains("x") && (out.contains("1") || out.contains("1.0")),
-            "ai output should reference the declared symbol and value"
-        );
+        assert!(out.contains("x") && (out.contains("1") || out.contains("1.0")));
     }
 }

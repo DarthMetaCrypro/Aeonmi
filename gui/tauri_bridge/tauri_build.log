@@ -1,0 +1,163 @@
+       Fresh unicode-ident v1.0.18
+       Fresh cfg-if v1.0.3
+       Fresh stable_deref_trait v1.2.0
+       Fresh version_check v0.9.5
+       Fresh smallvec v1.15.1
+       Fresh itoa v1.0.15
+       Fresh bytes v1.10.1
+       Fresh fnv v1.0.7
+       Fresh pin-project-lite v0.2.16
+       Fresh writeable v0.6.1
+       Fresh litemap v0.8.0
+       Fresh log v0.4.27
+       Fresh autocfg v1.5.0
+       Fresh futures-sink v0.3.31
+       Fresh futures-core v0.3.31
+       Fresh memchr v2.7.5
+       Fresh proc-macro2 v1.0.101
+       Fresh http v0.2.12
+       Fresh futures-channel v0.3.31
+       Fresh futures-io v0.3.31
+       Fresh pin-utils v0.1.0
+       Fresh scopeguard v1.2.0
+       Fresh futures-task v0.3.31
+       Fresh slab v0.4.11
+       Fresh getrandom v0.2.16
+       Fresh percent-encoding v2.3.2
+       Fresh quote v1.0.40
+       Fresh windows_x86_64_msvc v0.52.6
+       Fresh typenum v1.18.0
+       Fresh icu_properties_data v2.0.1
+       Fresh icu_normalizer_data v2.0.0
+       Fresh rand_core v0.6.4
+       Fresh form_urlencoded v1.2.2
+       Fresh utf8_iter v1.0.4
+       Fresh once_cell v1.21.3
+       Fresh cpufeatures v0.2.17
+       Fresh utf-8 v0.7.6
+       Fresh byteorder v1.5.0
+       Fresh hashbrown v0.15.5
+       Fresh mime v0.3.17
+       Fresh syn v2.0.106
+       Fresh windows-targets v0.52.6
+       Fresh generic-array v0.14.7
+       Fresh lock_api v0.4.13
+       Fresh zerocopy v0.8.26
+       Fresh httparse v1.10.1
+       Fresh winapi v0.3.9
+       Fresh tracing-core v0.1.34
+       Fresh equivalent v1.0.2
+       Fresh cfg_aliases v0.1.1
+       Fresh lazy_static v1.5.0
+       Fresh unicase v2.8.1
+       Fresh http v1.3.1
+       Fresh try-lock v0.2.5
+       Fresh ryu v1.0.20
+       Fresh data-encoding v2.9.0
+       Fresh httpdate v1.0.3
+       Fresh synstructure v0.13.2
+       Fresh zerovec-derive v0.11.1
+       Fresh displaydoc v0.2.5
+       Fresh windows-sys v0.59.0
+       Fresh futures-macro v0.3.31
+       Fresh serde_derive v1.0.219
+       Fresh crypto-common v0.1.6
+       Fresh block-buffer v0.10.4
+       Fresh parking_lot_core v0.9.11
+       Fresh thiserror-impl v1.0.69
+       Fresh tokio-macros v2.5.0
+       Fresh ppv-lite86 v0.2.21
+       Fresh libc v0.2.175
+       Fresh tracing-attributes v0.1.30
+       Fresh windows-sys v0.52.0
+       Fresh indexmap v2.11.0
+       Fresh want v0.3.1
+       Fresh pin-project-internal v1.1.10
+       Fresh zerofrom-derive v0.1.6
+       Fresh yoke-derive v0.8.0
+       Fresh futures-util v0.3.31
+       Fresh serde v1.0.219
+       Fresh parking_lot v0.12.4
+       Fresh socket2 v0.6.0
+       Fresh digest v0.10.7
+       Fresh thiserror v1.0.69
+       Fresh mio v1.0.4
+       Fresh rand_chacha v0.3.1
+       Fresh tracing v0.1.41
+       Fresh socket2 v0.5.10
+       Fresh http-body v0.4.6
+       Fresh headers-core v0.2.0
+       Fresh encoding_rs v0.8.35
+       Fresh base64 v0.21.7
+       Fresh spin v0.9.8
+       Fresh tower-service v0.3.3
+       Fresh zerofrom v0.1.6
+       Fresh tokio v1.47.1
+       Fresh sha1 v0.10.6
+       Fresh rand v0.8.5
+       Fresh overload v0.1.1
+       Fresh bitflags v2.9.3
+       Fresh base64 v0.13.1
+       Fresh multer v2.1.0
+       Fresh filedescriptor v0.8.3
+       Fresh serde_json v1.0.143
+       Fresh serde_urlencoded v0.7.1
+       Fresh winreg v0.10.1
+       Fresh mime_guess v2.0.5
+       Fresh anyhow v1.0.99
+       Fresh futures-executor v0.3.31
+       Fresh pin-project v1.1.10
+       Fresh shared_library v0.1.9
+       Fresh serial2 v0.2.31
+       Fresh sharded-slab v0.1.7
+       Fresh tracing-log v0.2.0
+       Fresh thread_local v1.1.9
+       Fresh shell-words v1.1.0
+       Fresh yoke v0.8.0
+       Fresh tokio-util v0.7.16
+       Fresh headers v0.3.9
+       Fresh nix v0.28.0
+       Fresh nu-ansi-term v0.46.0
+       Fresh bitflags v1.3.2
+       Fresh scoped-tls v1.0.1
+       Fresh downcast-rs v1.2.1
+       Fresh futures v0.3.31
+       Fresh zerovec v0.11.4
+       Fresh zerotrie v0.2.2
+       Fresh h2 v0.3.27
+       Fresh portable-pty v0.9.0
+       Fresh tracing-subscriber v0.3.19
+       Fresh tinystr v0.8.1
+       Fresh potential_utf v0.1.2
+       Fresh hyper v0.14.32
+       Fresh icu_locale_core v2.0.0
+       Fresh icu_collections v2.0.0
+       Fresh icu_provider v2.0.0
+       Fresh icu_normalizer v2.0.0
+       Fresh icu_properties v2.0.1
+       Fresh idna_adapter v1.2.1
+       Fresh idna v1.1.0
+       Fresh url v2.5.7
+       Fresh tungstenite v0.21.0
+       Fresh tungstenite v0.18.0
+       Fresh tokio-tungstenite v0.21.0
+       Fresh tokio-tungstenite v0.18.0
+       Fresh warp v0.3.7
+   Compiling tauri_bridge v0.1.0 (C:\Users\wlwil\Project\aeonmi_project\gui\tauri_bridge)
+     Running `set CARGO=C:\Users\wlwil\.rustup\toolchains\stable-x86_64-pc-windows-msvc\bin\cargo.exe&& set CARGO_BIN_NAME=tauri_bridge&& set CARGO_CRATE_NAME=tauri_bridge&& set CARGO_MANIFEST_DIR=C:\Users\wlwil\Project\aeonmi_project\gui\tauri_bridge&& set CARGO_MANIFEST_PATH=C:\Users\wlwil\Project\aeonmi_project\gui\tauri_bridge\Cargo.toml&& set CARGO_PKG_AUTHORS=""&& set CARGO_PKG_DESCRIPTION=""&& set CARGO_PKG_HOMEPAGE=""&& set CARGO_PKG_LICENSE=""&& set CARGO_PKG_LICENSE_FILE=""&& set CARGO_PKG_NAME=tauri_bridge&& set CARGO_PKG_README=README.md&& set CARGO_PKG_REPOSITORY=""&& set CARGO_PKG_RUST_VERSION=""&& set CARGO_PKG_VERSION=0.1.0&& set CARGO_PKG_VERSION_MAJOR=0&& set CARGO_PKG_VERSION_MINOR=1&& set CARGO_PKG_VERSION_PATCH=0&& set CARGO_PKG_VERSION_PRE=""&& set CARGO_PRIMARY_PACKAGE=1&& set CARGO_SBOM_PATH=""&& set PATH="C:\Users\wlwil\Project\aeonmi_project\gui\tauri_bridge\target\debug\deps;C:\Python313\Scripts\;C:\Python313\;C:\Program Files\Microsoft\jdk-17.0.16.8-hotspot\bin;C:\Program Files\Microsoft MPI\Bin\;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\bin;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\libnvvp;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6\bin;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6\libnvvp;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0\;C:\WINDOWS\System32\OpenSSH\;C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common;C:\Program Files\Microsoft SQL Server\150\Tools\Binn\;C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\170\Tools\Binn\;C:\Program Files\NVIDIA Corporation\NVIDIA app\NvDLISR;C:\Program Files\NVIDIA Corporation\Nsight Compute 2022.3.0\;C:\Program Files\NVIDIA Corporation\NGCCLI\amd64\;C:\ProgramData\chocolatey\bin;C:\Users\wlwil\AppData\Local\Android\Sdk\platform-tools;C:\Program Files\Microsoft\jdk-17.0.16.8-hotspot\bin;C:\Program Files\nodejs\;C:\Program Files\GitHub CLI\;C:\Program Files\Git\cmd;C:\Program Files\dotnet\;C:\Program Files (x86)\Incredibuild;C:\Program Files (x86)\Windows Kits\10\Windows Performance Toolkit\;C:\Users\wlwil\.cargo\bin;C:\ProgramData\cho;C:\Users\wlwil\AppData\Local\Programs\Microsoft VS Code\bin;C:\Users\wlwil\.dotnet\tools;C:\Users\wlwil\.rustup\toolchains\stable-x86_64-pc-windows-msvc\bin"&& set PYO3_PYTHON=C:\Users\wlwil\Project\aeonmi_project\.venv\Scripts\python.exe&& C:\Users\wlwil\.rustup\toolchains\stable-x86_64-pc-windows-msvc\bin\rustc.exe --crate-name tauri_bridge --edition=2021 src\main.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --crate-type bin --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 --check-cfg cfg(docsrs,test) --check-cfg "cfg(feature, values())" -C metadata=f924a4c4eef27f0c --out-dir C:\Users\wlwil\Project\aeonmi_project\gui\tauri_bridge\target\debug\deps -C incremental=C:\Users\wlwil\Project\aeonmi_project\gui\tauri_bridge\target\debug\incremental -L dependency=C:\Users\wlwil\Project\aeonmi_project\gui\tauri_bridge\target\debug\deps --extern anyhow=C:\Users\wlwil\Project\aeonmi_project\gui\tauri_bridge\target\debug\deps\libanyhow-7768eebda98c244c.rlib --extern futures=C:\Users\wlwil\Project\aeonmi_project\gui\tauri_bridge\target\debug\deps\libfutures-86cbd5231090b65d.rlib --extern portable_pty=C:\Users\wlwil\Project\aeonmi_project\gui\tauri_bridge\target\debug\deps\libportable_pty-1dd57f626922c6cb.rlib --extern tokio=C:\Users\wlwil\Project\aeonmi_project\gui\tauri_bridge\target\debug\deps\libtokio-e17fbc4b3fa5dfc4.rlib --extern tokio_tungstenite=C:\Users\wlwil\Project\aeonmi_project\gui\tauri_bridge\target\debug\deps\libtokio_tungstenite-dead14fa1380bd11.rlib --extern tracing=C:\Users\wlwil\Project\aeonmi_project\gui\tauri_bridge\target\debug\deps\libtracing-94988c308f3ae8b2.rlib --extern tracing_subscriber=C:\Users\wlwil\Project\aeonmi_project\gui\tauri_bridge\target\debug\deps\libtracing_subscriber-fbe8d57dc5deb747.rlib --extern warp=C:\Users\wlwil\Project\aeonmi_project\gui\tauri_bridge\target\debug\deps\libwarp-1219de4b6391367a.rlib -L native=C:\Users\wlwil\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\windows_x86_64_msvc-0.52.6\lib`
+error[E0599]: no method named `spawn_command` found for struct `PtyPair` in the current scope
+  --> src\main.rs:81:32
+   |
+81 |     let child = match pty_pair.spawn_command(cmd) {
+   |                                ^^^^^^^^^^^^^ method not found in `PtyPair`
+   |
+help: one of the expressions' fields has a method of the same name
+   |
+81 |     let child = match pty_pair.slave.spawn_command(cmd) {
+   |                                ++++++
+
+For more information about this error, try `rustc --explain E0599`.
+error: could not compile `tauri_bridge` (bin "tauri_bridge") due to 1 previous error
+
+Caused by:
+  process didn't exit successfully: `set CARGO=C:\Users\wlwil\.rustup\toolchains\stable-x86_64-pc-windows-msvc\bin\cargo.exe&& set CARGO_BIN_NAME=tauri_bridge&& set CARGO_CRATE_NAME=tauri_bridge&& set CARGO_MANIFEST_DIR=C:\Users\wlwil\Project\aeonmi_project\gui\tauri_bridge&& set CARGO_MANIFEST_PATH=C:\Users\wlwil\Project\aeonmi_project\gui\tauri_bridge\Cargo.toml&& set CARGO_PKG_AUTHORS=""&& set CARGO_PKG_DESCRIPTION=""&& set CARGO_PKG_HOMEPAGE=""&& set CARGO_PKG_LICENSE=""&& set CARGO_PKG_LICENSE_FILE=""&& set CARGO_PKG_NAME=tauri_bridge&& set CARGO_PKG_README=README.md&& set CARGO_PKG_REPOSITORY=""&& set CARGO_PKG_RUST_VERSION=""&& set CARGO_PKG_VERSION=0.1.0&& set CARGO_PKG_VERSION_MAJOR=0&& set CARGO_PKG_VERSION_MINOR=1&& set CARGO_PKG_VERSION_PATCH=0&& set CARGO_PKG_VERSION_PRE=""&& set CARGO_PRIMARY_PACKAGE=1&& set CARGO_SBOM_PATH=""&& set PATH="C:\Users\wlwil\Project\aeonmi_project\gui\tauri_bridge\target\debug\deps;C:\Python313\Scripts\;C:\Python313\;C:\Program Files\Microsoft\jdk-17.0.16.8-hotspot\bin;C:\Program Files\Microsoft MPI\Bin\;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\bin;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\libnvvp;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6\bin;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6\libnvvp;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0\;C:\WINDOWS\System32\OpenSSH\;C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common;C:\Program Files\Microsoft SQL Server\150\Tools\Binn\;C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\170\Tools\Binn\;C:\Program Files\NVIDIA Corporation\NVIDIA app\NvDLISR;C:\Program Files\NVIDIA Corporation\Nsight Compute 2022.3.0\;C:\Program Files\NVIDIA Corporation\NGCCLI\amd64\;C:\ProgramData\chocolatey\bin;C:\Users\wlwil\AppData\Local\Android\Sdk\platform-tools;C:\Program Files\Microsoft\jdk-17.0.16.8-hotspot\bin;C:\Program Files\nodejs\;C:\Program Files\GitHub CLI\;C:\Program Files\Git\cmd;C:\Program Files\dotnet\;C:\Program Files (x86)\Incredibuild;C:\Program Files (x86)\Windows Kits\10\Windows Performance Toolkit\;C:\Users\wlwil\.cargo\bin;C:\ProgramData\cho;C:\Users\wlwil\AppData\Local\Programs\Microsoft VS Code\bin;C:\Users\wlwil\.dotnet\tools;C:\Users\wlwil\.rustup\toolchains\stable-x86_64-pc-windows-msvc\bin"&& set PYO3_PYTHON=C:\Users\wlwil\Project\aeonmi_project\.venv\Scripts\python.exe&& C:\Users\wlwil\.rustup\toolchains\stable-x86_64-pc-windows-msvc\bin\rustc.exe --crate-name tauri_bridge --edition=2021 src\main.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --crate-type bin --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 --check-cfg cfg(docsrs,test) --check-cfg "cfg(feature, values())" -C metadata=f924a4c4eef27f0c --out-dir C:\Users\wlwil\Project\aeonmi_project\gui\tauri_bridge\target\debug\deps -C incremental=C:\Users\wlwil\Project\aeonmi_project\gui\tauri_bridge\target\debug\incremental -L dependency=C:\Users\wlwil\Project\aeonmi_project\gui\tauri_bridge\target\debug\deps --extern anyhow=C:\Users\wlwil\Project\aeonmi_project\gui\tauri_bridge\target\debug\deps\libanyhow-7768eebda98c244c.rlib --extern futures=C:\Users\wlwil\Project\aeonmi_project\gui\tauri_bridge\target\debug\deps\libfutures-86cbd5231090b65d.rlib --extern portable_pty=C:\Users\wlwil\Project\aeonmi_project\gui\tauri_bridge\target\debug\deps\libportable_pty-1dd57f626922c6cb.rlib --extern tokio=C:\Users\wlwil\Project\aeonmi_project\gui\tauri_bridge\target\debug\deps\libtokio-e17fbc4b3fa5dfc4.rlib --extern tokio_tungstenite=C:\Users\wlwil\Project\aeonmi_project\gui\tauri_bridge\target\debug\deps\libtokio_tungstenite-dead14fa1380bd11.rlib --extern tracing=C:\Users\wlwil\Project\aeonmi_project\gui\tauri_bridge\target\debug\deps\libtracing-94988c308f3ae8b2.rlib --extern tracing_subscriber=C:\Users\wlwil\Project\aeonmi_project\gui\tauri_bridge\target\debug\deps\libtracing_subscriber-fbe8d57dc5deb747.rlib --extern warp=C:\Users\wlwil\Project\aeonmi_project\gui\tauri_bridge\target\debug\deps\libwarp-1219de4b6391367a.rlib -L native=C:\Users\wlwil\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\windows_x86_64_msvc-0.52.6\lib` (exit code: 1)

@@ -16,7 +16,10 @@ pub struct FormatOptions {
 
 impl Default for FormatOptions {
     fn default() -> Self {
-        Self { indent: 4, max_blank: 1 }
+        Self {
+            indent: 4,
+            max_blank: 1,
+        }
     }
 }
 
@@ -84,7 +87,9 @@ pub fn format_ai_with(src: &str, opt: &FormatOptions) -> String {
                     i += 1;
                     continue;
                 }
-                if c == quote { break; }
+                if c == quote {
+                    break;
+                }
             }
             just_wrote_newline = false;
             continue;
@@ -109,7 +114,7 @@ pub fn format_ai_with(src: &str, opt: &FormatOptions) -> String {
             }
             '}' => {
                 // dedent first
-                if indent > 0 { indent -= 1; }
+                indent = indent.saturating_sub(1);
                 if !just_wrote_newline {
                     out.push('\n');
                 }
@@ -200,7 +205,9 @@ pub fn format_ai_with(src: &str, opt: &FormatOptions) -> String {
 }
 
 fn write_indent(out: &mut String, indent_spaces: usize, level: usize) {
-    for _ in 0..(indent_spaces * level) { out.push(' '); }
+    for _ in 0..(indent_spaces * level) {
+        out.push(' ');
+    }
 }
 
 fn push_pending_space(out: &mut String, need_space: &mut bool, was_space: &mut bool) {

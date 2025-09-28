@@ -1,3 +1,4 @@
+#![allow(clippy::doc_lazy_continuation)]
 //! Basic optimization routines for Titan.
 //!
 //! - `gradient_descent`: vanilla 1D gradient descent for smooth functions.

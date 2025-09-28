@@ -1,0 +1,35 @@
+// Quantum Teleportation Protocol in Aeonmi
+// Demonstrates entanglement and quantum measurement
+
+// Initialize qubits
+qubit alice;
+qubit bob;  
+qubit entangled_pair_a;
+qubit entangled_pair_b;
+
+// Step 1: Create entangled pair (Bell state)
+superpose(entangled_pair_a);
+entangle(entangled_pair_a, entangled_pair_b);
+
+// Step 2: Alice prepares her qubit in unknown state
+// (for demo, we'll put it in superposition)
+superpose(alice);
+
+// Step 3: Alice entangles her qubit with her part of the pair
+entangle(alice, entangled_pair_a);
+
+// Step 4: Alice measures both her qubits
+let alice_result1 = measure(alice);
+let alice_result2 = measure(entangled_pair_a);
+
+// Step 5: Based on Alice's measurements, apply corrections to Bob's qubit
+if alice_result1 == 1 {
+    𓀁(bob);  // Apply X gate (hieroglyphic notation)
+}
+if alice_result2 == 1 {
+    𓀂(bob);  // Apply Z gate (hieroglyphic notation)
+}
+
+// Step 6: Bob now has Alice's original quantum state
+let final_result = measure(bob);
+log("Quantum teleportation complete! Bob's result:", final_result);

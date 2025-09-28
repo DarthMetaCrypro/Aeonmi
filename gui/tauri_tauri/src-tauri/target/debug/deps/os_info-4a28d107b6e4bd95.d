@@ -1,0 +1,11 @@
+C:\Users\wlwil\Project\aeonmi_project\gui\tauri_tauri\src-tauri\target\debug\deps\os_info-4a28d107b6e4bd95.d: C:\Users\wlwil\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\os_info-3.12.0\src\lib.rs C:\Users\wlwil\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\os_info-3.12.0\src\windows\mod.rs C:\Users\wlwil\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\os_info-3.12.0\src\windows\winapi.rs C:\Users\wlwil\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\os_info-3.12.0\src\bitness.rs C:\Users\wlwil\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\os_info-3.12.0\src\info.rs C:\Users\wlwil\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\os_info-3.12.0\src\os_type.rs C:\Users\wlwil\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\os_info-3.12.0\src\version.rs
+
+C:\Users\wlwil\Project\aeonmi_project\gui\tauri_tauri\src-tauri\target\debug\deps\libos_info-4a28d107b6e4bd95.rmeta: C:\Users\wlwil\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\os_info-3.12.0\src\lib.rs C:\Users\wlwil\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\os_info-3.12.0\src\windows\mod.rs C:\Users\wlwil\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\os_info-3.12.0\src\windows\winapi.rs C:\Users\wlwil\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\os_info-3.12.0\src\bitness.rs C:\Users\wlwil\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\os_info-3.12.0\src\info.rs C:\Users\wlwil\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\os_info-3.12.0\src\os_type.rs C:\Users\wlwil\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\os_info-3.12.0\src\version.rs
+
+C:\Users\wlwil\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\os_info-3.12.0\src\lib.rs:
+C:\Users\wlwil\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\os_info-3.12.0\src\windows\mod.rs:
+C:\Users\wlwil\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\os_info-3.12.0\src\windows\winapi.rs:
+C:\Users\wlwil\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\os_info-3.12.0\src\bitness.rs:
+C:\Users\wlwil\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\os_info-3.12.0\src\info.rs:
+C:\Users\wlwil\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\os_info-3.12.0\src\os_type.rs:
+C:\Users\wlwil\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\os_info-3.12.0\src\version.rs:
