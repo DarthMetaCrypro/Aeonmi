@@ -16,6 +16,73 @@ Aeonmi is an advanced programming language and compiler framework designed for A
 
 > New: A comprehensive language + tooling manual is now available: see **[Aeonmi Language Guide](docs/Aeonmi_Language_Guide.md)** for a structured, beginner→expert path, patterns, limitations, roadmap hints, and quantum examples.
 
+## Aeonmi Language Essentials
+
+The pre-release ships with a lightweight but expressive surface language that targets both the native VM and the JS transpiler. The highlights below let you write production-ready `.ai` programs without leaving this README—then dive into the full [language guide](docs/Aeonmi_Language_Guide.md) for deeper background, recipes, and roadmap notes.
+
+### First Lines
+
+```ai
+log("Aeonmi ready");
+let stamina = 5;
+if (stamina > 3) {
+    log("push harder");
+} else {
+    log("recover");
+}
+
+let i = 0;
+while (i < 3) {
+    log("lap " + i);
+    i = i + 1;
+}
+```
+
+Run it via the CLI:
+
+```bash
+cargo run -- run examples/getting_started.ai --native
+```
+
+### Core Syntax
+
+| Concept | Status | Notes |
+|---------|--------|-------|
+| Variables | `let name = expr;` | Bindings are mutable after declaration. Blocks (`{ ... }`) introduce scope. |
+| Arithmetic | `+ - * /` | Division truncates toward zero. `%` is roadmap. |
+| Comparisons | `== != < <= > >=` | Yield booleans. |
+| Logic | `! && ||` | Short-circuit evaluation. |
+| Control Flow | `if`, `while`, `for` | `for` mirrors JS: `for (init; condition; update) { ... }`. |
+| Functions | `function name(params) { ... }` | Explicit `return` required. |
+| Comments | `# ...` or `// ...` | Both line styles are supported. |
+
+### Built-in Functions
+
+| Built-in | Purpose | Notes |
+|----------|---------|-------|
+| `log(value, ...)` / `print(value, ...)` | Write to stdout with automatic spacing. | Works natively and after JS transpile (`console.log`). |
+| `time_ms()` | Millisecond timestamp (Unix epoch). | Deterministic per backend. |
+| `rand()` | Deterministic LCG seeded from `AEONMI_SEED` or wall clock. | Use integer math to bucket ranges. |
+| `len(value)` | Length for strings, arrays, or objects. | New in v0.2.0-pre: returns `Number`; errors on unsupported types. |
+
+### Pattern Toolbox
+
+* **Accumulation:** `let total = 0; while (cursor < max) { total = total + source(cursor); cursor = cursor + 1; }`
+* **Guards:** Prefer early returns inside functions to keep blocks flat.
+* **Pseudo-collections:** Without native arrays yet, encode via dedicated functions or number-indexed state machines (the language guide shows “switch” patterns).
+* **Quantum Hooks:** Tokens like `superpose(q);` and hieroglyphic calls `𓁁(q1, q2);` parse today and are forwarded for future quantum backends.
+
+### From Script to Application
+
+1. Draft `.ai` source under `examples/` or your own workspace folder.
+2. Compile to JS for inspection: `cargo run -- run your_file.ai --out your_file.js`.
+3. Execute on the native VM: `cargo run -- native your_file.ai`.
+4. Iterate with the TUI/editor: `cargo run -- edit your_file.ai`.
+
+Need inspiration? Check out [`examples/aeonmi_focus_flow.ai`](examples/aeonmi_focus_flow.ai) for a complete productivity pulse app built entirely in Aeonmi.
+
+> **Tip:** The [`docs/Aeonmi_Language_Guide.md`](docs/Aeonmi_Language_Guide.md) expands each topic with diagnostics, recipes (e.g., random selection without modulo), and quantum + glyph previews.
+
 ## Branch Status
 
 | Role | Branch | Description | Guidance |

@@ -128,6 +128,7 @@ If not yet implemented, keep logic inline or simulate with pattern dispatch usin
 | `print(v)` | (Alias, if present). |
 | `rand()` | Pseudo random integer. |
 | `time_ms()` | Millisecond timestamp. |
+| `len(v)` | Length of strings, arrays, or objects (0 for null). |
 | (Quantum stubs) | Placeholder identifiers until feature enabled. |
 
 ## 11. Randomness Without `%`
