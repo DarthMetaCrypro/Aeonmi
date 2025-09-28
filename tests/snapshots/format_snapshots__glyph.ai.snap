@@ -1,0 +1,6 @@
+---
+source: tests/format_snapshots.rs
+expression: "&out"
+---
+ð(1, 2);
+log("glyph done");

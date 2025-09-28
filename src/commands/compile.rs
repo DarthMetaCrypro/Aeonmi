@@ -132,9 +132,54 @@ pub fn compile_pipeline(
     // Generate code (JS or canonical .ai)
     let output_string = match emit {
         EmitKind::Ai => {
+<<<<<<< HEAD
+<<<<<<< HEAD
             let mut gen = CodeGenerator::new_ai();
             match gen.generate(&ast) {
                 Ok(s) => s,
+=======
+            if let Err(e) = fs::write(&out, &source) {
+                if pretty {
+                    eprintln!("{} {}", "error:".bright_red().bold(), e);
+                } else {
+                    eprintln!("Failed to write output: {}", e);
+                }
+                exit(1);
+            }
+            println!(
+                "{} {}",
+                "ok:".green().bold(),
+                format!("Wrote Aeonmi source to '{}'.", out.display())
+            );
+            Ok(())
+        }
+        EmitKind::Js => {
+            let compiler = Compiler::new();
+            let run_semantic = !skip_sema;
+            let res = compiler.compile_with(
+                &source,
+                &out.display().to_string(),
+                run_semantic,
+                debug_titan,
+            );
+            match res {
+                Ok(_) => {
+                    println!(
+                        "{} {}",
+                        "ok:".green().bold(),
+                        format!(
+                            "Compilation successful. Output written to '{}'.",
+                            out.display()
+                        )
+                    );
+                    Ok(())
+                }
+>>>>>>> 57cd645 (feat(cli): integrate new Aeonmi CLI + shard updates)
+=======
+            let mut gen = CodeGenerator::new_ai();
+            match gen.generate(&ast) {
+                Ok(s) => s,
+>>>>>>> 0503a82 (VM wired to Shard; canonical .ai emitter; CLI/test fixes)
                 Err(e) => {
                     eprintln!("{} AI emit failed: {}", "error:".bright_red().bold(), e);
                     exit(1);

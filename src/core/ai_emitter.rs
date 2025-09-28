@@ -1,5 +1,7 @@
 #![cfg_attr(test, allow(dead_code, unused_variables))]
 //! Canonical .ai emitter for Aeonmi IR.
+<<<<<<< HEAD
+<<<<<<< HEAD
 //! - Deterministic output: sorted imports/decls, 2-space indent, LF
 //! - Header embeds FNV-1a 64-bit hash of body for reproducibility
 //!
@@ -33,11 +35,69 @@ impl AiEmitter {
 }
 
 /// Legacy functional API (kept for existing tests)
+=======
+//! Produces deterministic output (sorted decls/imports, 2-space indent, LF, stable formatting)
+//! Header includes a simple FNV-1a 64-bit of the body for reproducible integrity.
+=======
+//! - Deterministic output: sorted imports/decls, 2-space indent, LF
+//! - Header embeds FNV-1a 64-bit hash of body for reproducibility
+//!
+<<<<<<< HEAD
+//! This module exposes both the legacy free function `emit_ai(&Module)`
+//! and a thin `AiEmitter` facade so other parts of the compiler (e.g. the
+//! code generator front-end) can request canonical `.ai` output.
+//!
+//! Roadmap wiring:
+//!  - `AiEmitter::generate_from_ir(&Module)` is ready.
+//!  - `AiEmitter::generate(&ASTNode)` lowers AST→IR and emits canonical `.ai`.
+>>>>>>> 42ca0eb (core: lexer/parser/token stabilized; tests passing; remove stray example)
+=======
+//! Exposes both the legacy free function `emit_ai(&Module)` and a thin
+//! `AiEmitter` facade so other parts of the compiler can request canonical `.ai`.
+>>>>>>> 0503a82 (VM wired to Shard; canonical .ai emitter; CLI/test fixes)
+
+use crate::core::ir::*;
+use crate::core::lowering::lower_ast_to_ir;
+use std::fmt::Write as _;
+
+/// Thin wrapper to emit canonical `.ai` from IR or AST.
+#[derive(Default)]
+pub struct AiEmitter;
+
+impl AiEmitter {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Preferred entrypoint once you have IR.
+    pub fn generate_from_ir(&mut self, module: &Module) -> Result<String, String> {
+        Ok(emit_ai(module))
+    }
+
+    /// Entry point: emit canonical `.ai` directly from AST.
+    /// Uses `lower_ast_to_ir` to produce IR, then pretty-prints via `emit_ai`.
+    pub fn generate(&mut self, ast: &crate::core::ast::ASTNode) -> Result<String, String> {
+        let module = lower_ast_to_ir(ast, "main").map_err(|e| format!("lowering error: {e}"))?;
+        self.generate_from_ir(&module)
+    }
+}
+
+<<<<<<< HEAD
+// =========================
+// Legacy functional API (kept for existing tests)
+// =========================
+
+>>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
+=======
+/// Legacy functional API (kept for existing tests)
+>>>>>>> 0503a82 (VM wired to Shard; canonical .ai emitter; CLI/test fixes)
 pub fn emit_ai(module: &Module) -> String {
     // 1) Body (deterministic)
     let mut body = String::new();
     write_module(&mut body, module);
 
+<<<<<<< HEAD
+<<<<<<< HEAD
     // 2) Hash header (FNV-1a 64-bit)
     let hash = fnv1a64(body.as_bytes());
 
@@ -46,12 +106,33 @@ pub fn emit_ai(module: &Module) -> String {
     let _ = writeln!(&mut out, "// aeonmi:1");
     let _ = writeln!(&mut out, "// hash:{:016x}", hash);
     let _ = writeln!(&mut out, "// tool:aeonmi unknown");
+=======
+    // 2) Hash header (FNV-1a 64-bit, implemented here to avoid external deps)
+=======
+    // 2) Hash header (FNV-1a 64-bit)
+>>>>>>> 0503a82 (VM wired to Shard; canonical .ai emitter; CLI/test fixes)
+    let hash = fnv1a64(body.as_bytes());
+
+    // 3) Final output with header (LF newlines only)
+    let mut out = String::new();
+<<<<<<< HEAD
+    writeln!(&mut out, "// aeonmi:1").unwrap();
+    writeln!(&mut out, "// hash:{:016x}", hash).unwrap();
+    writeln!(&mut out, "// tool:aeonmi unknown").unwrap();
+>>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
+=======
+    let _ = writeln!(&mut out, "// aeonmi:1");
+    let _ = writeln!(&mut out, "// hash:{:016x}", hash);
+    let _ = writeln!(&mut out, "// tool:aeonmi unknown");
+>>>>>>> 0503a82 (VM wired to Shard; canonical .ai emitter; CLI/test fixes)
     out.push('\n');
     out.push_str(&body);
     out
 }
 
 fn write_module(dst: &mut String, m: &Module) {
+<<<<<<< HEAD
+<<<<<<< HEAD
     // Imports first (sorted)
     let mut imports = m.imports.clone();
     imports.sort_by(|a, b| (a.path.as_str(), a.alias.as_deref()).cmp(&(b.path.as_str(), b.alias.as_deref())));
@@ -63,6 +144,29 @@ fn write_module(dst: &mut String, m: &Module) {
             None => {
                 let _ = writeln!(dst, "import {};", escape_sym(&im.path));
             }
+=======
+    // Imports first (sorted by path/alias externally; re-sort here to be safe)
+    let mut imports = m.imports.clone();
+    imports.sort_by(|a, b| (a.path.as_str(), a.alias.as_deref()).cmp(&(b.path.as_str(), b.alias.as_deref())));
+    for im in imports {
+        if let Some(alias) = im.alias {
+            writeln!(dst, "import {} as {};", escape_sym(&im.path), escape_sym(&alias)).unwrap();
+        } else {
+            writeln!(dst, "import {};", escape_sym(&im.path)).unwrap();
+>>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
+=======
+    // Imports first (sorted)
+    let mut imports = m.imports.clone();
+    imports.sort_by(|a, b| (a.path.as_str(), a.alias.as_deref()).cmp(&(b.path.as_str(), b.alias.as_deref())));
+    for im in imports {
+        match im.alias {
+            Some(alias) => {
+                let _ = writeln!(dst, "import {} as {};", escape_sym(&im.path), escape_sym(&alias));
+            }
+            None => {
+                let _ = writeln!(dst, "import {};", escape_sym(&im.path));
+            }
+>>>>>>> 0503a82 (VM wired to Shard; canonical .ai emitter; CLI/test fixes)
         }
     }
     if !m.imports.is_empty() {
@@ -76,12 +180,28 @@ fn write_module(dst: &mut String, m: &Module) {
     for (i, d) in decls.iter().enumerate() {
         match d {
             Decl::Const(c) => {
+<<<<<<< HEAD
+<<<<<<< HEAD
                 let _ = write!(dst, "const {} = ", escape_sym(&c.name));
+=======
+                write!(dst, "const {} = ", escape_sym(&c.name)).unwrap();
+>>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
+=======
+                let _ = write!(dst, "const {} = ", escape_sym(&c.name));
+>>>>>>> 0503a82 (VM wired to Shard; canonical .ai emitter; CLI/test fixes)
                 write_expr(dst, &c.value, 0);
                 dst.push_str(";\n");
             }
             Decl::Let(l) => {
+<<<<<<< HEAD
+<<<<<<< HEAD
                 let _ = write!(dst, "let {}", escape_sym(&l.name));
+=======
+                write!(dst, "let {}", escape_sym(&l.name)).unwrap();
+>>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
+=======
+                let _ = write!(dst, "let {}", escape_sym(&l.name));
+>>>>>>> 0503a82 (VM wired to Shard; canonical .ai emitter; CLI/test fixes)
                 if let Some(v) = &l.value {
                     dst.push_str(" = ");
                     write_expr(dst, v, 0);
@@ -89,10 +209,24 @@ fn write_module(dst: &mut String, m: &Module) {
                 dst.push_str(";\n");
             }
             Decl::Fn(f) => {
+<<<<<<< HEAD
+<<<<<<< HEAD
                 let _ = write!(dst, "fn {}(", escape_sym(&f.name));
                 for (pi, p) in f.params.iter().enumerate() {
                     if pi > 0 { dst.push_str(", "); }
                     let _ = write!(dst, "{}", escape_sym(p));
+=======
+                write!(dst, "fn {}(", escape_sym(&f.name)).unwrap();
+                for (pi, p) in f.params.iter().enumerate() {
+                    if pi > 0 { dst.push_str(", "); }
+                    write!(dst, "{}", escape_sym(p)).unwrap();
+>>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
+=======
+                let _ = write!(dst, "fn {}(", escape_sym(&f.name));
+                for (pi, p) in f.params.iter().enumerate() {
+                    if pi > 0 { dst.push_str(", "); }
+                    let _ = write!(dst, "{}", escape_sym(p));
+>>>>>>> 0503a82 (VM wired to Shard; canonical .ai emitter; CLI/test fixes)
                 }
                 dst.push_str(") ");
                 write_block(dst, &f.body, 0);
@@ -154,7 +288,15 @@ fn write_stmt(dst: &mut String, s: &Stmt, indent: usize) {
             dst.push('\n');
         }
         For { init, cond, step, body } => {
+<<<<<<< HEAD
+<<<<<<< HEAD
             // Canonical for: for (init; cond; step) { ... }
+=======
+            // Canonical for: lowered form: for (init; cond; step) { ... }
+>>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
+=======
+            // Canonical for: for (init; cond; step) { ... }
+>>>>>>> 0503a82 (VM wired to Shard; canonical .ai emitter; CLI/test fixes)
             indent_spaces(dst, indent);
             dst.push_str("for (");
             if let Some(init_s) = init {
@@ -174,7 +316,15 @@ fn write_stmt(dst: &mut String, s: &Stmt, indent: usize) {
         }
         Let { name, value } => {
             indent_spaces(dst, indent);
+<<<<<<< HEAD
+<<<<<<< HEAD
             let _ = write!(dst, "let {}", escape_sym(name));
+=======
+            write!(dst, "let {}", escape_sym(name)).unwrap();
+>>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
+=======
+            let _ = write!(dst, "let {}", escape_sym(name));
+>>>>>>> 0503a82 (VM wired to Shard; canonical .ai emitter; CLI/test fixes)
             if let Some(v) = value {
                 dst.push_str(" = ");
                 write_expr(dst, v, indent);
@@ -192,10 +342,24 @@ fn write_stmt(dst: &mut String, s: &Stmt, indent: usize) {
 }
 
 fn write_stmt_inline(dst: &mut String, s: &Stmt, indent: usize) {
+<<<<<<< HEAD
+<<<<<<< HEAD
     // Used in for(...) init; keep single-line; no trailing semicolon duplication
     match s {
         Stmt::Let { name, value } => {
             let _ = write!(dst, "let {}", escape_sym(name));
+=======
+    // Used in for(...) init; keep it single-line without trailing semicolon duplication
+    match s {
+        Stmt::Let { name, value } => {
+            write!(dst, "let {}", escape_sym(name)).unwrap();
+>>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
+=======
+    // Used in for(...) init; keep single-line; no trailing semicolon duplication
+    match s {
+        Stmt::Let { name, value } => {
+            let _ = write!(dst, "let {}", escape_sym(name));
+>>>>>>> 0503a82 (VM wired to Shard; canonical .ai emitter; CLI/test fixes)
             if let Some(v) = value {
                 dst.push_str(" = ");
                 write_expr(dst, v, indent);
@@ -209,7 +373,17 @@ fn write_stmt_inline(dst: &mut String, s: &Stmt, indent: usize) {
         Stmt::Expr(e) => {
             write_expr(dst, e, indent);
         }
+<<<<<<< HEAD
+<<<<<<< HEAD
         _ => { /* unsupported inline; emit nothing */ }
+=======
+        _ => {
+            // Fallback: emit nothing (unsupported inline)
+        }
+>>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
+=======
+        _ => { /* unsupported inline; emit nothing */ }
+>>>>>>> 0503a82 (VM wired to Shard; canonical .ai emitter; CLI/test fixes)
     }
 }
 
@@ -229,7 +403,15 @@ fn write_expr(dst: &mut String, e: &Expr, indent: usize) {
         }
         Binary { left, op, right } => {
             write_expr(dst, left, indent);
+<<<<<<< HEAD
+<<<<<<< HEAD
             let _ = write!(dst, " {} ", op);
+=======
+            write!(dst, " {} ", op).unwrap();
+>>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
+=======
+            let _ = write!(dst, " {} ", op);
+>>>>>>> 0503a82 (VM wired to Shard; canonical .ai emitter; CLI/test fixes)
             write_expr(dst, right, indent);
         }
         Unary { op, expr } => {
@@ -251,7 +433,15 @@ fn write_expr(dst: &mut String, e: &Expr, indent: usize) {
             dst.push('{');
             for (i, (k, v)) in kvs.iter().enumerate() {
                 if i > 0 { dst.push_str(", "); }
+<<<<<<< HEAD
+<<<<<<< HEAD
                 let _ = write!(dst, "{}: ", escape_sym(k));
+=======
+                write!(dst, "{}: ", escape_sym(k)).unwrap();
+>>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
+=======
+                let _ = write!(dst, "{}: ", escape_sym(k));
+>>>>>>> 0503a82 (VM wired to Shard; canonical .ai emitter; CLI/test fixes)
                 write_expr(dst, v, indent);
             }
             dst.push('}');
@@ -265,9 +455,21 @@ fn write_lit(dst: &mut String, l: &Lit) {
         Lit::Bool(b) => dst.push_str(if *b { "true" } else { "false" }),
         Lit::Number(n) => {
             if n.fract() == 0.0 {
+<<<<<<< HEAD
+<<<<<<< HEAD
                 let _ = write!(dst, "{}", *n as i64);
             } else {
                 let _ = write!(dst, "{}", n);
+=======
+                write!(dst, "{}", *n as i64).unwrap();
+            } else {
+                write!(dst, "{}", n).unwrap();
+>>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
+=======
+                let _ = write!(dst, "{}", *n as i64);
+            } else {
+                let _ = write!(dst, "{}", n);
+>>>>>>> 0503a82 (VM wired to Shard; canonical .ai emitter; CLI/test fixes)
             }
         }
         Lit::String(s) => {
@@ -275,7 +477,15 @@ fn write_lit(dst: &mut String, l: &Lit) {
             for ch in s.chars() {
                 match ch {
                     '\\' => dst.push_str("\\\\"),
+<<<<<<< HEAD
+<<<<<<< HEAD
                     '"'  => dst.push_str("\\\""),
+=======
+                    '"' => dst.push_str("\\\""),
+>>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
+=======
+                    '"'  => dst.push_str("\\\""),
+>>>>>>> 0503a82 (VM wired to Shard; canonical .ai emitter; CLI/test fixes)
                     '\n' => dst.push_str("\\n"),
                     '\r' => dst.push_str("\\r"),
                     '\t' => dst.push_str("\\t"),
@@ -287,14 +497,32 @@ fn write_lit(dst: &mut String, l: &Lit) {
     }
 }
 
+<<<<<<< HEAD
+<<<<<<< HEAD
 #[inline]
 fn indent_spaces(dst: &mut String, n: usize) {
     // cheaper than " ".repeat(n) allocation
+=======
+fn indent_spaces(dst: &mut String, n: usize) {
+>>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
+=======
+#[inline]
+fn indent_spaces(dst: &mut String, n: usize) {
+    // cheaper than " ".repeat(n) allocation
+>>>>>>> 0503a82 (VM wired to Shard; canonical .ai emitter; CLI/test fixes)
     for _ in 0..n { dst.push(' '); }
 }
 
 fn escape_sym(sym: &str) -> String {
+<<<<<<< HEAD
+<<<<<<< HEAD
     // Keep Unicode; replace whitespace/control with underscores.
+=======
+    // Minimal: keep glyphs/Unicode; escape spaces and control chars with `_`.
+>>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
+=======
+    // Keep Unicode; replace whitespace/control with underscores.
+>>>>>>> 0503a82 (VM wired to Shard; canonical .ai emitter; CLI/test fixes)
     if sym.chars().all(|c| !c.is_whitespace() && !c.is_control()) {
         sym.to_string()
     } else {
@@ -304,7 +532,15 @@ fn escape_sym(sym: &str) -> String {
 
 fn fnv1a64(bytes: &[u8]) -> u64 {
     const FNV_OFFSET: u64 = 0xcbf29ce484222325;
+<<<<<<< HEAD
+<<<<<<< HEAD
     const FNV_PRIME:  u64 = 0x00000100000001B3;
+=======
+    const FNV_PRIME: u64 = 0x100000001b3;
+>>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
+=======
+    const FNV_PRIME:  u64 = 0x00000100000001B3;
+>>>>>>> 0503a82 (VM wired to Shard; canonical .ai emitter; CLI/test fixes)
     let mut hash = FNV_OFFSET;
     for b in bytes {
         hash ^= *b as u64;
@@ -312,6 +548,10 @@ fn fnv1a64(bytes: &[u8]) -> u64 {
     }
     hash
 }
+<<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 0503a82 (VM wired to Shard; canonical .ai emitter; CLI/test fixes)
 
 #[cfg(test)]
 mod tests {
@@ -332,3 +572,8 @@ mod tests {
         assert!(out.lines().next().unwrap().starts_with("// aeonmi:1"));
     }
 }
+<<<<<<< HEAD
+=======
+>>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
+=======
+>>>>>>> 0503a82 (VM wired to Shard; canonical .ai emitter; CLI/test fixes)

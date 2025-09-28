@@ -9,7 +9,9 @@ pub enum EmitKind {
     Ai,
 }
 impl Default for EmitKind {
-    fn default() -> Self { EmitKind::Js }
+    fn default() -> Self {
+        EmitKind::Js
+    }
 }
 
 #[derive(Copy, Clone, Debug, ValueEnum)]
@@ -104,6 +106,9 @@ pub enum Command {
         /// Enable Titan debug mode during compilation (overrides global if set)
         #[arg(long = "debug-titan", action = ArgAction::SetTrue)]
         debug_titan: bool,
+    /// Watch input for changes and re-run the emit when modified
+    #[arg(long = "watch", action = ArgAction::SetTrue)]
+    watch: bool,
     },
 
     /// Run an .ai file directly (compile-to-js + execute with Node if available)
@@ -112,6 +117,9 @@ pub enum Command {
         input: PathBuf,
         #[arg(long = "out", value_name = "FILE")]
         out: Option<PathBuf>,
+    /// Watch input and re-run when changed
+    #[arg(long = "watch", action = ArgAction::SetTrue)]
+    watch: bool,
     },
 
     /// Quantum execution (Titan local or Qiskit backends)
@@ -151,7 +159,84 @@ pub enum Command {
         tui: bool,
     },
 
+    /// File operations (new/open/save/import/export)
+    New {
+        #[arg(value_name = "FILE")]
+        file: Option<PathBuf>,
+    },
+    Open {
+        #[arg(value_name = "FILE")]
+        file: PathBuf,
+    },
+    Save {
+        #[arg(value_name = "FILE")]
+        file: Option<PathBuf>,
+    },
+    SaveAs {
+        #[arg(value_name = "FILE")]
+        file: PathBuf,
+    },
+    Close {
+        #[arg(value_name = "FILE")]
+        file: Option<PathBuf>,
+    },
+    Import {
+        #[arg(value_name = "FILE")]
+        file: PathBuf,
+    },
+    Export {
+        #[arg(value_name = "FILE")]
+        file: PathBuf,
+        #[arg(value_name = "FORMAT")]
+        format: Option<String>,
+    },
+    Upload {
+        #[arg(value_name = "PATH")]
+        path: PathBuf,
+    },
+    Download {
+        #[arg(value_name = "FILE")]
+        file: PathBuf,
+    },
+
     /// Debug helpers
-    Tokens { #[arg(value_name = "INPUT")] input: PathBuf },
-    Ast    { #[arg(value_name = "INPUT")] input: PathBuf },
+    Tokens {
+        #[arg(value_name = "INPUT")]
+        input: PathBuf,
+    },
+    Ast {
+        #[arg(value_name = "INPUT")]
+        input: PathBuf,
+    },
+    /// VM / Runtime control for the Aeonmi VM
+    Vm {
+        #[command(subcommand)]
+        action: VmAction,
+    },
+
+    /// AI helpers (placeholders)
+    Ai {
+        #[command(subcommand)]
+        action: AiAction,
+    },
+}
+
+#[derive(Debug, Subcommand)]
+pub enum VmAction {
+    Start,
+    Stop,
+    Status,
+    Reset,
+    Snapshot { #[arg(value_name = "NAME")] name: String },
+    Restore { #[arg(value_name = "NAME")] name: String },
+    Mount { #[arg(value_name = "DIR")] dir: PathBuf },
+}
+
+#[derive(Debug, Subcommand)]
+pub enum AiAction {
+    Suggest,
+    Debug,
+    Optimize,
+    Explain { #[arg(value_name = "SECTION")] section: Option<String> },
+    Refactor { #[arg(value_name = "RULE")] rule: Option<String> },
 }

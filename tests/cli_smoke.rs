@@ -71,8 +71,17 @@ fn cli_skips_semantic_when_flagged() {
     assert!(
         combined.contains("semantic analyzer: skipped")
             || combined.contains("skipped by flag")
+<<<<<<< HEAD
+<<<<<<< HEAD
             || (combined.contains("semantic analyzer") && combined.contains("skipp"))
             || combined.contains("semantic analysis skipped"),
+=======
+            || combined.contains("semantic analyzer") && combined.contains("skipp"),
+>>>>>>> 9543281 (feat: TUI editor + neon shell + hardened lexer (NFC, AI blocks, comments, tests))
+=======
+            || (combined.contains("semantic analyzer") && combined.contains("skipp"))
+            || combined.contains("semantic analysis skipped"),
+>>>>>>> 0503a82 (VM wired to Shard; canonical .ai emitter; CLI/test fixes)
         "did not find expected skip message in output:\n{}",
         combined
     );

@@ -38,6 +38,8 @@ anyhow = "1"
 colored = "2.1"
 clap = { version = "4.5", features = ["derive"] }
 unicode-ident = "1.0"
+unicode-normalization = "0.1"
+zeroize = "1"
 
 # Config / paths
 dirs-next = "2"
@@ -46,6 +48,12 @@ toml = "0.8"
 
 # Editor niceties
 ctrlc = "3.4"
+
+# File watching
+notify = "6.1"
+
+# Helpers for recursive copy
+fs_extra = "1.3"
 
 # TUI / terminal
 crossterm = "0.27"
