@@ -4,6 +4,7 @@
 use crate::core::ai_emitter::AiEmitter;
 use crate::core::ast::ASTNode;
 use crate::core::token::TokenKind;
+use std::collections::BTreeSet;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Backend {
@@ -11,9 +12,15 @@ pub enum Backend {
     Ai,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+enum Helper {
+    Len,
+}
+
 pub struct CodeGenerator {
     indent: usize,
     backend: Backend,
+    helpers: BTreeSet<Helper>,
 }
 
 impl Default for CodeGenerator {
@@ -27,12 +34,14 @@ impl CodeGenerator {
         Self {
             indent: 0,
             backend: Backend::Js,
+            helpers: BTreeSet::new(),
         }
     }
     pub fn new_ai() -> Self {
         Self {
             indent: 0,
             backend: Backend::Ai,
+            helpers: BTreeSet::new(),
         }
     }
     pub fn generate(&mut self, ast: &ASTNode) -> Result<String, String> {
@@ -57,13 +66,25 @@ impl CodeGenerator {
     fn emit_js(&mut self, node: &ASTNode) -> String {
         match node {
             ASTNode::Program(items) => {
-                let mut out = String::new();
+                let saved_helpers = std::mem::take(&mut self.helpers);
+                let mut body = String::new();
                 for item in items {
-                    out.push_str(&self.emit_js(item));
+                    body.push_str(&self.emit_js(item));
+                    if !body.ends_with('\n') {
+                        body.push('\n');
+                    }
+                }
+
+                let needed_helpers = std::mem::take(&mut self.helpers);
+                let mut out = String::new();
+                if !needed_helpers.is_empty() {
+                    out.push_str(&Self::render_helpers(&needed_helpers));
                     if !out.ends_with('\n') {
                         out.push('\n');
                     }
                 }
+                out.push_str(&body);
+                self.helpers = saved_helpers;
                 out
             }
             ASTNode::Block(items) => {
@@ -84,9 +105,19 @@ impl CodeGenerator {
             ASTNode::VariableDecl { name, value, .. } => {
                 format!("let {} = {};\n", name, self.emit_expr_js(value))
             }
-            ASTNode::Function { name, params, body, .. } => {
+            ASTNode::Function {
+                name, params, body, ..
+            } => {
                 let mut s = String::new();
-                s.push_str(&format!("function {}({}) ", name, params.iter().map(|p| p.name.clone()).collect::<Vec<_>>().join(", ")));
+                s.push_str(&format!(
+                    "function {}({}) ",
+                    name,
+                    params
+                        .iter()
+                        .map(|p| p.name.clone())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                ));
                 let block = ASTNode::Block(body.clone());
                 s.push_str(&self.emit_js(&block));
                 s
@@ -205,7 +236,12 @@ impl CodeGenerator {
                 format!("{}{}", self.op_str(op), self.emit_expr_js(expr))
             }
             ASTNode::Call { callee, args } => {
-                let c = self.emit_expr_js(callee);
+                let mapped = match &**callee {
+                    ASTNode::Identifier(name) => self.map_helper(name),
+                    ASTNode::IdentifierSpanned { name, .. } => self.map_helper(name),
+                    _ => None,
+                };
+                let c = mapped.unwrap_or_else(|| self.emit_expr_js(callee));
                 let a = args
                     .iter()
                     .map(|x| self.emit_expr_js(x))
@@ -241,6 +277,40 @@ impl CodeGenerator {
             }
             _ => "/*expr*/".into(),
         }
+    }
+    fn map_helper(&mut self, name: &str) -> Option<String> {
+        match name {
+            "len" => {
+                self.helpers.insert(Helper::Len);
+                Some("__aeonmi_len".to_string())
+            }
+            _ => None,
+        }
+    }
+    fn render_helpers(helpers: &BTreeSet<Helper>) -> String {
+        let mut prelude = String::new();
+        for (idx, helper) in helpers.iter().enumerate() {
+            if idx > 0 {
+                prelude.push('\n');
+            }
+            match helper {
+                Helper::Len => {
+                    prelude.push_str("const __aeonmi_len = (value) => {\n");
+                    prelude.push_str(
+                        "    if (typeof value === \"string\") { return value.length; }\n",
+                    );
+                    prelude.push_str("    if (Array.isArray(value)) { return value.length; }\n");
+                    prelude.push_str(
+                        "    if (value && typeof value === \"object\") { return Object.keys(value).length; }\n",
+                    );
+                    prelude
+                        .push_str("    if (value === null || value === undefined) { return 0; }\n");
+                    prelude.push_str("    throw new Error(\"len: unsupported type\");\n");
+                    prelude.push_str("};\n");
+                }
+            }
+        }
+        prelude
     }
     /// Returns a JS statement block string **without** a trailing newline.
     fn wrap_stmt_js(&mut self, n: &ASTNode) -> String {
@@ -326,7 +396,10 @@ mod tests {
     fn gen_minimal_ai_backend() {
         // This test requires a mock or real AiEmitter implementation.
         // If not available, adjust accordingly.
-        let ast = ASTNode::Program(vec![ASTNode::new_variable_decl("x", ASTNode::NumberLiteral(1.0))]);
+        let ast = ASTNode::Program(vec![ASTNode::new_variable_decl(
+            "x",
+            ASTNode::NumberLiteral(1.0),
+        )]);
         let mut g = CodeGenerator::new_ai();
         let out = g.generate(&ast).unwrap();
         assert!(out.contains("x") && (out.contains("1") || out.contains("1.0")));

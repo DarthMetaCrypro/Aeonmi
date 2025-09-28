@@ -20,6 +20,11 @@ path = "src/main.rs"
 name = "aeonmi_project"
 path = "src/bin/aeonmi_project.rs"
 
+# Lowercase CLI alias so integration tests can resolve CARGO_BIN_EXE_aeonmi
+[[bin]]
+name = "aeonmi"
+path = "src/bin/aeonmi.rs"
+
 [profile.release]
 opt-level = 3
 lto = true

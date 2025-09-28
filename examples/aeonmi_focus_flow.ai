@@ -1,0 +1,66 @@
+// Aeonmi FocusFlow – flagship productivity pulse demo
+log("=== Aeonmi FocusFlow ===");
+
+function computeMomentum(streak, energy) {
+    let boost = streak * 2;
+    if (energy > 7) {
+        boost = boost + 3;
+    } else {
+        if (energy < 3) {
+            boost = boost - 2;
+        }
+    }
+    if (boost < 1) {
+        boost = 1;
+    }
+    return boost;
+}
+
+function calibrateSession(name, minutes, focus) {
+    let intensity = minutes / 5;
+    if (intensity < 1) {
+        intensity = 1;
+    }
+    let depth = focus + intensity;
+    return "Session[" + name + "] depth=" + depth;
+}
+
+let streak = 6;
+let energy = 8;
+let momentum = computeMomentum(streak, energy);
+let tasks_planned = 5;
+let tasks_completed = 4;
+let completion_rate = (tasks_completed * 100) / tasks_planned;
+
+log("Momentum score: " + momentum);
+log("Completion rate: " + completion_rate + "%");
+
+let mission = "Ship Aeonmi prototype";
+let mission_complexity = len(mission);
+log("Mission signature units: " + mission_complexity);
+
+let sprint_day = 1;
+while (sprint_day <= 3) {
+    let minutes = 25 + (sprint_day * 5);
+    let session_name = "Focus Block " + sprint_day;
+    let report = calibrateSession(session_name, minutes, momentum);
+    log("Day " + sprint_day + ": " + report);
+    sprint_day = sprint_day + 1;
+}
+
+for (let review = 0; review < 3; review = review + 1) {
+    let score = momentum + review;
+    if (score > 15) {
+        log("Review " + review + ": elite flow sustained.");
+    } else {
+        log("Review " + review + ": reinforce rituals.");
+    }
+}
+
+if (mission_complexity > 20) {
+    log("Inspiration pulse detected. Draft visionary note now.");
+} else {
+    log("Stability pulse detected. Protect deep work window.");
+}
+
+log("FocusFlow runtime complete. Momentum anchor stored.");

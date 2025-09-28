@@ -1,13 +1,13 @@
 #![cfg_attr(test, allow(dead_code, unused_variables))]
 //! Aeonmi VM: tree-walk interpreter over IR.
 //! Supports: literals, arrays/objects, let/assign, if/while/for, fn calls/returns,
-//! basic binary/unary ops, and built-ins: print, log, time_ms, rand.
+//! basic binary/unary ops, and built-ins: print, log, time_ms, rand, len.
 
 use crate::core::ir::*;
 use std::collections::HashMap;
-use std::time::{SystemTime, UNIX_EPOCH};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Once;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Debug, Clone)]
 pub enum Value {
@@ -149,11 +149,19 @@ impl Interpreter {
                 f: builtin_rand,
             }),
         );
+        env.define(
+            "len".into(),
+            Value::Builtin(Builtin {
+                name: "len",
+                arity: 1,
+                f: builtin_len,
+            }),
+        );
         Self { env }
     }
 
     pub fn run_module(&mut self, m: &Module) -> Result<(), RuntimeError> {
-    debug_log!("vm: run_module decls={} ", m.decls.len());
+        debug_log!("vm: run_module decls={} ", m.decls.len());
         // Load top-level decls
         for d in &m.decls {
             debug_log!("vm: processing decl: {:?}", d);
@@ -183,10 +191,10 @@ impl Interpreter {
         }
         // If there is a `main` fn with zero params, run it.
         if let Some(Value::Function(_)) = self.env.get("main") {
-            debug_log!("vm: calling main()" );
+            debug_log!("vm: calling main()");
             let _ = self.call_ident("main", vec![])?;
         } else {
-            debug_log!("vm: no main() found" );
+            debug_log!("vm: no main() found");
         }
         Ok(())
     }
@@ -258,7 +266,7 @@ impl Interpreter {
     }
 
     fn exec_function_block(&mut self, b: &Block) -> ControlFlow {
-    debug_log!("vm: exec_function_block" );
+        debug_log!("vm: exec_function_block");
         // Don't create an additional scope - function call already created one
         for s in &b.stmts {
             match self.exec_stmt(s) {
@@ -586,7 +594,9 @@ fn init_seed_once() {
         // Order of precedence:
         // 1. AEONMI_SEED env var (u64 parse)
         // 2. Time-based fallback (nanos lower 32 bits)
-        let from_env = std::env::var("AEONMI_SEED").ok().and_then(|s| s.parse::<u64>().ok());
+        let from_env = std::env::var("AEONMI_SEED")
+            .ok()
+            .and_then(|s| s.parse::<u64>().ok());
         let seed = from_env.unwrap_or_else(|| {
             (SystemTime::now()
                 .duration_since(UNIX_EPOCH)
@@ -612,6 +622,23 @@ fn lcg_next() -> u64 {
 fn builtin_rand(_i: &mut Interpreter, _args: Vec<Value>) -> Result<Value, RuntimeError> {
     let x = lcg_next();
     Ok(Value::Number(((x >> 8) as f64) / (u32::MAX as f64)))
+}
+
+fn builtin_len(_i: &mut Interpreter, args: Vec<Value>) -> Result<Value, RuntimeError> {
+    if args.len() != 1 {
+        return Err(err(format!(
+            "len expects exactly 1 argument, got {}",
+            args.len()
+        )));
+    }
+
+    match args.into_iter().next().unwrap() {
+        Value::String(s) => Ok(Value::Number(s.chars().count() as f64)),
+        Value::Array(items) => Ok(Value::Number(items.len() as f64)),
+        Value::Object(map) => Ok(Value::Number(map.len() as f64)),
+        Value::Null => Ok(Value::Number(0.0)),
+        other => Err(err(format!("len unsupported for value: {:?}", other))),
+    }
 }
 
 fn display(v: &Value) -> String {
